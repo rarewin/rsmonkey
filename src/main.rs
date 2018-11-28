@@ -42,47 +42,29 @@ enum TokenType {
     Return,
 }
 
+macro_rules! new_token {
+    ($tt:expr, $l:expr) => {
+        Token {
+            token_type: $tt,
+            literal: $l.to_string(),
+        }
+    };
+}
+
 #[test]
 fn test_next_token() {
-    let input = "=+(){},;";
+    let input = r##"=+(){},;"##;
 
     let tests = [
-        Token {
-            token_type: TokenType::Assign,
-            literal: "=".to_string(),
-        },
-        Token {
-            token_type: TokenType::Plus,
-            literal: "+".to_string(),
-        },
-        Token {
-            token_type: TokenType::LParen,
-            literal: "(".to_string(),
-        },
-        Token {
-            token_type: TokenType::RParen,
-            literal: ")".to_string(),
-        },
-        Token {
-            token_type: TokenType::LBrace,
-            literal: "{".to_string(),
-        },
-        Token {
-            token_type: TokenType::RBrace,
-            literal: "}".to_string(),
-        },
-        Token {
-            token_type: TokenType::Comma,
-            literal: ",".to_string(),
-        },
-        Token {
-            token_type: TokenType::Semicolon,
-            literal: ";".to_string(),
-        },
-        Token {
-            token_type: TokenType::EoF,
-            literal: "EOF".to_string(),
-        },
+        new_token!(TokenType::Assign, "="),
+        new_token!(TokenType::Plus, "+"),
+        new_token!(TokenType::LParen, "("),
+        new_token!(TokenType::RParen, ")"),
+        new_token!(TokenType::LBrace, "{"),
+        new_token!(TokenType::RBrace, "}"),
+        new_token!(TokenType::Comma, ","),
+        new_token!(TokenType::Semicolon, ";"),
+        new_token!(TokenType::EoF, "EOF"),
     ];
 
     let mut l = Lexer::new(input.to_string());
@@ -127,46 +109,16 @@ impl Lexer {
 
     pub fn next_token(&mut self) -> Token {
         let token = match self.ch {
-            '=' => Token {
-                token_type: TokenType::Assign,
-                literal: "=".to_string(),
-            },
-            '+' => Token {
-                token_type: TokenType::Plus,
-                literal: "+".to_string(),
-            },
-            '(' => Token {
-                token_type: TokenType::LParen,
-                literal: "(".to_string(),
-            },
-            ')' => Token {
-                token_type: TokenType::RParen,
-                literal: ")".to_string(),
-            },
-            '{' => Token {
-                token_type: TokenType::LBrace,
-                literal: "{".to_string(),
-            },
-            '}' => Token {
-                token_type: TokenType::RBrace,
-                literal: "}".to_string(),
-            },
-            ',' => Token {
-                token_type: TokenType::Comma,
-                literal: ",".to_string(),
-            },
-            ';' => Token {
-                token_type: TokenType::Semicolon,
-                literal: ";".to_string(),
-            },
-            '\0' => Token {
-                token_type: TokenType::EoF,
-                literal: "EoF".to_string(),
-            },
-            _ => Token {
-                token_type: TokenType::Ileegal,
-                literal: "illegal".to_string(),
-            },
+            '=' => new_token!(TokenType::Assign, "="),
+            '+' => new_token!(TokenType::Plus, "+"),
+            '(' => new_token!(TokenType::LParen, "("),
+            ')' => new_token!(TokenType::RParen, ")"),
+            '{' => new_token!(TokenType::LBrace, "{"),
+            '}' => new_token!(TokenType::RBrace, "}"),
+            ',' => new_token!(TokenType::Comma, ","),
+            ';' => new_token!(TokenType::Semicolon, ";"),
+            '\0' => new_token!(TokenType::EoF, "EOF"),
+            _ => new_token!(TokenType::Ileegal, "illegal"),
         };
         self.read_char();
 

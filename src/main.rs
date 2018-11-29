@@ -60,7 +60,9 @@ fn test_next_token() {
       x + y;
     };
 
-    let result = add(five, ten);"##;
+    let result = add(five, ten);
+    !-/*5;
+    5 < 10 > 5;"##;
 
     let tests = [
         new_token!(TokenType::Assign, "="),
@@ -111,6 +113,21 @@ fn test_next_token() {
         new_token!(TokenType::Ident, "ten"),
         new_token!(TokenType::RParen, ")"),
         new_token!(TokenType::Semicolon, ";"),
+        //
+        new_token!(TokenType::Bang, "!"),
+        new_token!(TokenType::Minus, "-"),
+        new_token!(TokenType::Slash, "/"),
+        new_token!(TokenType::Asterisk, "*"),
+        new_token!(TokenType::Int, "5"),
+        new_token!(TokenType::Semicolon, ";"),
+        //
+        new_token!(TokenType::Int, "5"),
+        new_token!(TokenType::LT, "<"),
+        new_token!(TokenType::Int, "10"),
+        new_token!(TokenType::GT, ">"),
+        new_token!(TokenType::Int, "5"),
+        new_token!(TokenType::Semicolon, ";"),
+        //
         new_token!(TokenType::EoF, "EOF"),
     ];
 
@@ -159,6 +176,12 @@ impl Lexer {
         let token = match self.ch {
             '=' => new_token!(TokenType::Assign, "="),
             '+' => new_token!(TokenType::Plus, "+"),
+            '-' => new_token!(TokenType::Minus, "-"),
+            '!' => new_token!(TokenType::Bang, "!"),
+            '/' => new_token!(TokenType::Slash, "/"),
+            '*' => new_token!(TokenType::Asterisk, "*"),
+            '<' => new_token!(TokenType::LT, "<"),
+            '>' => new_token!(TokenType::GT, ">"),
             '(' => new_token!(TokenType::LParen, "("),
             ')' => new_token!(TokenType::RParen, ")"),
             '{' => new_token!(TokenType::LBrace, "{"),

@@ -62,7 +62,13 @@ fn test_next_token() {
 
     let result = add(five, ten);
     !-/*5;
-    5 < 10 > 5;"##;
+    5 < 10 > 5;
+
+    if (5 < 10) {
+      return true;
+    } else {
+      return false;
+    }"##;
 
     let tests = [
         new_token!(TokenType::Assign, "="),
@@ -127,6 +133,24 @@ fn test_next_token() {
         new_token!(TokenType::GT, ">"),
         new_token!(TokenType::Int, "5"),
         new_token!(TokenType::Semicolon, ";"),
+        //
+        new_token!(TokenType::If, "if"),
+        new_token!(TokenType::LParen, "("),
+        new_token!(TokenType::Int, "5"),
+        new_token!(TokenType::LT, "<"),
+        new_token!(TokenType::Int, "10"),
+        new_token!(TokenType::RParen, ")"),
+        new_token!(TokenType::LBrace, "{"),
+        new_token!(TokenType::Return, "return"),
+        new_token!(TokenType::True, "true"),
+        new_token!(TokenType::Semicolon, ";"),
+        new_token!(TokenType::RBrace, "}"),
+        new_token!(TokenType::Else, "else"),
+        new_token!(TokenType::LBrace, "{"),
+        new_token!(TokenType::Return, "return"),
+        new_token!(TokenType::False, "false"),
+        new_token!(TokenType::Semicolon, ";"),
+        new_token!(TokenType::RBrace, "}"),
         //
         new_token!(TokenType::EoF, "EOF"),
     ];
@@ -237,6 +261,16 @@ fn lookup_ident(s: &str) -> TokenType {
         TokenType::Let
     } else if t == "fn" {
         TokenType::Function
+    } else if t == "if" {
+        TokenType::If
+    } else if t == "else" {
+        TokenType::Else
+    } else if t == "return" {
+        TokenType::Return
+    } else if t == "true" {
+        TokenType::True
+    } else if t == "false" {
+        TokenType::False
     } else {
         TokenType::Ident
     }

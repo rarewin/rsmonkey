@@ -6,7 +6,7 @@ struct Token {
 
 #[derive(Debug, PartialEq)]
 enum TokenType {
-    Ileegal,
+    Illegal,
     EoF,
 
     Ident,
@@ -53,7 +53,14 @@ macro_rules! new_token {
 
 #[test]
 fn test_next_token() {
-    let input = r##"=+(){},;"##;
+    let input = r##"=+(){},; let five = 5;
+    let ten = 10;
+
+    let add = fn(x, y) {
+      x + y;
+    };
+
+    let result = add(five, ten);"##;
 
     let tests = [
         new_token!(TokenType::Assign, "="),
@@ -63,6 +70,46 @@ fn test_next_token() {
         new_token!(TokenType::LBrace, "{"),
         new_token!(TokenType::RBrace, "}"),
         new_token!(TokenType::Comma, ","),
+        new_token!(TokenType::Semicolon, ";"),
+        //
+        new_token!(TokenType::Let, "let"),
+        new_token!(TokenType::Ident, "five"),
+        new_token!(TokenType::Assign, "="),
+        new_token!(TokenType::Int, "5"),
+        new_token!(TokenType::Semicolon, ";"),
+        //
+        new_token!(TokenType::Let, "let"),
+        new_token!(TokenType::Ident, "ten"),
+        new_token!(TokenType::Assign, "="),
+        new_token!(TokenType::Int, "10"),
+        new_token!(TokenType::Semicolon, ";"),
+        //
+        new_token!(TokenType::Let, "let"),
+        new_token!(TokenType::Ident, "add"),
+        new_token!(TokenType::Assign, "="),
+        new_token!(TokenType::Function, "fn"),
+        new_token!(TokenType::LParen, "("),
+        new_token!(TokenType::Ident, "x"),
+        new_token!(TokenType::Comma, ","),
+        new_token!(TokenType::Ident, "y"),
+        new_token!(TokenType::RParen, ")"),
+        new_token!(TokenType::LBrace, "{"),
+        new_token!(TokenType::Ident, "x"),
+        new_token!(TokenType::Plus, "+"),
+        new_token!(TokenType::Ident, "y"),
+        new_token!(TokenType::Semicolon, ";"),
+        new_token!(TokenType::RBrace, "}"),
+        new_token!(TokenType::Semicolon, ";"),
+        //
+        new_token!(TokenType::Let, "let"),
+        new_token!(TokenType::Ident, "result"),
+        new_token!(TokenType::Assign, "="),
+        new_token!(TokenType::Ident, "add"),
+        new_token!(TokenType::LParen, "("),
+        new_token!(TokenType::Ident, "five"),
+        new_token!(TokenType::Comma, ","),
+        new_token!(TokenType::Ident, "ten"),
+        new_token!(TokenType::RParen, ")"),
         new_token!(TokenType::Semicolon, ";"),
         new_token!(TokenType::EoF, "EOF"),
     ];
@@ -108,6 +155,7 @@ impl Lexer {
     }
 
     pub fn next_token(&mut self) -> Token {
+        self.skip_whitespace();
         let token = match self.ch {
             '=' => new_token!(TokenType::Assign, "="),
             '+' => new_token!(TokenType::Plus, "+"),
@@ -118,11 +166,56 @@ impl Lexer {
             ',' => new_token!(TokenType::Comma, ","),
             ';' => new_token!(TokenType::Semicolon, ";"),
             '\0' => new_token!(TokenType::EoF, "EOF"),
-            _ => new_token!(TokenType::Ileegal, "illegal"),
+            _ => {
+                if is_letter(self.ch) {
+                    let p = self.position;
+                    while is_letter(self.ch) {
+                        self.read_char();
+                    }
+                    let v = &self.input[p..self.position].to_string();
+                    return new_token!(lookup_ident(&v), v);
+                } else if is_digit(self.ch) {
+                    let p = self.position;
+                    while is_digit(self.ch) {
+                        self.read_char();
+                    }
+                    return new_token!(TokenType::Int, &self.input[p..self.position].to_string());
+                } else {
+                    return new_token!(TokenType::Illegal, "illegal");
+                }
+            }
         };
         self.read_char();
 
         return token;
+    }
+
+    pub fn skip_whitespace(&mut self) {
+        while self.ch == ' ' || self.ch == '\t' || self.ch == '\n' || self.ch == '\r' {
+            self.read_char();
+        }
+    }
+}
+
+/// Return true if ch is letter.
+fn is_letter(ch: char) -> bool {
+    return ('a' <= ch && ch <= 'z') || ('A' <= ch && ch <= 'Z') || ch == '_';
+}
+
+/// Retutn true if ch is digit.
+fn is_digit(ch: char) -> bool {
+    return '0' <= ch && ch <= '9';
+}
+
+fn lookup_ident(s: &str) -> TokenType {
+    let t = s.to_string();
+
+    if t == "let" {
+        TokenType::Let
+    } else if t == "fn" {
+        TokenType::Function
+    } else {
+        TokenType::Ident
     }
 }
 

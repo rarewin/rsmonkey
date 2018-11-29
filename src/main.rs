@@ -68,7 +68,10 @@ fn test_next_token() {
       return true;
     } else {
       return false;
-    }"##;
+    }
+
+    10 == 10;
+    10 != 9;"##;
 
     let tests = [
         new_token!(TokenType::Assign, "="),
@@ -152,6 +155,16 @@ fn test_next_token() {
         new_token!(TokenType::Semicolon, ";"),
         new_token!(TokenType::RBrace, "}"),
         //
+        new_token!(TokenType::Int, "10"),
+        new_token!(TokenType::Eq, "=="),
+        new_token!(TokenType::Int, "10"),
+        new_token!(TokenType::Semicolon, ";"),
+        //
+        new_token!(TokenType::Int, "10"),
+        new_token!(TokenType::NotEq, "!="),
+        new_token!(TokenType::Int, "9"),
+        new_token!(TokenType::Semicolon, ";"),
+        //
         new_token!(TokenType::EoF, "EOF"),
     ];
 
@@ -198,10 +211,24 @@ impl Lexer {
     pub fn next_token(&mut self) -> Token {
         self.skip_whitespace();
         let token = match self.ch {
-            '=' => new_token!(TokenType::Assign, "="),
+            '=' => {
+                if self.peek_char() == '=' {
+                    self.read_char();
+                    new_token!(TokenType::Eq, "==")
+                } else {
+                    new_token!(TokenType::Assign, "=")
+                }
+            }
             '+' => new_token!(TokenType::Plus, "+"),
             '-' => new_token!(TokenType::Minus, "-"),
-            '!' => new_token!(TokenType::Bang, "!"),
+            '!' => {
+                if self.peek_char() == '=' {
+                    self.read_char();
+                    new_token!(TokenType::NotEq, "!=")
+                } else {
+                    new_token!(TokenType::Bang, "!")
+                }
+            }
             '/' => new_token!(TokenType::Slash, "/"),
             '*' => new_token!(TokenType::Asterisk, "*"),
             '<' => new_token!(TokenType::LT, "<"),
@@ -235,6 +262,14 @@ impl Lexer {
         self.read_char();
 
         return token;
+    }
+
+    pub fn peek_char(&mut self) -> char {
+        if self.read_position >= self.input.len() {
+            return '\0';
+        } else {
+            return self.input.as_bytes()[self.read_position] as char;
+        }
     }
 
     pub fn skip_whitespace(&mut self) {

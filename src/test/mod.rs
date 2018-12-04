@@ -1,4 +1,6 @@
+use rsmonkey::ast::*;
 use rsmonkey::lexer::Lexer;
+use rsmonkey::parser::Parser;
 use rsmonkey::token::{Token, TokenType};
 
 #[test]
@@ -124,4 +126,46 @@ fn test_next_token() {
         let tok = l.next_token();
         assert_eq!(&tok, tp);
     }
+}
+
+#[test]
+fn test_let_statements() {
+    let input = r##"let x = 5;
+                    let y = 10;
+                    let foobar = 838383;"##;
+
+    let mut l = Lexer::new(input.to_string());
+    let mut p = new_parser(l);
+
+    let program = p.parse_program();
+
+    assert!(program.statements.len() == 3);
+
+    let tests = ["x", "y", "foobar"];
+
+    for i in 0..tests.len() {
+        let stmt = match &program.statements[i] {
+            Node::StatementNode(s) => s,
+            _ => panic!(),
+        };
+        let tt = tests[i];
+
+        test_let_statement(stmt, tt);
+    }
+}
+
+///
+fn test_let_statement(s: &LetStatement, name: &str) {
+    // assert_eq!(s.name.value, name);
+    assert_eq!(s.token_literal(), name);
+}
+
+///
+fn new_parser(l: Lexer) -> Parser {
+    let mut p = Parser::new(l);
+
+    p.next_token();
+    p.next_token();
+
+    p
 }

@@ -36,6 +36,11 @@ impl Token {
         }
     }
 
+    /// clone
+    pub fn clone(&self) -> Token {
+        Token::new(self.token_type, &self.literal)
+    }
+
     /// check if EoF or not
     ///
     /// # Return value
@@ -54,10 +59,25 @@ impl Token {
     pub fn is_eof(&self) -> bool {
         self.token_type == TokenType::EoF
     }
+
+    /// get token literal string
+    ///
+    /// # Return value
+    ///
+    /// ```
+    /// extern crate rsmonkey;
+    /// use rsmonkey::token::{TokenType, Token};
+    ///
+    /// let l = Token::new(TokenType::Ident, "hoge");
+    /// assert_eq!(l.token_literal(), "hoge");
+    /// ```
+    pub fn token_literal(&self) -> String {
+        self.literal.to_string()
+    }
 }
 
 /// Token type
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum TokenType {
     /// illegal token
     Illegal,

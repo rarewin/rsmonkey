@@ -1,6 +1,7 @@
 use crate::token::Token;
 
 /// enum for nodes
+#[derive(Debug)]
 pub enum Node {
     StatementNode(LetStatement),
     ExpressionNode(Identifier),
@@ -8,6 +9,7 @@ pub enum Node {
 }
 
 /// struct for let statement
+#[derive(Debug)]
 pub struct LetStatement {
     pub token: Token,
     pub name: Identifier,
@@ -15,12 +17,14 @@ pub struct LetStatement {
 }
 
 /// struct for identifier
+#[derive(Debug)]
 pub struct Identifier {
-    token: Token,
-    value: String,
+    pub token: Token,
+    pub value: String,
 }
 
 /// struct for programs
+#[derive(Debug)]
 pub struct Program {
     pub statements: Vec<Node>,
 }

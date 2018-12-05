@@ -2,9 +2,9 @@
 #[derive(Debug, PartialEq)]
 pub struct Token {
     /// type of token
-    token_type: TokenType,
+    pub token_type: TokenType,
     /// literal string
-    literal: String,
+    pub literal: String,
 }
 
 impl Token {
@@ -36,7 +36,21 @@ impl Token {
         }
     }
 
-    /// clone
+    /// clone token
+    ///
+    /// # Return value
+    ///
+    /// retuen a cloned Token
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// extern crate rsmonkey;
+    /// use rsmonkey::token::{TokenType, Token};
+    ///
+    /// let token = Token::new(TokenType::Int, "4");
+    /// let token2 = token.clone();
+    /// ```
     pub fn clone(&self) -> Token {
         Token::new(self.token_type, &self.literal)
     }
@@ -73,6 +87,11 @@ impl Token {
     /// ```
     pub fn token_literal(&self) -> String {
         self.literal.to_string()
+    }
+
+    /// get type of token is `tt`
+    pub fn get_token_type(&self) -> TokenType {
+        self.token_type
     }
 }
 

@@ -134,12 +134,17 @@ fn test_let_statements() {
                     let y = 10;
                     let foobar = 838383;"##;
 
-    let mut l = Lexer::new(input.to_string());
-    let mut p = new_parser(l);
+    let l = Lexer::new(input.to_string());
+    let mut p = Parser::new(l);
 
     let program = p.parse_program();
 
-    assert!(program.statements.len() == 3);
+    assert!(
+        program.statements.len() == 3,
+        "length of program.statements should be {}, but got {}",
+        3,
+        program.statements.len()
+    );
 
     let tests = ["x", "y", "foobar"];
 
@@ -156,16 +161,6 @@ fn test_let_statements() {
 
 ///
 fn test_let_statement(s: &LetStatement, name: &str) {
-    // assert_eq!(s.name.value, name);
-    assert_eq!(s.token_literal(), name);
-}
-
-///
-fn new_parser(l: Lexer) -> Parser {
-    let mut p = Parser::new(l);
-
-    p.next_token();
-    p.next_token();
-
-    p
+    assert_eq!(s.name.value, name);
+    assert_eq!(s.name.token_literal(), name);
 }

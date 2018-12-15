@@ -159,8 +159,45 @@ fn test_let_statements() {
     }
 }
 
+/// test let statement.
+/// get panicked if the test is failed.
 ///
+/// # Arguments
+///
+/// * `s` - let statement
+/// * `name` - expected string for identifer of `s`
+///
+/// # Examples
+///
+/// ```
+/// extern crate rsmonkey;
+/// use rsmonkey::ast::LetStatement;
+/// use rsmonkey::token::{TokenType, Token};
+///
+/// let stmt = LetStatement {
+///    token: Token {
+///       token_type: TokenType::Ident,
+///       literal: "0".to_string(),
+///    },
+///    name: Identifier {
+///       token: Token {
+///          token_type: TokenType::Ident,
+///          literal: "0".to_string(),
+///        },
+///        value: "0".to_string(),
+/// };
+/// ```
 fn test_let_statement(s: &LetStatement, name: &str) {
-    assert_eq!(s.name.value, name);
-    assert_eq!(s.name.token_literal(), name);
+    assert_eq!(
+        s.name.value, name,
+        "expected identifier is '{}', but got '{}'.",
+        name, s.name.value,
+    );
+    assert_eq!(
+        s.name.token_literal(),
+        name,
+        "expected identifier is '{}', but got '{}'.",
+        name,
+        s.name.token_literal()
+    );
 }

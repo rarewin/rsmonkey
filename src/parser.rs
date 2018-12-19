@@ -11,6 +11,8 @@ pub struct Parser {
     cur_token: Token,
     /// peek token
     peek_token: Token,
+    /// error string
+    errors: Vec<Box<String>>,
 }
 
 impl Parser {
@@ -20,12 +22,18 @@ impl Parser {
             lexer: l,
             cur_token: Token::new(TokenType::Illegal, ""),
             peek_token: Token::new(TokenType::Illegal, ""),
+            errors: Vec::<Box<String>>::new(),
         };
 
         p.next_token();
         p.next_token();
 
         p
+    }
+
+    /// error string
+    pub fn errors(&self) -> &Vec<Box<String>> {
+        return &self.errors;
     }
 
     /// update current position
@@ -50,6 +58,7 @@ impl Parser {
             self.next_token();
             true
         } else {
+            self.peek_error(tt);
             false
         }
     }
@@ -60,7 +69,7 @@ impl Parser {
 
         while self.cur_token.get_token_type() != TokenType::EoF {
             match self.parse_statement() {
-                Node::StatementNode(s) => program.statements.push(Node::StatementNode(s)),
+                Node::LetStatementNode(s) => program.statements.push(Node::LetStatementNode(s)),
                 _ => {}
             }
             self.next_token();
@@ -107,6 +116,13 @@ impl Parser {
             self.next_token();
         }
 
-        Node::StatementNode(stmt)
+        Node::LetStatementNode(stmt)
+    }
+
+    pub fn peek_error(&mut self, t: TokenType) {
+        self.errors.push(Box::new(format!(
+            "expected next token to be {:?}, got {:?} instead",
+            t, self.peek_token.token_type
+        )));
     }
 }

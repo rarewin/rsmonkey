@@ -3,8 +3,8 @@ use crate::token::Token;
 /// enum for nodes
 #[derive(Debug)]
 pub enum Node {
-    StatementNode(LetStatement),
-    ExpressionNode(Identifier),
+    LetStatementNode(LetStatement),
+    IdentifierNode(Identifier),
     Null,
 }
 
@@ -55,7 +55,7 @@ impl Program {
     pub fn token_literal(&self) -> String {
         if self.statements.len() > 0 {
             match &self.statements[0] {
-                Node::StatementNode(s) => s.token_literal(),
+                Node::LetStatementNode(s) => s.token_literal(),
                 _ => panic!(),
             }
         } else {

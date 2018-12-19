@@ -138,6 +138,7 @@ fn test_let_statements() {
     let mut p = Parser::new(l);
 
     let program = p.parse_program();
+    check_parser_errors(p);
 
     assert!(
         program.statements.len() == 3,
@@ -150,7 +151,7 @@ fn test_let_statements() {
 
     for i in 0..tests.len() {
         let stmt = match &program.statements[i] {
-            Node::StatementNode(s) => s,
+            Node::LetStatementNode(s) => s,
             _ => panic!(),
         };
         let tt = tests[i];
@@ -200,4 +201,18 @@ fn test_let_statement(s: &LetStatement, name: &str) {
         name,
         s.name.token_literal()
     );
+}
+
+fn check_parser_errors(p: Parser) {
+    let errors = p.errors();
+
+    if errors.len() == 0 {
+        return;
+    }
+
+    println!("parser has {} errors", errors.len());
+
+    for e in errors {
+        println!("parser error: {}", e);
+    }
 }

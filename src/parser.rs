@@ -70,6 +70,9 @@ impl Parser {
         while self.cur_token.get_token_type() != TokenType::EoF {
             match self.parse_statement() {
                 Node::LetStatementNode(s) => program.statements.push(Node::LetStatementNode(s)),
+                Node::ReturnStatementNode(s) => {
+                    program.statements.push(Node::ReturnStatementNode(s))
+                }
                 _ => {}
             }
             self.next_token();
@@ -82,6 +85,7 @@ impl Parser {
     pub fn parse_statement(&mut self) -> Node {
         match self.cur_token.get_token_type() {
             TokenType::Let => self.parse_let_statement(),
+            TokenType::Return => self.parse_return_statement(),
             _ => Node::Null,
         }
     }
@@ -117,6 +121,19 @@ impl Parser {
         }
 
         Node::LetStatementNode(stmt)
+    }
+
+    /// parse return statement
+    pub fn parse_return_statement(&mut self) -> Node {
+        let stmt = ReturnStatement {
+            token: self.cur_token.clone(),
+        };
+
+        while !self.cur_token_is(TokenType::Semicolon) {
+            self.next_token();
+        }
+
+        Node::ReturnStatementNode(stmt)
     }
 
     pub fn peek_error(&mut self, t: TokenType) {

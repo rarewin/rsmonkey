@@ -5,6 +5,7 @@ use crate::token::Token;
 pub enum Node {
     LetStatementNode(LetStatement),
     IdentifierNode(Identifier),
+    ReturnStatementNode(ReturnStatement),
     Null,
 }
 
@@ -14,6 +15,13 @@ pub struct LetStatement {
     pub token: Token,
     pub name: Identifier,
     // pub value: Expression,
+}
+
+/// struct for return statement
+#[derive(Debug)]
+pub struct ReturnStatement {
+    pub token: Token,
+    // pub return_value: Expression,
 }
 
 /// struct for identifier

@@ -203,6 +203,34 @@ fn test_let_statement(s: &LetStatement, name: &str) {
     );
 }
 
+#[test]
+fn test_return_statements() {
+    let input = r##"
+    return 5;
+    return 10;
+    return 993322;"##;
+
+    let l = Lexer::new(input.to_string());
+    let mut p = Parser::new(l);
+
+    let program = p.parse_program();
+    check_parser_errors(p);
+
+    assert!(
+        program.statements.len() == 3,
+        "length of program.statements should be {}, but got {}",
+        3,
+        program.statements.len()
+    );
+
+    for i in 0..program.statements.len() {
+        match &program.statements[i] {
+            Node::ReturnStatementNode(_) => {}
+            _ => panic!(),
+        }
+    }
+}
+
 fn check_parser_errors(p: Parser) {
     let errors = p.errors();
 

@@ -151,7 +151,7 @@ fn test_let_statements() {
 
     for i in 0..tests.len() {
         let stmt = match &program.statements[i] {
-            Node::LetStatementNode(s) => s,
+            StatementNode::LetStatementNode(s) => s,
             _ => panic!(),
         };
         let tt = tests[i];
@@ -225,7 +225,7 @@ fn test_return_statements() {
 
     for i in 0..program.statements.len() {
         match &program.statements[i] {
-            Node::ReturnStatementNode(_) => {}
+            StatementNode::ReturnStatementNode(_) => {}
             _ => panic!(),
         }
     }

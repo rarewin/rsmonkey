@@ -1,11 +1,17 @@
 use crate::token::Token;
 
-/// enum for nodes
+/// statement node
 #[derive(Debug)]
-pub enum Node {
+pub enum StatementNode {
     LetStatementNode(LetStatement),
-    IdentifierNode(Identifier),
     ReturnStatementNode(ReturnStatement),
+    Null,
+}
+
+// expression node
+#[derive(Debug)]
+pub enum ExpressionNode {
+    IdentifierNode(Identifier),
     Null,
 }
 
@@ -34,7 +40,7 @@ pub struct Identifier {
 /// struct for programs
 #[derive(Debug)]
 pub struct Program {
-    pub statements: Vec<Node>,
+    pub statements: Vec<StatementNode>,
 }
 
 impl LetStatement {
@@ -63,7 +69,7 @@ impl Program {
     pub fn token_literal(&self) -> String {
         if self.statements.len() > 0 {
             match &self.statements[0] {
-                Node::LetStatementNode(s) => s.token_literal(),
+                StatementNode::LetStatementNode(s) => s.token_literal(),
                 _ => panic!(),
             }
         } else {

@@ -69,10 +69,12 @@ impl Parser {
 
         while self.cur_token.get_token_type() != TokenType::EoF {
             match self.parse_statement() {
-                Node::LetStatementNode(s) => program.statements.push(Node::LetStatementNode(s)),
-                Node::ReturnStatementNode(s) => {
-                    program.statements.push(Node::ReturnStatementNode(s))
+                StatementNode::LetStatementNode(s) => {
+                    program.statements.push(StatementNode::LetStatementNode(s))
                 }
+                StatementNode::ReturnStatementNode(s) => program
+                    .statements
+                    .push(StatementNode::ReturnStatementNode(s)),
                 _ => {}
             }
             self.next_token();
@@ -82,16 +84,16 @@ impl Parser {
     }
 
     /// parse statement
-    pub fn parse_statement(&mut self) -> Node {
+    pub fn parse_statement(&mut self) -> StatementNode {
         match self.cur_token.get_token_type() {
             TokenType::Let => self.parse_let_statement(),
             TokenType::Return => self.parse_return_statement(),
-            _ => Node::Null,
+            _ => StatementNode::Null,
         }
     }
 
     /// parse let statement
-    pub fn parse_let_statement(&mut self) -> Node {
+    pub fn parse_let_statement(&mut self) -> StatementNode {
         let mut stmt = LetStatement {
             token: self.cur_token.clone(),
             name: Identifier {
@@ -104,7 +106,7 @@ impl Parser {
         };
 
         if !self.expect_peek(TokenType::Ident) {
-            return Node::Null;
+            return StatementNode::Null;
         }
 
         stmt.name = Identifier {
@@ -113,18 +115,18 @@ impl Parser {
         };
 
         if !self.expect_peek(TokenType::Assign) {
-            return Node::Null;
+            return StatementNode::Null;
         }
 
         while !self.cur_token_is(TokenType::Semicolon) {
             self.next_token();
         }
 
-        Node::LetStatementNode(stmt)
+        StatementNode::LetStatementNode(stmt)
     }
 
     /// parse return statement
-    pub fn parse_return_statement(&mut self) -> Node {
+    pub fn parse_return_statement(&mut self) -> StatementNode {
         let stmt = ReturnStatement {
             token: self.cur_token.clone(),
         };
@@ -133,7 +135,7 @@ impl Parser {
             self.next_token();
         }
 
-        Node::ReturnStatementNode(stmt)
+        StatementNode::ReturnStatementNode(stmt)
     }
 
     pub fn peek_error(&mut self, t: TokenType) {

@@ -103,6 +103,7 @@ impl Parser {
                 },
                 value: "dummy".to_string(),
             },
+            value: StatementNode::Null,
         };
 
         if !self.expect_peek(TokenType::Ident) {
@@ -122,20 +123,21 @@ impl Parser {
             self.next_token();
         }
 
-        StatementNode::LetStatementNode(stmt)
+        StatementNode::LetStatementNode(Box::new(stmt))
     }
 
     /// parse return statement
     pub fn parse_return_statement(&mut self) -> StatementNode {
         let stmt = ReturnStatement {
             token: self.cur_token.clone(),
+            return_value: ExpressionNode::Null,
         };
 
         while !self.cur_token_is(TokenType::Semicolon) {
             self.next_token();
         }
 
-        StatementNode::ReturnStatementNode(stmt)
+        StatementNode::ReturnStatementNode(Box::new(stmt))
     }
 
     pub fn peek_error(&mut self, t: TokenType) {

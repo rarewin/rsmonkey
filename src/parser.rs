@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::ast::*;
 use crate::lexer::Lexer;
 use crate::token::{Token, TokenType};
@@ -13,6 +15,10 @@ pub struct Parser {
     peek_token: Token,
     /// error string
     errors: Vec<String>,
+    /// prefix parsing functions
+    prefix_parse_funcs: HashMap<TokenType, fn() -> ExpressionNode>,
+    /// infix parsing functions
+    infix_parse_funcs: HashMap<TokenType, fn(ExpressionNode) -> ExpressionNode>,
 }
 
 impl Parser {
@@ -23,6 +29,8 @@ impl Parser {
             cur_token: Token::new(TokenType::Illegal, ""),
             peek_token: Token::new(TokenType::Illegal, ""),
             errors: Vec::<String>::new(),
+            prefix_parse_funcs: HashMap::<TokenType, fn() -> ExpressionNode>::new(),
+            infix_parse_funcs: HashMap::<TokenType, fn(ExpressionNode) -> ExpressionNode>::new(),
         };
 
         p.next_token();
@@ -145,5 +153,15 @@ impl Parser {
             "expected next token to be {:?}, got {:?} instead",
             t, self.peek_token.token_type
         ));
+    }
+
+    /// register prefix parsing function for tt
+    pub fn register_prefix(&mut self, tt: TokenType, func: fn() -> ExpressionNode) {
+        self.prefix_parse_funcs.insert(tt, func);
+    }
+
+    /// register infix parsing function for tt
+    pub fn register_infix(&mut self, tt: TokenType, func: fn(ExpressionNode) -> ExpressionNode) {
+        self.infix_parse_funcs.insert(tt, func);
     }
 }

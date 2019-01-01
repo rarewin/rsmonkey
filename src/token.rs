@@ -96,7 +96,7 @@ impl Token {
 }
 
 /// Token type
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum TokenType {
     /// illegal token
     Illegal,

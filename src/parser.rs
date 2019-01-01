@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use crate::ast::*;
 use crate::lexer::Lexer;
 use crate::token::{Token, TokenType};
@@ -15,10 +13,6 @@ pub struct Parser {
     peek_token: Token,
     /// error string
     errors: Vec<String>,
-    /// prefix parsing functions
-    prefix_parse_funcs: HashMap<TokenType, fn() -> ExpressionNode>,
-    /// infix parsing functions
-    infix_parse_funcs: HashMap<TokenType, fn(ExpressionNode) -> ExpressionNode>,
 }
 
 impl Parser {
@@ -29,8 +23,6 @@ impl Parser {
             cur_token: Token::new(TokenType::Illegal, ""),
             peek_token: Token::new(TokenType::Illegal, ""),
             errors: Vec::<String>::new(),
-            prefix_parse_funcs: HashMap::<TokenType, fn() -> ExpressionNode>::new(),
-            infix_parse_funcs: HashMap::<TokenType, fn(ExpressionNode) -> ExpressionNode>::new(),
         };
 
         p.next_token();
@@ -76,15 +68,7 @@ impl Parser {
         let mut program = Program::new();
 
         while self.cur_token.get_token_type() != TokenType::EoF {
-            match self.parse_statement() {
-                StatementNode::LetStatementNode(s) => {
-                    program.statements.push(StatementNode::LetStatementNode(s))
-                }
-                StatementNode::ReturnStatementNode(s) => program
-                    .statements
-                    .push(StatementNode::ReturnStatementNode(s)),
-                _ => {}
-            }
+            program.statements.push(self.parse_statement());
             self.next_token();
         }
 
@@ -96,7 +80,7 @@ impl Parser {
         match self.cur_token.get_token_type() {
             TokenType::Let => self.parse_let_statement(),
             TokenType::Return => self.parse_return_statement(),
-            _ => StatementNode::Null,
+            _ => self.parse_expression_statement(),
         }
     }
 
@@ -131,7 +115,7 @@ impl Parser {
             self.next_token();
         }
 
-        StatementNode::LetStatementNode(Box::new(stmt))
+        return StatementNode::LetStatementNode(Box::new(stmt));
     }
 
     /// parse return statement
@@ -145,7 +129,44 @@ impl Parser {
             self.next_token();
         }
 
-        StatementNode::ReturnStatementNode(Box::new(stmt))
+        return StatementNode::ReturnStatementNode(Box::new(stmt));
+    }
+
+    /// parse expression statement
+    pub fn parse_expression_statement(&mut self) -> StatementNode {
+        let stmt = ExpressionStatement {
+            token: self.cur_token.clone(),
+            expression: self.parse_expression(OperationPrecedence::Lowest),
+        };
+
+        if self.peek_token_is(TokenType::Semicolon) {
+            self.next_token();
+        }
+
+        return StatementNode::ExpressionStatementNode(Box::new(stmt));
+    }
+
+    /// parse expression
+    pub fn parse_expression(&mut self, _precedence: OperationPrecedence) -> ExpressionNode {
+        self.prefix_parse(self.cur_token.token_type.clone())
+    }
+
+    /// parse identifier
+    pub fn parse_identifier(&mut self) -> ExpressionNode {
+        let ident = Identifier {
+            token: self.cur_token.clone(),
+            value: self.cur_token.literal.clone(),
+        };
+
+        return ExpressionNode::IdentifierNode(Box::new(ident));
+    }
+
+    /// parse prefix
+    fn prefix_parse(&mut self, tt: TokenType) -> ExpressionNode {
+        match tt {
+            TokenType::Ident => self.parse_identifier(),
+            _ => panic!(),
+        }
     }
 
     pub fn peek_error(&mut self, t: TokenType) {
@@ -153,15 +174,5 @@ impl Parser {
             "expected next token to be {:?}, got {:?} instead",
             t, self.peek_token.token_type
         ));
-    }
-
-    /// register prefix parsing function for tt
-    pub fn register_prefix(&mut self, tt: TokenType, func: fn() -> ExpressionNode) {
-        self.prefix_parse_funcs.insert(tt, func);
-    }
-
-    /// register infix parsing function for tt
-    pub fn register_infix(&mut self, tt: TokenType, func: fn(ExpressionNode) -> ExpressionNode) {
-        self.infix_parse_funcs.insert(tt, func);
     }
 }

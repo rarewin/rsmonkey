@@ -259,6 +259,24 @@ fn test_string() {
     assert_eq!(program.string(), "let myVar = anotherVar;");
 }
 
+#[test]
+fn test_identifier_expression() {
+    let input = r##"foobar;"##;
+
+    let l = Lexer::new(input.to_string());
+    let mut p = Parser::new(l);
+
+    let program = p.parse_program();
+    check_parser_errors(p);
+
+    assert_eq!(
+        program.statements.len(),
+        1,
+        "program does not have enough statements. got {}",
+        program.statements.len()
+    );
+}
+
 fn check_parser_errors(p: Parser) {
     let errors = p.errors();
 

@@ -9,11 +9,23 @@ pub enum StatementNode {
     Null,
 }
 
-// expression node
+/// expression node
 #[derive(Debug)]
 pub enum ExpressionNode {
     IdentifierNode(Box<Identifier>),
     Null,
+}
+
+/// operation precedence
+#[derive(Debug, PartialEq, PartialOrd)]
+pub enum OperationPrecedence {
+    Lowest,
+    Equals,      // ==
+    LessGreater, // > or <
+    Sum,         // +
+    Product,     // *
+    Prefix,      // -X or !X
+    Call,        // function call
 }
 
 /// struct for let statement

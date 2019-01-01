@@ -231,6 +231,34 @@ fn test_return_statements() {
     }
 }
 
+#[test]
+fn test_string() {
+    let v = vec![StatementNode::LetStatementNode(Box::new(LetStatement {
+        token: Token {
+            token_type: TokenType::Let,
+            literal: "let".to_string(),
+        },
+        name: Identifier {
+            token: Token {
+                token_type: TokenType::Ident,
+                literal: "myVar".to_string(),
+            },
+            value: "myVar".to_string(),
+        },
+        value: ExpressionNode::IdentifierNode(Box::new(Identifier {
+            token: Token {
+                token_type: TokenType::Ident,
+                literal: "anotherVar".to_string(),
+            },
+            value: "myVar".to_string(),
+        })),
+    }))];
+
+    let program = Program { statements: { v } };
+
+    assert_eq!(program.string(), "let myVar = anotherVar;");
+}
+
 fn check_parser_errors(p: Parser) {
     let errors = p.errors();
 

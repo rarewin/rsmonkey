@@ -21,7 +21,7 @@ pub enum ExpressionNode {
 pub struct LetStatement {
     pub token: Token,
     pub name: Identifier,
-    pub value: StatementNode,
+    pub value: ExpressionNode,
 }
 
 /// struct for return statement
@@ -35,7 +35,7 @@ pub struct ReturnStatement {
 #[derive(Debug)]
 pub struct ExpressionStatement {
     pub token: Token,
-    // pub expression: Expression,
+    pub expression: ExpressionNode,
 }
 
 /// struct for identifier
@@ -62,7 +62,7 @@ impl LetStatement {
         ret.push_str(" = ");
 
         let v = match &self.value {
-            StatementNode::ExpressionStatementNode(es) => es.string(),
+            ExpressionNode::IdentifierNode(idn) => idn.string(),
             _ => panic!(),
         };
         ret.push_str(&v);

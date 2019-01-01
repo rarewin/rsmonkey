@@ -103,7 +103,7 @@ impl Parser {
                 },
                 value: "dummy".to_string(),
             },
-            value: StatementNode::Null,
+            value: ExpressionNode::Null,
         };
 
         if !self.expect_peek(TokenType::Ident) {

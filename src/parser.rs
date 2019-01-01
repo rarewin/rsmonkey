@@ -12,7 +12,7 @@ pub struct Parser {
     /// peek token
     peek_token: Token,
     /// error string
-    errors: Vec<Box<String>>,
+    errors: Vec<String>,
 }
 
 impl Parser {
@@ -22,7 +22,7 @@ impl Parser {
             lexer: l,
             cur_token: Token::new(TokenType::Illegal, ""),
             peek_token: Token::new(TokenType::Illegal, ""),
-            errors: Vec::<Box<String>>::new(),
+            errors: Vec::<String>::new(),
         };
 
         p.next_token();
@@ -32,7 +32,7 @@ impl Parser {
     }
 
     /// error string
-    pub fn errors(&self) -> &Vec<Box<String>> {
+    pub fn errors(&self) -> &Vec<String> {
         return &self.errors;
     }
 
@@ -141,9 +141,9 @@ impl Parser {
     }
 
     pub fn peek_error(&mut self, t: TokenType) {
-        self.errors.push(Box::new(format!(
+        self.errors.push(format!(
             "expected next token to be {:?}, got {:?} instead",
             t, self.peek_token.token_type
-        )));
+        ));
     }
 }

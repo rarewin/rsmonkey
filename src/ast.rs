@@ -13,6 +13,7 @@ pub enum StatementNode {
 #[derive(Debug)]
 pub enum ExpressionNode {
     IdentifierNode(Box<Identifier>),
+    IntegerLiteralNode(Box<IntegerLiteral>),
     Null,
 }
 
@@ -55,6 +56,13 @@ pub struct ExpressionStatement {
 pub struct Identifier {
     pub token: Token,
     pub value: String,
+}
+
+/// struct for integer literal
+#[derive(Debug)]
+pub struct IntegerLiteral {
+    pub token: Token,
+    pub value: i64,
 }
 
 /// struct for programs

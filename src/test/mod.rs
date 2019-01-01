@@ -275,6 +275,31 @@ fn test_identifier_expression() {
         "program does not have enough statements. got {}",
         program.statements.len()
     );
+
+    let stmt = match &program.statements[0] {
+        StatementNode::ExpressionStatementNode(es) => es,
+        _ => panic!("first statement is not expressionstatement"),
+    };
+
+    assert_eq!(stmt.token.token_literal(), "foobar");
+}
+
+#[test]
+fn test_integer_literal_expression() {
+    let input = r##"5;"##;
+
+    let l = Lexer::new(input.to_string());
+    let mut p = Parser::new(l);
+
+    let program = p.parse_program();
+    check_parser_errors(p);
+
+    assert_eq!(
+        program.statements.len(),
+        1,
+        "program does not have enough statements. got {}",
+        program.statements.len()
+    );
 }
 
 fn check_parser_errors(p: Parser) {

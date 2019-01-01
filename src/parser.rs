@@ -161,11 +161,26 @@ impl Parser {
         return ExpressionNode::IdentifierNode(Box::new(ident));
     }
 
+    /// parse integer literal
+    pub fn parse_integer_literal(&mut self) -> ExpressionNode {
+        let lit = IntegerLiteral {
+            token: self.cur_token.clone(),
+            value: self
+                .cur_token
+                .literal
+                .parse()
+                .expect("failed to parse as i64"),
+        };
+
+        return ExpressionNode::IntegerLiteralNode(Box::new(lit));
+    }
+
     /// parse prefix
     fn prefix_parse(&mut self, tt: TokenType) -> ExpressionNode {
         match tt {
             TokenType::Ident => self.parse_identifier(),
-            _ => panic!(),
+            TokenType::Int => self.parse_integer_literal(),
+            _ => panic!("unsupported by prefix_parser: {:?}", tt),
         }
     }
 

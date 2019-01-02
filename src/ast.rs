@@ -83,17 +83,12 @@ pub struct Program {
 impl LetStatement {
     /// get string of the statement
     pub fn string(&self) -> String {
-        let mut ret = String::new();
-
-        ret.push_str(&self.token_literal());
-        ret.push_str(" ");
-        ret.push_str(&self.name.string());
-        ret.push_str(" = ");
-        ret.push_str(&extract_string_from_expression_node(&self.value));
-
-        ret.push_str(";");
-
-        return ret;
+        format!(
+            "{} {} = {};",
+            &self.token_literal(),
+            &self.name.string(),
+            &extract_string_from_expression_node(&self.value)
+        )
     }
 
     /// get token's literal
@@ -114,13 +109,11 @@ impl ExpressionStatement {
 impl ReturnStatement {
     /// get string of the statement
     pub fn string(&self) -> String {
-        let mut ret = String::new();
-
-        ret.push_str(&self.token.token_literal());
-        ret.push_str(" ");
-        ret.push_str(&extract_string_from_expression_node(&self.return_value));
-
-        return ret;
+        format!(
+            "{} {}",
+            &self.token.token_literal(),
+            &extract_string_from_expression_node(&self.return_value),
+        )
     }
 }
 
@@ -151,13 +144,11 @@ impl IntegerLiteral {
 impl PrefixExpression {
     /// get string of the prefix expression
     pub fn string(&self) -> String {
-        let mut ret = String::new();
-        ret.push_str(&format!(
+        format!(
             "({}{})",
             self.operator,
             extract_string_from_expression_node(&self.right)
-        ));
-        return ret;
+        )
     }
 
     /// get token's literal

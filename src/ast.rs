@@ -15,6 +15,7 @@ pub enum ExpressionNode {
     IdentifierNode(Box<Identifier>),
     IntegerLiteralNode(Box<IntegerLiteral>),
     PrefixExpressionNode(Box<PrefixExpression>),
+    InfixExpressionNode(Box<InfixExpression>),
     Null,
 }
 
@@ -70,6 +71,15 @@ pub struct IntegerLiteral {
 #[derive(Debug)]
 pub struct PrefixExpression {
     pub token: Token,
+    pub operator: String,
+    pub right: ExpressionNode,
+}
+
+/// struct for infix expression
+#[derive(Debug)]
+pub struct InfixExpression {
+    pub token: Token,
+    pub left: ExpressionNode,
     pub operator: String,
     pub right: ExpressionNode,
 }
@@ -157,6 +167,23 @@ impl PrefixExpression {
     }
 }
 
+impl InfixExpression {
+    /// get string of the infix expression
+    pub fn string(&self) -> String {
+        format!(
+            "({} {} {})",
+            extract_string_from_expression_node(&self.left),
+            self.operator,
+            extract_string_from_expression_node(&self.right),
+        )
+    }
+
+    /// get token's literal
+    pub fn token_literal(&self) -> String {
+        self.token.token_literal()
+    }
+}
+
 impl Program {
     /// constructer of Program
     pub fn new() -> Program {
@@ -201,6 +228,7 @@ fn extract_string_from_expression_node(node: &ExpressionNode) -> String {
         ExpressionNode::IdentifierNode(idn) => idn.string(),
         ExpressionNode::IntegerLiteralNode(iln) => iln.string(),
         ExpressionNode::PrefixExpressionNode(pen) => pen.string(),
+        ExpressionNode::InfixExpressionNode(ien) => ien.string(),
         _ => panic!("unexpected node"),
     }
 }

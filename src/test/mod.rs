@@ -357,6 +357,95 @@ fn test_parsing_prefix_expressions() {
     }
 }
 
+#[test]
+fn test_parsing_infix_expressions() {
+    struct Test {
+        input: String,
+        left_value: i64,
+        operator: String,
+        right_value: i64,
+    };
+
+    let infix_test = vec![
+        Test {
+            input: "5 + 5;".to_string(),
+            left_value: 5,
+            operator: "+".to_string(),
+            right_value: 5,
+        },
+        Test {
+            input: "5 - 5;".to_string(),
+            left_value: 5,
+            operator: "-".to_string(),
+            right_value: 5,
+        },
+        Test {
+            input: "5 * 4;".to_string(),
+            left_value: 5,
+            operator: "*".to_string(),
+            right_value: 4,
+        },
+        Test {
+            input: "8 / 4;".to_string(),
+            left_value: 8,
+            operator: "/".to_string(),
+            right_value: 4,
+        },
+        Test {
+            input: "2 > 8;".to_string(),
+            left_value: 2,
+            operator: ">".to_string(),
+            right_value: 8,
+        },
+        Test {
+            input: "8 < 2;".to_string(),
+            left_value: 8,
+            operator: "<".to_string(),
+            right_value: 2,
+        },
+        Test {
+            input: "2 == 2;".to_string(),
+            left_value: 2,
+            operator: "==".to_string(),
+            right_value: 2,
+        },
+        Test {
+            input: "3 != 2;".to_string(),
+            left_value: 3,
+            operator: "!=".to_string(),
+            right_value: 2,
+        },
+    ];
+
+    for tt in infix_test {
+        let l = Lexer::new(tt.input);
+        let mut p = Parser::new(l);
+
+        let program = p.parse_program();
+        check_parser_errors(p);
+
+        let stmt = match &program.statements[0] {
+            StatementNode::ExpressionStatementNode(es) => es,
+            _ => panic!("first statement is not expression statement"),
+        };
+
+        let exp = match &stmt.expression {
+            ExpressionNode::InfixExpressionNode(ie) => ie,
+            _ => panic!("this expression statement does not have infix expression"),
+        };
+
+        test_integer_literal(&exp.left, tt.left_value);
+
+        assert_eq!(
+            tt.operator, exp.operator,
+            "unexpected operator {} (expected {})",
+            exp.operator, tt.operator
+        );
+
+        test_integer_literal(&exp.right, tt.right_value);
+    }
+}
+
 fn check_parser_errors(p: Parser) {
     let errors = p.errors();
 

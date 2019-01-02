@@ -147,8 +147,19 @@ impl Parser {
     }
 
     /// parse expression
-    pub fn parse_expression(&mut self, _precedence: OperationPrecedence) -> ExpressionNode {
-        self.prefix_parse(self.cur_token.token_type.clone())
+    pub fn parse_expression(&mut self, precedence: OperationPrecedence) -> ExpressionNode {
+        let mut ex = self.prefix_parse(self.cur_token.token_type.clone());
+
+        if let ExpressionNode::Null = ex {
+            return ex;
+        }
+
+        while !self.peek_token_is(TokenType::Semicolon) && precedence < self.peek_precedence() {
+            self.next_token();
+            ex = self.infix_parse(self.cur_token.token_type, ex);
+        }
+
+        return ex;
     }
 
     /// parse identifier
@@ -190,6 +201,22 @@ impl Parser {
         return ExpressionNode::PrefixExpressionNode(Box::new(pe));
     }
 
+    /// parse infix expression
+    pub fn parse_infix_expression(&mut self, left: ExpressionNode) -> ExpressionNode {
+        let mut ie = InfixExpression {
+            token: self.cur_token.clone(),
+            left: left,
+            operator: self.cur_token.token_literal(),
+            right: ExpressionNode::Null,
+        };
+
+        let precedence = self.cur_precedence();
+        self.next_token();
+        ie.right = self.parse_expression(precedence);
+
+        return ExpressionNode::InfixExpressionNode(Box::new(ie));
+    }
+
     /// parse prefix
     fn prefix_parse(&mut self, tt: TokenType) -> ExpressionNode {
         match tt {
@@ -197,14 +224,55 @@ impl Parser {
             TokenType::Int => self.parse_integer_literal(),
             TokenType::Bang => self.parse_prefix_expression(),
             TokenType::Minus => self.parse_prefix_expression(),
-            _ => panic!("unsupported by prefix_parser: {:?}", tt),
+            _ => ExpressionNode::Null, // panic!("unsupported by prefix_parser: {:?}", tt),
         }
     }
 
+    /// parse infix
+    fn infix_parse(&mut self, tt: TokenType, left: ExpressionNode) -> ExpressionNode {
+        match tt {
+            TokenType::Plus => self.parse_infix_expression(left),
+            TokenType::Minus => self.parse_infix_expression(left),
+            TokenType::Asterisk => self.parse_infix_expression(left),
+            TokenType::Slash => self.parse_infix_expression(left),
+            TokenType::GT => self.parse_infix_expression(left),
+            TokenType::LT => self.parse_infix_expression(left),
+            TokenType::Eq => self.parse_infix_expression(left),
+            TokenType::NotEq => self.parse_infix_expression(left),
+            _ => panic!("unsupported by infix_parser: {:?}", tt),
+        }
+    }
+
+    /// set error caused by peek token
     pub fn peek_error(&mut self, t: TokenType) {
         self.errors.push(format!(
             "expected next token to be {:?}, got {:?} instead",
             t, self.peek_token.token_type
         ));
+    }
+
+    /// get precedence of the peek token
+    pub fn peek_precedence(&self) -> OperationPrecedence {
+        return get_precedence(&self.peek_token.token_type);
+    }
+
+    /// get precedence of the current token
+    pub fn cur_precedence(&self) -> OperationPrecedence {
+        return get_precedence(&self.cur_token.token_type);
+    }
+}
+
+/// get precedence of the operation `tt`
+fn get_precedence(tt: &TokenType) -> OperationPrecedence {
+    match tt {
+        TokenType::Eq => OperationPrecedence::Equals,
+        TokenType::NotEq => OperationPrecedence::Equals,
+        TokenType::LT => OperationPrecedence::LessGreater,
+        TokenType::GT => OperationPrecedence::LessGreater,
+        TokenType::Plus => OperationPrecedence::Sum,
+        TokenType::Minus => OperationPrecedence::Sum,
+        TokenType::Slash => OperationPrecedence::Product,
+        TokenType::Asterisk => OperationPrecedence::Product,
+        _ => OperationPrecedence::Lowest,
     }
 }

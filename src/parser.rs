@@ -175,11 +175,28 @@ impl Parser {
         return ExpressionNode::IntegerLiteralNode(Box::new(lit));
     }
 
+    /// parse prefix expression
+    pub fn parse_prefix_expression(&mut self) -> ExpressionNode {
+        let mut pe = PrefixExpression {
+            token: self.cur_token.clone(),
+            operator: self.cur_token.token_literal(),
+            right: ExpressionNode::Null,
+        };
+
+        self.next_token();
+
+        pe.right = self.parse_expression(OperationPrecedence::Prefix);
+
+        return ExpressionNode::PrefixExpressionNode(Box::new(pe));
+    }
+
     /// parse prefix
     fn prefix_parse(&mut self, tt: TokenType) -> ExpressionNode {
         match tt {
             TokenType::Ident => self.parse_identifier(),
             TokenType::Int => self.parse_integer_literal(),
+            TokenType::Bang => self.parse_prefix_expression(),
+            TokenType::Minus => self.parse_prefix_expression(),
             _ => panic!("unsupported by prefix_parser: {:?}", tt),
         }
     }

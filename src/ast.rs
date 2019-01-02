@@ -14,6 +14,7 @@ pub enum StatementNode {
 pub enum ExpressionNode {
     IdentifierNode(Box<Identifier>),
     IntegerLiteralNode(Box<IntegerLiteral>),
+    PrefixExpressionNode(Box<PrefixExpression>),
     Null,
 }
 
@@ -65,6 +66,14 @@ pub struct IntegerLiteral {
     pub value: i64,
 }
 
+/// struct for prefix expression
+#[derive(Debug)]
+pub struct PrefixExpression {
+    pub token: Token,
+    pub operator: String,
+    pub right: ExpressionNode,
+}
+
 /// struct for programs
 #[derive(Debug)]
 pub struct Program {
@@ -80,12 +89,7 @@ impl LetStatement {
         ret.push_str(" ");
         ret.push_str(&self.name.string());
         ret.push_str(" = ");
-
-        let v = match &self.value {
-            ExpressionNode::IdentifierNode(idn) => idn.string(),
-            _ => panic!(),
-        };
-        ret.push_str(&v);
+        ret.push_str(&extract_string_from_expression_node(&self.value));
 
         ret.push_str(";");
 
@@ -114,13 +118,7 @@ impl ReturnStatement {
 
         ret.push_str(&self.token.token_literal());
         ret.push_str(" ");
-
-        let v = match &self.return_value {
-            ExpressionNode::IdentifierNode(idn) => idn.string(),
-            _ => panic!(),
-        };
-
-        ret.push_str(&v);
+        ret.push_str(&extract_string_from_expression_node(&self.return_value));
 
         return ret;
     }
@@ -130,6 +128,36 @@ impl Identifier {
     /// get string of the identifer
     pub fn string(&self) -> String {
         self.token_literal()
+    }
+
+    /// get token's literal
+    pub fn token_literal(&self) -> String {
+        self.token.token_literal()
+    }
+}
+
+impl IntegerLiteral {
+    /// get string of the integer literal
+    pub fn string(&self) -> String {
+        self.token_literal()
+    }
+
+    /// get token's literal
+    pub fn token_literal(&self) -> String {
+        self.token.token_literal()
+    }
+}
+
+impl PrefixExpression {
+    /// get string of the prefix expression
+    pub fn string(&self) -> String {
+        let mut ret = String::new();
+        ret.push_str(&format!(
+            "({}{})",
+            self.operator,
+            extract_string_from_expression_node(&self.right)
+        ));
+        return ret;
     }
 
     /// get token's literal
@@ -150,11 +178,7 @@ impl Program {
     pub fn string(&self) -> String {
         let mut ret = String::new();
         for stmt in &self.statements {
-            let stmt_str = match stmt {
-                StatementNode::LetStatementNode(s) => s.string(),
-                _ => panic!(),
-            };
-            ret.push_str(&stmt_str);
+            ret.push_str(&extract_string_from_statement_node(&stmt));
         }
         return ret;
     }
@@ -169,5 +193,23 @@ impl Program {
         } else {
             "".to_string()
         }
+    }
+}
+
+/// extract string from StatementNode
+fn extract_string_from_statement_node(node: &StatementNode) -> String {
+    match node {
+        StatementNode::LetStatementNode(ls) => ls.string(),
+        _ => panic!("unexpected node"),
+    }
+}
+
+/// extract string from ExpressionNode
+fn extract_string_from_expression_node(node: &ExpressionNode) -> String {
+    match node {
+        ExpressionNode::IdentifierNode(idn) => idn.string(),
+        ExpressionNode::IntegerLiteralNode(iln) => iln.string(),
+        ExpressionNode::PrefixExpressionNode(pen) => pen.string(),
+        _ => panic!("unexpected node"),
     }
 }

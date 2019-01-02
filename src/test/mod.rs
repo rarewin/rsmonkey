@@ -302,6 +302,61 @@ fn test_integer_literal_expression() {
     );
 }
 
+#[test]
+fn test_parsing_prefix_expressions() {
+    struct Test {
+        input: String,
+        operator: String,
+        integer_value: i64,
+    };
+
+    let prefix_test = vec![
+        Test {
+            input: "!5;".to_string(),
+            operator: "!".to_string(),
+            integer_value: 5,
+        },
+        Test {
+            input: "-15;".to_string(),
+            operator: "-".to_string(),
+            integer_value: 15,
+        },
+    ];
+
+    for tt in prefix_test {
+        let l = Lexer::new(tt.input);
+        let mut p = Parser::new(l);
+
+        let program = p.parse_program();
+        check_parser_errors(p);
+
+        assert_eq!(
+            program.statements.len(),
+            1,
+            "program does not have enough statements. got {}",
+            program.statements.len()
+        );
+
+        let stmt = match &program.statements[0] {
+            StatementNode::ExpressionStatementNode(es) => es,
+            _ => panic!("first statement is not expression statement"),
+        };
+
+        let exp = match &stmt.expression {
+            ExpressionNode::PrefixExpressionNode(pe) => pe,
+            _ => panic!("this expression statement does not have prefix expression"),
+        };
+
+        assert_eq!(
+            tt.operator, exp.operator,
+            "unexpected operator {} (expected {})",
+            exp.operator, tt.operator
+        );
+
+        test_integer_literal(&exp.right, tt.integer_value);
+    }
+}
+
 fn check_parser_errors(p: Parser) {
     let errors = p.errors();
 
@@ -314,4 +369,25 @@ fn check_parser_errors(p: Parser) {
     for e in errors {
         println!("parser error: {}", e);
     }
+}
+
+fn test_integer_literal(en: &ExpressionNode, value: i64) {
+    let il = match &en {
+        ExpressionNode::IntegerLiteralNode(iln) => iln,
+        _ => panic!("unexpected node"),
+    };
+
+    assert_eq!(
+        il.value, value,
+        "integer value is expected as {} but got {}",
+        value, il.value
+    );
+
+    assert_eq!(
+        il.token_literal(),
+        format!("{}", value),
+        "token_literal() is expected as {} bug got {}",
+        format!("{}", value),
+        il.token_literal(),
+    );
 }

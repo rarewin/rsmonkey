@@ -111,7 +111,7 @@ impl LetStatement {
 impl ExpressionStatement {
     /// get string of the statement
     pub fn string(&self) -> String {
-        "".to_string()
+        extract_string_from_expression_node(&self.expression)
     }
 }
 
@@ -218,6 +218,7 @@ impl Program {
 fn extract_string_from_statement_node(node: &StatementNode) -> String {
     match node {
         StatementNode::LetStatementNode(ls) => ls.string(),
+        StatementNode::ExpressionStatementNode(es) => es.string(),
         _ => panic!("unexpected node"),
     }
 }

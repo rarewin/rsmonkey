@@ -446,6 +446,77 @@ fn test_parsing_infix_expressions() {
     }
 }
 
+#[test]
+fn test_operator_precedence_parsing() {
+    struct Test {
+        input: String,
+        expected: String,
+    };
+
+    let operator_precedence_test = vec![
+        Test {
+            input: "-a * b;".to_string(),
+            expected: "((-a) * b)".to_string(),
+        },
+        Test {
+            input: "!-a".to_string(),
+            expected: "(!(-a))".to_string(),
+        },
+        Test {
+            input: "a + b + c".to_string(),
+            expected: "((a + b) + c)".to_string(),
+        },
+        Test {
+            input: "a + b - c".to_string(),
+            expected: "((a + b) - c)".to_string(),
+        },
+        Test {
+            input: "a * b * c".to_string(),
+            expected: "((a * b) * c)".to_string(),
+        },
+        Test {
+            input: "a * b / c".to_string(),
+            expected: "((a * b) / c)".to_string(),
+        },
+        Test {
+            input: "a + b * c + d / e - f".to_string(),
+            expected: "(((a + (b * c)) + (d / e)) - f)".to_string(),
+        },
+        Test {
+            input: "3 + 4; -5 * 5;".to_string(),
+            expected: "(3 + 4)((-5) * 5)".to_string(),
+        },
+        Test {
+            input: "5 > 4 == 3 < 4".to_string(),
+            expected: "((5 > 4) == (3 < 4))".to_string(),
+        },
+        Test {
+            input: "5 < 4 != 3 > 4".to_string(),
+            expected: "((5 < 4) != (3 > 4))".to_string(),
+        },
+        Test {
+            input: "3 + 4 * 5 == 3 * 1 + 4 * 5".to_string(),
+            expected: "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))".to_string(),
+        },
+    ];
+
+    for tt in operator_precedence_test {
+        let l = Lexer::new(tt.input);
+        let mut p = Parser::new(l);
+
+        let program = p.parse_program();
+        check_parser_errors(p);
+
+        assert_eq!(
+            program.string(),
+            tt.expected,
+            r##"expected "{}", got "{}""##,
+            tt.expected,
+            program.string(),
+        );
+    }
+}
+
 fn check_parser_errors(p: Parser) {
     let errors = p.errors();
 

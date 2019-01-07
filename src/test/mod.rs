@@ -3,6 +3,11 @@ use rsmonkey::lexer::Lexer;
 use rsmonkey::parser::Parser;
 use rsmonkey::token::{Token, TokenType};
 
+enum TestLiteral {
+    IntegerLiteral(i64),
+    StringLiteral(String),
+}
+
 #[test]
 fn test_next_token() {
     let input = r##"=+(){},; let five = 5;
@@ -429,20 +434,12 @@ fn test_parsing_infix_expressions() {
             _ => panic!("first statement is not expression statement"),
         };
 
-        let exp = match &stmt.expression {
-            ExpressionNode::InfixExpressionNode(ie) => ie,
-            _ => panic!("this expression statement does not have infix expression"),
-        };
-
-        test_integer_literal(&exp.left, tt.left_value);
-
-        assert_eq!(
-            tt.operator, exp.operator,
-            "unexpected operator {} (expected {})",
-            exp.operator, tt.operator
+        test_infix_expression(
+            &stmt.expression,
+            &TestLiteral::IntegerLiteral(tt.left_value),
+            tt.operator.clone(),
+            &TestLiteral::IntegerLiteral(tt.right_value),
         );
-
-        test_integer_literal(&exp.right, tt.right_value);
     }
 }
 
@@ -531,6 +528,12 @@ fn check_parser_errors(p: Parser) {
     }
 }
 
+/// test integer literal
+///
+/// # Arguments
+///
+/// * `en` - `ExpressionNode::IntegerLiteralNode` to be tested
+/// * `value` - the value that `en` should have
 fn test_integer_literal(en: &ExpressionNode, value: i64) {
     let il = match &en {
         ExpressionNode::IntegerLiteralNode(iln) => iln,
@@ -550,4 +553,62 @@ fn test_integer_literal(en: &ExpressionNode, value: i64) {
         format!("{}", value),
         il.token_literal(),
     );
+}
+
+/// test string literal
+///
+/// # Arguments
+///
+/// * `en` - `ExpressionNode::IdentifierNode` to be tested
+/// * `value` - the value that `en` should have
+fn test_string_literal(en: &ExpressionNode, value: String) {
+    let id = match &en {
+        ExpressionNode::IdentifierNode(idn) => idn,
+        _ => panic!("unexpected node"),
+    };
+
+    assert_eq!(
+        id.value, value,
+        r##"value is expected as "{}" but got "{}""##,
+        value, id.value,
+    );
+
+    assert_eq!(
+        id.token_literal(),
+        value,
+        r##"token_literal() is expected as "{}" but got "{}""##,
+        id.token_literal(),
+        id.value,
+    );
+}
+
+/// test expression's literal
+fn test_literal_expression(en: &ExpressionNode, literal: &TestLiteral) {
+    match literal {
+        TestLiteral::IntegerLiteral(i) => test_integer_literal(&en, *i),
+        TestLiteral::StringLiteral(s) => test_string_literal(&en, s.to_string()),
+    }
+}
+
+/// test infix expression
+fn test_infix_expression(
+    en: &ExpressionNode,
+    ex_left: &TestLiteral,
+    ex_operator: String,
+    ex_right: &TestLiteral,
+) {
+    let ifn = match &en {
+        ExpressionNode::InfixExpressionNode(ie) => ie,
+        _ => panic!("not infix expression {:?}", en),
+    };
+
+    test_literal_expression(&ifn.left, &ex_left);
+
+    assert_eq!(
+        ifn.operator, ex_operator,
+        "unexpected operator {} (expected {})",
+        ifn.operator, ex_operator,
+    );
+
+    test_literal_expression(&ifn.right, &ex_right);
 }

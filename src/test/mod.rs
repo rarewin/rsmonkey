@@ -591,6 +591,26 @@ fn test_operator_precedence_parsing() {
             input: "3 < 5 == true".to_string(),
             expected: "((3 < 5) == true)".to_string(),
         },
+        Test {
+            input: "1 + (2 + 3) + 4;".to_string(),
+            expected: "((1 + (2 + 3)) + 4)".to_string(),
+        },
+        Test {
+            input: "(5 + 5) * 2;".to_string(),
+            expected: "((5 + 5) * 2)".to_string(),
+        },
+        Test {
+            input: "2 / (5 + 5);".to_string(),
+            expected: "(2 / (5 + 5))".to_string(),
+        },
+        Test {
+            input: "-(5 + 5);".to_string(),
+            expected: "(-(5 + 5))".to_string(),
+        },
+        Test {
+            input: "!(true == true);".to_string(),
+            expected: "(!(true == true))".to_string(),
+        },
     ];
 
     for tt in operator_precedence_test {

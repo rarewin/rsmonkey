@@ -16,6 +16,7 @@ pub enum ExpressionNode {
     IntegerLiteralNode(Box<IntegerLiteral>),
     PrefixExpressionNode(Box<PrefixExpression>),
     InfixExpressionNode(Box<InfixExpression>),
+    BooleanExpressionNode(Box<Boolean>),
     Null,
 }
 
@@ -82,6 +83,13 @@ pub struct InfixExpression {
     pub left: ExpressionNode,
     pub operator: String,
     pub right: ExpressionNode,
+}
+
+/// struct for boolean
+#[derive(Debug)]
+pub struct Boolean {
+    pub token: Token,
+    pub value: bool,
 }
 
 /// struct for programs
@@ -176,6 +184,19 @@ impl InfixExpression {
             self.operator,
             extract_string_from_expression_node(&self.right),
         )
+    }
+
+    /// get token's literal
+    pub fn token_literal(&self) -> String {
+        self.token.token_literal()
+    }
+}
+
+/// boolean
+impl Boolean {
+    /// get string of the boolean value
+    pub fn string(&self) -> String {
+        self.token.token_literal()
     }
 
     /// get token's literal

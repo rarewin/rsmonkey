@@ -6,6 +6,7 @@ use rsmonkey::token::{Token, TokenType};
 enum TestLiteral {
     IntegerLiteral(i64),
     StringLiteral(String),
+    BooleanLiteral(bool),
 }
 
 #[test]
@@ -307,6 +308,57 @@ fn test_integer_literal_expression() {
     );
 }
 
+/// test boolean
+#[test]
+fn test_boolean_literal_expression() {
+    struct Test {
+        input: String,
+        value: bool,
+    };
+
+    let boolean_test = vec![
+        Test {
+            input: "true".to_string(),
+            value: true,
+        },
+        Test {
+            input: "false".to_string(),
+            value: false,
+        },
+    ];
+
+    for tt in boolean_test {
+        let l = Lexer::new(tt.input);
+        let mut p = Parser::new(l);
+
+        let program = p.parse_program();
+        check_parser_errors(p);
+
+        assert_eq!(
+            program.statements.len(),
+            1,
+            "program does not have enough statements. got {}",
+            program.statements.len()
+        );
+
+        let stmt = match &program.statements[0] {
+            StatementNode::ExpressionStatementNode(es) => es,
+            _ => panic!("first statement is not expression statement"),
+        };
+
+        let exp = match &stmt.expression {
+            ExpressionNode::BooleanExpressionNode(bn) => bn,
+            _ => panic!("this expression statement does not have boolean expression"),
+        };
+
+        assert_eq!(
+            exp.value, tt.value,
+            "{} is expected, but got {}",
+            tt.value, exp.value,
+        );
+    }
+}
+
 #[test]
 fn test_parsing_prefix_expressions() {
     struct Test {
@@ -587,6 +639,7 @@ fn test_literal_expression(en: &ExpressionNode, literal: &TestLiteral) {
     match literal {
         TestLiteral::IntegerLiteral(i) => test_integer_literal(&en, *i),
         TestLiteral::StringLiteral(s) => test_string_literal(&en, s.to_string()),
+        _ => panic!("unexpected test literal"),
     }
 }
 

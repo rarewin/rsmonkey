@@ -201,6 +201,16 @@ impl Parser {
         return ExpressionNode::PrefixExpressionNode(Box::new(pe));
     }
 
+    /// parse boolean expression
+    pub fn parse_boolean_expression(&mut self) -> ExpressionNode {
+        let be = Boolean {
+            token: self.cur_token.clone(),
+            value: self.cur_token_is(TokenType::True),
+        };
+
+        return ExpressionNode::BooleanExpressionNode(Box::new(be));
+    }
+
     /// parse infix expression
     pub fn parse_infix_expression(&mut self, left: ExpressionNode) -> ExpressionNode {
         let mut ie = InfixExpression {
@@ -224,6 +234,8 @@ impl Parser {
             TokenType::Int => self.parse_integer_literal(),
             TokenType::Bang => self.parse_prefix_expression(),
             TokenType::Minus => self.parse_prefix_expression(),
+            TokenType::True => self.parse_boolean_expression(),
+            TokenType::False => self.parse_boolean_expression(),
             _ => ExpressionNode::Null, // panic!("unsupported by prefix_parser: {:?}", tt),
         }
     }

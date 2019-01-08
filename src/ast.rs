@@ -251,6 +251,7 @@ fn extract_string_from_expression_node(node: &ExpressionNode) -> String {
         ExpressionNode::IntegerLiteralNode(iln) => iln.string(),
         ExpressionNode::PrefixExpressionNode(pen) => pen.string(),
         ExpressionNode::InfixExpressionNode(ien) => ien.string(),
-        _ => panic!("unexpected node"),
+        ExpressionNode::BooleanExpressionNode(ben) => ben.string(),
+        _ => panic!("unexpected node (please implement extract_string_from_expression_node() for this node)"),
     }
 }

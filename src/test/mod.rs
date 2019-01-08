@@ -364,19 +364,29 @@ fn test_parsing_prefix_expressions() {
     struct Test {
         input: String,
         operator: String,
-        integer_value: i64,
+        value: TestLiteral,
     };
 
     let prefix_test = vec![
         Test {
             input: "!5;".to_string(),
             operator: "!".to_string(),
-            integer_value: 5,
+            value: TestLiteral::IntegerLiteral(5),
         },
         Test {
             input: "-15;".to_string(),
             operator: "-".to_string(),
-            integer_value: 15,
+            value: TestLiteral::IntegerLiteral(15),
+        },
+        Test {
+            input: "!true;".to_string(),
+            operator: "!".to_string(),
+            value: TestLiteral::BooleanLiteral(true),
+        },
+        Test {
+            input: "!false;".to_string(),
+            operator: "!".to_string(),
+            value: TestLiteral::BooleanLiteral(false),
         },
     ];
 
@@ -410,7 +420,7 @@ fn test_parsing_prefix_expressions() {
             exp.operator, tt.operator
         );
 
-        test_integer_literal(&exp.right, tt.integer_value);
+        test_literal_expression(&exp.right, &tt.value);
     }
 }
 
@@ -418,59 +428,77 @@ fn test_parsing_prefix_expressions() {
 fn test_parsing_infix_expressions() {
     struct Test {
         input: String,
-        left_value: i64,
+        left_value: TestLiteral,
         operator: String,
-        right_value: i64,
+        right_value: TestLiteral,
     };
 
     let infix_test = vec![
         Test {
             input: "5 + 5;".to_string(),
-            left_value: 5,
+            left_value: TestLiteral::IntegerLiteral(5),
             operator: "+".to_string(),
-            right_value: 5,
+            right_value: TestLiteral::IntegerLiteral(5),
         },
         Test {
             input: "5 - 5;".to_string(),
-            left_value: 5,
+            left_value: TestLiteral::IntegerLiteral(5),
             operator: "-".to_string(),
-            right_value: 5,
+            right_value: TestLiteral::IntegerLiteral(5),
         },
         Test {
             input: "5 * 4;".to_string(),
-            left_value: 5,
+            left_value: TestLiteral::IntegerLiteral(5),
             operator: "*".to_string(),
-            right_value: 4,
+            right_value: TestLiteral::IntegerLiteral(4),
         },
         Test {
             input: "8 / 4;".to_string(),
-            left_value: 8,
+            left_value: TestLiteral::IntegerLiteral(8),
             operator: "/".to_string(),
-            right_value: 4,
+            right_value: TestLiteral::IntegerLiteral(4),
         },
         Test {
             input: "2 > 8;".to_string(),
-            left_value: 2,
+            left_value: TestLiteral::IntegerLiteral(2),
             operator: ">".to_string(),
-            right_value: 8,
+            right_value: TestLiteral::IntegerLiteral(8),
         },
         Test {
             input: "8 < 2;".to_string(),
-            left_value: 8,
+            left_value: TestLiteral::IntegerLiteral(8),
             operator: "<".to_string(),
-            right_value: 2,
+            right_value: TestLiteral::IntegerLiteral(2),
         },
         Test {
             input: "2 == 2;".to_string(),
-            left_value: 2,
+            left_value: TestLiteral::IntegerLiteral(2),
             operator: "==".to_string(),
-            right_value: 2,
+            right_value: TestLiteral::IntegerLiteral(2),
         },
         Test {
             input: "3 != 2;".to_string(),
-            left_value: 3,
+            left_value: TestLiteral::IntegerLiteral(3),
             operator: "!=".to_string(),
-            right_value: 2,
+            right_value: TestLiteral::IntegerLiteral(2),
+        },
+        Test {
+            input: "true == true;".to_string(),
+            left_value: TestLiteral::BooleanLiteral(true),
+            operator: "==".to_string(),
+            right_value: TestLiteral::BooleanLiteral(true),
+        },
+        Test {
+            input: "true != false;".to_string(),
+            left_value: TestLiteral::BooleanLiteral(true),
+            operator: "!=".to_string(),
+            right_value: TestLiteral::BooleanLiteral(false),
+        },
+        Test {
+            input: "false == false;".to_string(),
+            left_value: TestLiteral::BooleanLiteral(false),
+            operator: "==".to_string(),
+            right_value: TestLiteral::BooleanLiteral(false),
         },
     ];
 
@@ -488,9 +516,9 @@ fn test_parsing_infix_expressions() {
 
         test_infix_expression(
             &stmt.expression,
-            &TestLiteral::IntegerLiteral(tt.left_value),
+            &tt.left_value,
             tt.operator.clone(),
-            &TestLiteral::IntegerLiteral(tt.right_value),
+            &tt.right_value,
         );
     }
 }
@@ -546,6 +574,22 @@ fn test_operator_precedence_parsing() {
         Test {
             input: "3 + 4 * 5 == 3 * 1 + 4 * 5".to_string(),
             expected: "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))".to_string(),
+        },
+        Test {
+            input: "true".to_string(),
+            expected: "true".to_string(),
+        },
+        Test {
+            input: "false".to_string(),
+            expected: "false".to_string(),
+        },
+        Test {
+            input: "3 > 5 == false".to_string(),
+            expected: "((3 > 5) == false)".to_string(),
+        },
+        Test {
+            input: "3 < 5 == true".to_string(),
+            expected: "((3 < 5) == true)".to_string(),
         },
     ];
 
@@ -634,12 +678,34 @@ fn test_string_literal(en: &ExpressionNode, value: String) {
     );
 }
 
+/// test boolean literal
+fn test_boolean_literal(en: &ExpressionNode, value: bool) {
+    let bl = match &en {
+        ExpressionNode::BooleanExpressionNode(be) => be,
+        _ => panic!("boolean expression node is expected"),
+    };
+
+    assert_eq!(
+        bl.value, value,
+        "{:?} is expected, but got {:?}",
+        value, bl.value,
+    );
+
+    assert_eq!(
+        bl.token.token_literal(),
+        format!("{:?}", value),
+        r##"{:?} is expected, but got {:?}"##,
+        format!("{:?}", value),
+        bl.token.token_literal(),
+    );
+}
+
 /// test expression's literal
 fn test_literal_expression(en: &ExpressionNode, literal: &TestLiteral) {
     match literal {
         TestLiteral::IntegerLiteral(i) => test_integer_literal(&en, *i),
         TestLiteral::StringLiteral(s) => test_string_literal(&en, s.to_string()),
-        _ => panic!("unexpected test literal"),
+        TestLiteral::BooleanLiteral(b) => test_boolean_literal(&en, *b),
     }
 }
 

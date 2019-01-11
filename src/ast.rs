@@ -6,6 +6,7 @@ pub enum StatementNode {
     LetStatementNode(Box<LetStatement>),
     ReturnStatementNode(Box<ReturnStatement>),
     ExpressionStatementNode(Box<ExpressionStatement>),
+    BlockStatementNode(Box<BlockStatement>),
     Null,
 }
 
@@ -17,6 +18,7 @@ pub enum ExpressionNode {
     PrefixExpressionNode(Box<PrefixExpression>),
     InfixExpressionNode(Box<InfixExpression>),
     BooleanExpressionNode(Box<Boolean>),
+    IfExpressionNode(Box<IfExpression>),
     Null,
 }
 
@@ -52,6 +54,13 @@ pub struct ReturnStatement {
 pub struct ExpressionStatement {
     pub token: Token,
     pub expression: ExpressionNode,
+}
+
+/// struct for block statement
+#[derive(Debug)]
+pub struct BlockStatement {
+    pub token: Token,
+    pub statements: Vec<StatementNode>,
 }
 
 /// struct for identifier
@@ -90,6 +99,15 @@ pub struct InfixExpression {
 pub struct Boolean {
     pub token: Token,
     pub value: bool,
+}
+
+/// struft for if expression
+#[derive(Debug)]
+pub struct IfExpression {
+    pub token: Token,
+    pub condition: ExpressionNode,
+    pub consequence: StatementNode,
+    pub alternative: StatementNode,
 }
 
 /// struct for programs
@@ -135,6 +153,31 @@ impl ReturnStatement {
     }
 }
 
+/// BlockStatement
+impl BlockStatement {
+    /// get strings of block statements
+    pub fn string(&self) -> String {
+        let mut ret = String::new();
+        for stmt in &self.statements {
+            ret.push_str(&extract_string_from_statement_node(&stmt));
+        }
+        return ret;
+    }
+
+    /// get the first token's literal
+    pub fn token_literal(&self) -> String {
+        if self.statements.len() > 0 {
+            match &self.statements[0] {
+                StatementNode::LetStatementNode(s) => s.token_literal(),
+                _ => panic!(),
+            }
+        } else {
+            "".to_string()
+        }
+    }
+}
+
+/// Identifier
 impl Identifier {
     /// get string of the identifer
     pub fn string(&self) -> String {
@@ -205,8 +248,31 @@ impl Boolean {
     }
 }
 
+/// if expression
+impl IfExpression {
+    /// get string of the if expression
+    pub fn string(&self) -> String {
+        let mut ret = String::new();
+
+        ret.push_str(&format!(
+            "if{} {}",
+            extract_string_from_expression_node(&self.condition),
+            extract_string_from_statement_node(&self.consequence)
+        ));
+
+        if let StatementNode::Null = self.alternative {
+            ret.push_str(&format!(
+                "else {}",
+                extract_string_from_statement_node(&self.alternative)
+            ))
+        }
+
+        return ret;
+    }
+}
+
 impl Program {
-    /// constructer of Program
+    /// constructor of Program
     pub fn new() -> Program {
         Program {
             statements: Vec::new(),
@@ -225,13 +291,19 @@ impl Program {
     /// get the first token's literal
     pub fn token_literal(&self) -> String {
         if self.statements.len() > 0 {
-            match &self.statements[0] {
-                StatementNode::LetStatementNode(s) => s.token_literal(),
-                _ => panic!(),
-            }
+            extract_token_literal_from_statement_node(&self.statements[0])
         } else {
             "".to_string()
         }
+    }
+}
+
+/// extract token literal from StatementNode
+fn extract_token_literal_from_statement_node(node: &StatementNode) -> String {
+    match node {
+        StatementNode::LetStatementNode(ls) => ls.token.token_literal(),
+        StatementNode::ExpressionStatementNode(es) => es.token.token_literal(),
+        _ => panic!("unexpected node"),
     }
 }
 
@@ -240,6 +312,7 @@ fn extract_string_from_statement_node(node: &StatementNode) -> String {
     match node {
         StatementNode::LetStatementNode(ls) => ls.string(),
         StatementNode::ExpressionStatementNode(es) => es.string(),
+        StatementNode::BlockStatementNode(bs) => bs.string(),
         _ => panic!("unexpected node"),
     }
 }

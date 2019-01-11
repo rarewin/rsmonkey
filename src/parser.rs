@@ -224,6 +224,68 @@ impl Parser {
         return exp;
     }
 
+    /// parse if expression
+    pub fn parse_if_expression(&mut self) -> ExpressionNode {
+        let mut ife = IfExpression {
+            token: self.cur_token.clone(),
+            condition: ExpressionNode::Null,
+            consequence: StatementNode::Null,
+            alternative: StatementNode::Null,
+        };
+
+        if !self.expect_peek(TokenType::LParen) {
+            return ExpressionNode::Null;
+        }
+
+        self.next_token();
+        ife.condition = self.parse_expression(OperationPrecedence::Lowest);
+
+        if !self.expect_peek(TokenType::RParen) {
+            return ExpressionNode::Null;
+        }
+
+        if !self.expect_peek(TokenType::LBrace) {
+            return ExpressionNode::Null;
+        }
+
+        ife.consequence = self.parse_block_statement();
+
+        if self.peek_token_is(TokenType::Else) {
+            self.next_token();
+
+            if !self.expect_peek(TokenType::LBrace) {
+                return ExpressionNode::Null;
+            }
+
+            ife.alternative = self.parse_block_statement();
+        }
+
+        return ExpressionNode::IfExpressionNode(Box::new(ife));
+    }
+
+    /// parse block statement
+    pub fn parse_block_statement(&mut self) -> StatementNode {
+        let mut block = BlockStatement {
+            token: self.cur_token.clone(),
+            statements: Vec::<StatementNode>::new(),
+        };
+
+        self.next_token();
+
+        while !self.cur_token_is(TokenType::RBrace) && !self.cur_token_is(TokenType::EoF) {
+            let stmt = self.parse_statement();
+
+            if let StatementNode::Null = stmt {
+                return StatementNode::Null;
+            }
+
+            block.statements.push(stmt);
+            self.next_token();
+        }
+
+        return StatementNode::BlockStatementNode(Box::new(block));
+    }
+
     /// parse infix expression
     pub fn parse_infix_expression(&mut self, left: ExpressionNode) -> ExpressionNode {
         let mut ie = InfixExpression {
@@ -250,6 +312,7 @@ impl Parser {
             TokenType::True => self.parse_boolean_expression(),
             TokenType::False => self.parse_boolean_expression(),
             TokenType::LParen => self.parse_grouped_expression(),
+            TokenType::If => self.parse_if_expression(),
             _ => ExpressionNode::Null, // panic!("unsupported by prefix_parser: {:?}", tt),
         }
     }

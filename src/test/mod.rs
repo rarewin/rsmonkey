@@ -400,7 +400,7 @@ fn test_parsing_prefix_expressions() {
         assert_eq!(
             program.statements.len(),
             1,
-            "program does not have enough statements. got {}",
+            "program does not have the expected number of statements. {}",
             program.statements.len()
         );
 
@@ -628,6 +628,142 @@ fn test_operator_precedence_parsing() {
             program.string(),
         );
     }
+}
+
+#[test]
+fn test_if_expression() {
+    let input = "if (x < y) { x };".to_string();
+
+    let l = Lexer::new(input);
+    let mut p = Parser::new(l);
+
+    let program = p.parse_program();
+    check_parser_errors(p);
+
+    assert!(
+        program.statements.len() == 1,
+        "program does not have the expected number of statements. {}",
+        program.statements.len()
+    );
+
+    let exps = match &program.statements[0] {
+        StatementNode::ExpressionStatementNode(es) => es,
+        _ => panic!("expression stateme is expected"),
+    };
+
+    let exp = match &exps.expression {
+        ExpressionNode::IfExpressionNode(ie) => ie,
+        _ => panic!("if expression is expected"),
+    };
+
+    test_infix_expression(
+        &exp.condition,
+        &TestLiteral::StringLiteral("x".to_string()),
+        "<".to_string(),
+        &TestLiteral::StringLiteral("y".to_string()),
+    );
+
+    let cs = match &exp.consequence {
+        StatementNode::BlockStatementNode(bs) => bs,
+        _ => panic!("consequence does not have block statement"),
+    };
+
+    assert!(
+        cs.statements.len() == 1,
+        "consequence does not have the expected number of statements. {}",
+        cs.statements.len()
+    );
+
+    let conex = match &cs.statements[0] {
+        StatementNode::ExpressionStatementNode(es) => es,
+        _ => panic!("expression statement is expected"),
+    };
+
+    test_literal_expression(
+        &conex.expression,
+        &TestLiteral::StringLiteral("x".to_string()),
+    );
+
+    match &exp.alternative {
+        StatementNode::Null => {}
+        _ => panic!("alternative has unexpected statement node"),
+    };
+}
+
+#[test]
+fn test_if_else_expression() {
+    let input = "if (x < y) { x } else { y };".to_string();
+
+    let l = Lexer::new(input);
+    let mut p = Parser::new(l);
+
+    let program = p.parse_program();
+    check_parser_errors(p);
+
+    assert!(
+        program.statements.len() == 1,
+        "program does not have the expected number of statements. {}",
+        program.statements.len()
+    );
+
+    let exps = match &program.statements[0] {
+        StatementNode::ExpressionStatementNode(es) => es,
+        _ => panic!("expression stateme is expected"),
+    };
+
+    let exp = match &exps.expression {
+        ExpressionNode::IfExpressionNode(ie) => ie,
+        _ => panic!("if expression is expected"),
+    };
+
+    test_infix_expression(
+        &exp.condition,
+        &TestLiteral::StringLiteral("x".to_string()),
+        "<".to_string(),
+        &TestLiteral::StringLiteral("y".to_string()),
+    );
+
+    let cs = match &exp.consequence {
+        StatementNode::BlockStatementNode(bs) => bs,
+        _ => panic!("consequence does not have block statement"),
+    };
+
+    assert!(
+        cs.statements.len() == 1,
+        "consequence does not have the expected number of statements. {}",
+        cs.statements.len()
+    );
+
+    let conex = match &cs.statements[0] {
+        StatementNode::ExpressionStatementNode(es) => es,
+        _ => panic!("expression statement is expected"),
+    };
+
+    test_literal_expression(
+        &conex.expression,
+        &TestLiteral::StringLiteral("x".to_string()),
+    );
+
+    let als = match &exp.alternative {
+        StatementNode::BlockStatementNode(bs) => bs,
+        _ => panic!("alternative does not have block statement"),
+    };
+
+    assert!(
+        als.statements.len() == 1,
+        "consequence does not have the expected number of statements. {}",
+        als.statements.len()
+    );
+
+    let alsex = match &als.statements[0] {
+        StatementNode::ExpressionStatementNode(es) => es,
+        _ => panic!("expression statement is expected"),
+    };
+
+    test_literal_expression(
+        &alsex.expression,
+        &TestLiteral::StringLiteral("y".to_string()),
+    );
 }
 
 fn check_parser_errors(p: Parser) {

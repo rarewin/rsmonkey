@@ -186,6 +186,32 @@ impl Parser {
         return ExpressionNode::IntegerLiteralNode(Box::new(lit));
     }
 
+    /// parse function literal
+    pub fn parse_function_literal(&mut self) -> ExpressionNode {
+        let token = self.cur_token.clone();
+
+        if !self.expect_peek(TokenType::LParen) {
+            return ExpressionNode::Null;
+        }
+
+        let parameters = match self.parse_function_parameters() {
+            Some(p) => p,
+            _ => return ExpressionNode::Null,
+        };
+
+        if !self.expect_peek(TokenType::LBrace) {
+            return ExpressionNode::Null;
+        }
+
+        let body = self.parse_block_statement();
+
+        return ExpressionNode::FunctionLiteralNode(Box::new(FunctionLiteral {
+            token,
+            parameters,
+            body,
+        }));
+    }
+
     /// parse prefix expression
     pub fn parse_prefix_expression(&mut self) -> ExpressionNode {
         let mut pe = PrefixExpression {
@@ -286,6 +312,39 @@ impl Parser {
         return StatementNode::BlockStatementNode(Box::new(block));
     }
 
+    /// parse function parameters
+    pub fn parse_function_parameters(&mut self) -> Option<Vec<ExpressionNode>> {
+        let mut params = Vec::<ExpressionNode>::new();
+
+        if self.peek_token_is(TokenType::RParen) {
+            self.next_token();
+            return Some(params);
+        }
+
+        self.next_token();
+
+        params.push(ExpressionNode::IdentifierNode(Box::new(Identifier {
+            token: self.cur_token.clone(),
+            value: self.cur_token.literal.clone(),
+        })));
+
+        while self.peek_token_is(TokenType::Comma) {
+            self.next_token();
+            self.next_token();
+
+            params.push(ExpressionNode::IdentifierNode(Box::new(Identifier {
+                token: self.cur_token.clone(),
+                value: self.cur_token.literal.clone(),
+            })));
+        }
+
+        if !self.expect_peek(TokenType::RParen) {
+            return None;
+        }
+
+        return Some(params);
+    }
+
     /// parse infix expression
     pub fn parse_infix_expression(&mut self, left: ExpressionNode) -> ExpressionNode {
         let mut ie = InfixExpression {
@@ -313,6 +372,7 @@ impl Parser {
             TokenType::False => self.parse_boolean_expression(),
             TokenType::LParen => self.parse_grouped_expression(),
             TokenType::If => self.parse_if_expression(),
+            TokenType::Function => self.parse_function_literal(),
             _ => ExpressionNode::Null, // panic!("unsupported by prefix_parser: {:?}", tt),
         }
     }

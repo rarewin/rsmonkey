@@ -766,6 +766,133 @@ fn test_if_else_expression() {
     );
 }
 
+#[test]
+fn test_function_literal_parsing() {
+    let input = "fn(x, y) { x + y; }".to_string();
+
+    let l = Lexer::new(input);
+    let mut p = Parser::new(l);
+
+    let program = p.parse_program();
+    check_parser_errors(p);
+
+    assert!(
+        program.statements.len() == 1,
+        "program does not have the expected number of statements. {}",
+        program.statements.len()
+    );
+
+    let exps = match &program.statements[0] {
+        StatementNode::ExpressionStatementNode(exps) => exps,
+        _ => panic!("expression stateme is expected"),
+    };
+
+    let fl = match &exps.expression {
+        ExpressionNode::FunctionLiteralNode(f) => f,
+        _ => panic!("function literalis expected"),
+    };
+
+    assert!(
+        fl.parameters.len() == 2,
+        "parameters should have {}, but got {}",
+        2,
+        fl.parameters.len(),
+    );
+
+    test_literal_expression(
+        &fl.parameters[0],
+        &TestLiteral::StringLiteral("x".to_string()),
+    );
+    test_literal_expression(
+        &fl.parameters[1],
+        &TestLiteral::StringLiteral("y".to_string()),
+    );
+
+    let body = match &fl.body {
+        StatementNode::BlockStatementNode(b) => b,
+        _ => panic!("block statement is expected here"),
+    };
+
+    assert!(
+        body.statements.len() == 1,
+        "block statement does not have the expected number of statements. got {}",
+        body.statements.len(),
+    );
+
+    let body_stmt = match &body.statements[0] {
+        StatementNode::ExpressionStatementNode(e) => e,
+        _ => panic!("expression statement is expected here"),
+    };
+
+    test_infix_expression(
+        &body_stmt.expression,
+        &TestLiteral::StringLiteral("x".to_string()),
+        "+".to_string(),
+        &TestLiteral::StringLiteral("y".to_string()),
+    );
+}
+
+#[test]
+fn test_function_parameter_parsing() {
+    struct Test {
+        input: String,
+        expected: Vec<&'static str>,
+    };
+
+    let func_test = vec![
+        Test {
+            input: "fn() {};".to_string(),
+            expected: vec![],
+        },
+        Test {
+            input: "fn(x) {};".to_string(),
+            expected: vec!["x"],
+        },
+        Test {
+            input: "fn(x, y, z) {};".to_string(),
+            expected: vec!["x", "y", "z"],
+        },
+    ];
+
+    for tt in func_test {
+        let l = Lexer::new(tt.input);
+        let mut p = Parser::new(l);
+
+        let program = p.parse_program();
+        check_parser_errors(p);
+
+        assert!(
+            program.statements.len() == 1,
+            "program does not have the expected number of statements. {}",
+            program.statements.len()
+        );
+
+        let exps = match &program.statements[0] {
+            StatementNode::ExpressionStatementNode(exps) => exps,
+            _ => panic!("expression stateme is expected"),
+        };
+
+        let fl = match &exps.expression {
+            ExpressionNode::FunctionLiteralNode(f) => f,
+            _ => panic!("function literalis expected"),
+        };
+
+        assert!(
+            fl.parameters.len() == tt.expected.len(),
+            "parameters should have {}, but got {}",
+            tt.expected.len(),
+            fl.parameters.len(),
+        );
+
+        for i in 0..(tt.expected.len()) {
+            test_literal_expression(
+                &fl.parameters[i],
+                &TestLiteral::StringLiteral(tt.expected[i].to_string()),
+            );
+        }
+    }
+}
+
 fn check_parser_errors(p: Parser) {
     let errors = p.errors();
 

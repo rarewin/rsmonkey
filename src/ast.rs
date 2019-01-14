@@ -15,6 +15,7 @@ pub enum StatementNode {
 pub enum ExpressionNode {
     IdentifierNode(Box<Identifier>),
     IntegerLiteralNode(Box<IntegerLiteral>),
+    FunctionLiteralNode(Box<FunctionLiteral>),
     PrefixExpressionNode(Box<PrefixExpression>),
     InfixExpressionNode(Box<InfixExpression>),
     BooleanExpressionNode(Box<Boolean>),
@@ -75,6 +76,14 @@ pub struct Identifier {
 pub struct IntegerLiteral {
     pub token: Token,
     pub value: i64,
+}
+
+/// struct for function literal
+#[derive(Debug)]
+pub struct FunctionLiteral {
+    pub token: Token,
+    pub parameters: Vec<ExpressionNode>,
+    pub body: StatementNode,
 }
 
 /// struct for prefix expression
@@ -197,6 +206,38 @@ impl IntegerLiteral {
     }
 
     /// get token's literal
+    pub fn token_literal(&self) -> String {
+        self.token.token_literal()
+    }
+}
+
+/// function literal
+impl FunctionLiteral {
+    /// get string of the expression
+    pub fn string(&self) -> String {
+        let mut ret = String::new();
+
+        ret.push_str(&self.token_literal());
+        ret.push_str("(");
+        ret.push_str(
+            &((&self.parameters)
+                .into_iter()
+                .map(|x| {
+                    if let ExpressionNode::IdentifierNode(ident) = x {
+                        ident.string()
+                    } else {
+                        panic!("unexpected data")
+                    }
+                })
+                .collect::<Vec<String>>()
+                .join(", ")),
+        );
+        ret.push_str(") ");
+        ret.push_str(&extract_string_from_statement_node(&self.body));
+
+        return ret;
+    }
+
     pub fn token_literal(&self) -> String {
         self.token.token_literal()
     }

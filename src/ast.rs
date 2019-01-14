@@ -199,6 +199,7 @@ impl Identifier {
     }
 }
 
+/// integer literal
 impl IntegerLiteral {
     /// get string of the integer literal
     pub fn string(&self) -> String {
@@ -238,11 +239,13 @@ impl FunctionLiteral {
         return ret;
     }
 
+    /// get token's literal
     pub fn token_literal(&self) -> String {
         self.token.token_literal()
     }
 }
 
+/// prefix expression
 impl PrefixExpression {
     /// get string of the prefix expression
     pub fn string(&self) -> String {
@@ -259,6 +262,7 @@ impl PrefixExpression {
     }
 }
 
+/// infix expression
 impl InfixExpression {
     /// get string of the infix expression
     pub fn string(&self) -> String {
@@ -312,6 +316,7 @@ impl IfExpression {
     }
 }
 
+/// Program
 impl Program {
     /// constructor of Program
     pub fn new() -> Program {

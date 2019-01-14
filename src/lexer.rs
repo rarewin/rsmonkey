@@ -113,24 +113,16 @@ fn is_digit(ch: char) -> bool {
     return '0' <= ch && ch <= '9';
 }
 
+/// lookup identifier
 fn lookup_ident(s: &str) -> TokenType {
-    let t = s.to_string();
-
-    if t == "let" {
-        TokenType::Let
-    } else if t == "fn" {
-        TokenType::Function
-    } else if t == "if" {
-        TokenType::If
-    } else if t == "else" {
-        TokenType::Else
-    } else if t == "return" {
-        TokenType::Return
-    } else if t == "true" {
-        TokenType::True
-    } else if t == "false" {
-        TokenType::False
-    } else {
-        TokenType::Ident
+    match s {
+        "let" => TokenType::Let,
+        "fn" => TokenType::Function,
+        "if" => TokenType::If,
+        "else" => TokenType::Else,
+        "return" => TokenType::Return,
+        "true" => TokenType::True,
+        "false" => TokenType::False,
+        _ => TokenType::Ident,
     }
 }

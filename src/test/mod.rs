@@ -689,7 +689,7 @@ fn test_if_expression() {
 
 #[test]
 fn test_if_else_expression() {
-    let input = "if (x < y) { x } else { y };";
+    let input = "if (x < y) { x; } else { y };";
 
     let l = Lexer::new(input.to_string());
     let mut p = Parser::new(l);
@@ -755,6 +755,8 @@ fn test_if_else_expression() {
     };
 
     test_literal_expression(&alsex.expression, &TestLiteral::StringLiteral("y"));
+
+    assert_eq!(exp.string(), "if (x < y) x else y");
 }
 
 #[test]

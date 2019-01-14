@@ -176,10 +176,7 @@ impl BlockStatement {
     /// get the first token's literal
     pub fn token_literal(&self) -> String {
         if self.statements.len() > 0 {
-            match &self.statements[0] {
-                StatementNode::LetStatementNode(s) => s.token_literal(),
-                _ => panic!(),
-            }
+            extract_string_from_statement_node(&self.statements[0])
         } else {
             "".to_string()
         }
@@ -300,16 +297,13 @@ impl IfExpression {
         let mut ret = String::new();
 
         ret.push_str(&format!(
-            "if{} {}",
+            "if {} {}",
             extract_string_from_expression_node(&self.condition),
             extract_string_from_statement_node(&self.consequence)
         ));
 
-        if let StatementNode::Null = self.alternative {
-            ret.push_str(&format!(
-                "else {}",
-                extract_string_from_statement_node(&self.alternative)
-            ))
+        if let StatementNode::BlockStatementNode(bs) = &self.alternative {
+            ret.push_str(&format!(" else {}", bs.string()))
         }
 
         return ret;

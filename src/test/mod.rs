@@ -5,7 +5,7 @@ use rsmonkey::token::{Token, TokenType};
 
 enum TestLiteral {
     IntegerLiteral(i64),
-    StringLiteral(String),
+    StringLiteral(&'static str),
     BooleanLiteral(bool),
 }
 
@@ -312,23 +312,23 @@ fn test_integer_literal_expression() {
 #[test]
 fn test_boolean_literal_expression() {
     struct Test {
-        input: String,
+        input: &'static str,
         value: bool,
     };
 
     let boolean_test = vec![
         Test {
-            input: "true".to_string(),
+            input: "true",
             value: true,
         },
         Test {
-            input: "false".to_string(),
+            input: "false",
             value: false,
         },
     ];
 
     for tt in boolean_test {
-        let l = Lexer::new(tt.input);
+        let l = Lexer::new(tt.input.to_string());
         let mut p = Parser::new(l);
 
         let program = p.parse_program();
@@ -362,36 +362,36 @@ fn test_boolean_literal_expression() {
 #[test]
 fn test_parsing_prefix_expressions() {
     struct Test {
-        input: String,
-        operator: String,
+        input: &'static str,
+        operator: &'static str,
         value: TestLiteral,
     };
 
     let prefix_test = vec![
         Test {
-            input: "!5;".to_string(),
-            operator: "!".to_string(),
+            input: "!5;",
+            operator: "!",
             value: TestLiteral::IntegerLiteral(5),
         },
         Test {
-            input: "-15;".to_string(),
-            operator: "-".to_string(),
+            input: "-15;",
+            operator: "-",
             value: TestLiteral::IntegerLiteral(15),
         },
         Test {
-            input: "!true;".to_string(),
-            operator: "!".to_string(),
+            input: "!true;",
+            operator: "!",
             value: TestLiteral::BooleanLiteral(true),
         },
         Test {
-            input: "!false;".to_string(),
-            operator: "!".to_string(),
+            input: "!false;",
+            operator: "!",
             value: TestLiteral::BooleanLiteral(false),
         },
     ];
 
     for tt in prefix_test {
-        let l = Lexer::new(tt.input);
+        let l = Lexer::new(tt.input.to_string());
         let mut p = Parser::new(l);
 
         let program = p.parse_program();
@@ -427,83 +427,83 @@ fn test_parsing_prefix_expressions() {
 #[test]
 fn test_parsing_infix_expressions() {
     struct Test {
-        input: String,
+        input: &'static str,
         left_value: TestLiteral,
-        operator: String,
+        operator: &'static str,
         right_value: TestLiteral,
     };
 
     let infix_test = vec![
         Test {
-            input: "5 + 5;".to_string(),
+            input: "5 + 5;",
             left_value: TestLiteral::IntegerLiteral(5),
-            operator: "+".to_string(),
+            operator: "+",
             right_value: TestLiteral::IntegerLiteral(5),
         },
         Test {
-            input: "5 - 5;".to_string(),
+            input: "5 - 5;",
             left_value: TestLiteral::IntegerLiteral(5),
-            operator: "-".to_string(),
+            operator: "-",
             right_value: TestLiteral::IntegerLiteral(5),
         },
         Test {
-            input: "5 * 4;".to_string(),
+            input: "5 * 4;",
             left_value: TestLiteral::IntegerLiteral(5),
-            operator: "*".to_string(),
+            operator: "*",
             right_value: TestLiteral::IntegerLiteral(4),
         },
         Test {
-            input: "8 / 4;".to_string(),
+            input: "8 / 4;",
             left_value: TestLiteral::IntegerLiteral(8),
-            operator: "/".to_string(),
+            operator: "/",
             right_value: TestLiteral::IntegerLiteral(4),
         },
         Test {
-            input: "2 > 8;".to_string(),
+            input: "2 > 8;",
             left_value: TestLiteral::IntegerLiteral(2),
-            operator: ">".to_string(),
+            operator: ">",
             right_value: TestLiteral::IntegerLiteral(8),
         },
         Test {
-            input: "8 < 2;".to_string(),
+            input: "8 < 2;",
             left_value: TestLiteral::IntegerLiteral(8),
-            operator: "<".to_string(),
+            operator: "<",
             right_value: TestLiteral::IntegerLiteral(2),
         },
         Test {
-            input: "2 == 2;".to_string(),
+            input: "2 == 2;",
             left_value: TestLiteral::IntegerLiteral(2),
-            operator: "==".to_string(),
+            operator: "==",
             right_value: TestLiteral::IntegerLiteral(2),
         },
         Test {
-            input: "3 != 2;".to_string(),
+            input: "3 != 2;",
             left_value: TestLiteral::IntegerLiteral(3),
-            operator: "!=".to_string(),
+            operator: "!=",
             right_value: TestLiteral::IntegerLiteral(2),
         },
         Test {
-            input: "true == true;".to_string(),
+            input: "true == true;",
             left_value: TestLiteral::BooleanLiteral(true),
-            operator: "==".to_string(),
+            operator: "==",
             right_value: TestLiteral::BooleanLiteral(true),
         },
         Test {
-            input: "true != false;".to_string(),
+            input: "true != false;",
             left_value: TestLiteral::BooleanLiteral(true),
-            operator: "!=".to_string(),
+            operator: "!=",
             right_value: TestLiteral::BooleanLiteral(false),
         },
         Test {
-            input: "false == false;".to_string(),
+            input: "false == false;",
             left_value: TestLiteral::BooleanLiteral(false),
-            operator: "==".to_string(),
+            operator: "==",
             right_value: TestLiteral::BooleanLiteral(false),
         },
     ];
 
     for tt in infix_test {
-        let l = Lexer::new(tt.input);
+        let l = Lexer::new(tt.input.to_string());
         let mut p = Parser::new(l);
 
         let program = p.parse_program();
@@ -517,7 +517,7 @@ fn test_parsing_infix_expressions() {
         test_infix_expression(
             &stmt.expression,
             &tt.left_value,
-            tt.operator.clone(),
+            tt.operator,
             &tt.right_value,
         );
     }
@@ -526,95 +526,95 @@ fn test_parsing_infix_expressions() {
 #[test]
 fn test_operator_precedence_parsing() {
     struct Test {
-        input: String,
-        expected: String,
+        input: &'static str,
+        expected: &'static str,
     };
 
     let operator_precedence_test = vec![
         Test {
-            input: "-a * b;".to_string(),
-            expected: "((-a) * b)".to_string(),
+            input: "-a * b;",
+            expected: "((-a) * b)",
         },
         Test {
-            input: "!-a".to_string(),
-            expected: "(!(-a))".to_string(),
+            input: "!-a",
+            expected: "(!(-a))",
         },
         Test {
-            input: "a + b + c".to_string(),
-            expected: "((a + b) + c)".to_string(),
+            input: "a + b + c",
+            expected: "((a + b) + c)",
         },
         Test {
-            input: "a + b - c".to_string(),
-            expected: "((a + b) - c)".to_string(),
+            input: "a + b - c",
+            expected: "((a + b) - c)",
         },
         Test {
-            input: "a * b * c".to_string(),
-            expected: "((a * b) * c)".to_string(),
+            input: "a * b * c",
+            expected: "((a * b) * c)",
         },
         Test {
-            input: "a * b / c".to_string(),
-            expected: "((a * b) / c)".to_string(),
+            input: "a * b / c",
+            expected: "((a * b) / c)",
         },
         Test {
-            input: "a + b * c + d / e - f".to_string(),
-            expected: "(((a + (b * c)) + (d / e)) - f)".to_string(),
+            input: "a + b * c + d / e - f",
+            expected: "(((a + (b * c)) + (d / e)) - f)",
         },
         Test {
-            input: "3 + 4; -5 * 5;".to_string(),
-            expected: "(3 + 4)((-5) * 5)".to_string(),
+            input: "3 + 4; -5 * 5;",
+            expected: "(3 + 4)((-5) * 5)",
         },
         Test {
-            input: "5 > 4 == 3 < 4".to_string(),
-            expected: "((5 > 4) == (3 < 4))".to_string(),
+            input: "5 > 4 == 3 < 4",
+            expected: "((5 > 4) == (3 < 4))",
         },
         Test {
-            input: "5 < 4 != 3 > 4".to_string(),
-            expected: "((5 < 4) != (3 > 4))".to_string(),
+            input: "5 < 4 != 3 > 4",
+            expected: "((5 < 4) != (3 > 4))",
         },
         Test {
-            input: "3 + 4 * 5 == 3 * 1 + 4 * 5".to_string(),
-            expected: "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))".to_string(),
+            input: "3 + 4 * 5 == 3 * 1 + 4 * 5",
+            expected: "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
         },
         Test {
-            input: "true".to_string(),
-            expected: "true".to_string(),
+            input: "true",
+            expected: "true",
         },
         Test {
-            input: "false".to_string(),
-            expected: "false".to_string(),
+            input: "false",
+            expected: "false",
         },
         Test {
-            input: "3 > 5 == false".to_string(),
-            expected: "((3 > 5) == false)".to_string(),
+            input: "3 > 5 == false",
+            expected: "((3 > 5) == false)",
         },
         Test {
-            input: "3 < 5 == true".to_string(),
-            expected: "((3 < 5) == true)".to_string(),
+            input: "3 < 5 == true",
+            expected: "((3 < 5) == true)",
         },
         Test {
-            input: "1 + (2 + 3) + 4;".to_string(),
-            expected: "((1 + (2 + 3)) + 4)".to_string(),
+            input: "1 + (2 + 3) + 4;",
+            expected: "((1 + (2 + 3)) + 4)",
         },
         Test {
-            input: "(5 + 5) * 2;".to_string(),
-            expected: "((5 + 5) * 2)".to_string(),
+            input: "(5 + 5) * 2;",
+            expected: "((5 + 5) * 2)",
         },
         Test {
-            input: "2 / (5 + 5);".to_string(),
-            expected: "(2 / (5 + 5))".to_string(),
+            input: "2 / (5 + 5);",
+            expected: "(2 / (5 + 5))",
         },
         Test {
-            input: "-(5 + 5);".to_string(),
-            expected: "(-(5 + 5))".to_string(),
+            input: "-(5 + 5);",
+            expected: "(-(5 + 5))",
         },
         Test {
-            input: "!(true == true);".to_string(),
-            expected: "(!(true == true))".to_string(),
+            input: "!(true == true);",
+            expected: "(!(true == true))",
         },
     ];
 
     for tt in operator_precedence_test {
-        let l = Lexer::new(tt.input);
+        let l = Lexer::new(tt.input.to_string());
         let mut p = Parser::new(l);
 
         let program = p.parse_program();
@@ -632,9 +632,9 @@ fn test_operator_precedence_parsing() {
 
 #[test]
 fn test_if_expression() {
-    let input = "if (x < y) { x };".to_string();
+    let input = "if (x < y) { x };";
 
-    let l = Lexer::new(input);
+    let l = Lexer::new(input.to_string());
     let mut p = Parser::new(l);
 
     let program = p.parse_program();
@@ -658,9 +658,9 @@ fn test_if_expression() {
 
     test_infix_expression(
         &exp.condition,
-        &TestLiteral::StringLiteral("x".to_string()),
-        "<".to_string(),
-        &TestLiteral::StringLiteral("y".to_string()),
+        &TestLiteral::StringLiteral("x"),
+        "<",
+        &TestLiteral::StringLiteral("y"),
     );
 
     let cs = match &exp.consequence {
@@ -679,10 +679,7 @@ fn test_if_expression() {
         _ => panic!("expression statement is expected"),
     };
 
-    test_literal_expression(
-        &conex.expression,
-        &TestLiteral::StringLiteral("x".to_string()),
-    );
+    test_literal_expression(&conex.expression, &TestLiteral::StringLiteral("x"));
 
     match &exp.alternative {
         StatementNode::Null => {}
@@ -692,9 +689,9 @@ fn test_if_expression() {
 
 #[test]
 fn test_if_else_expression() {
-    let input = "if (x < y) { x } else { y };".to_string();
+    let input = "if (x < y) { x } else { y };";
 
-    let l = Lexer::new(input);
+    let l = Lexer::new(input.to_string());
     let mut p = Parser::new(l);
 
     let program = p.parse_program();
@@ -718,9 +715,9 @@ fn test_if_else_expression() {
 
     test_infix_expression(
         &exp.condition,
-        &TestLiteral::StringLiteral("x".to_string()),
-        "<".to_string(),
-        &TestLiteral::StringLiteral("y".to_string()),
+        &TestLiteral::StringLiteral("x"),
+        "<",
+        &TestLiteral::StringLiteral("y"),
     );
 
     let cs = match &exp.consequence {
@@ -739,10 +736,7 @@ fn test_if_else_expression() {
         _ => panic!("expression statement is expected"),
     };
 
-    test_literal_expression(
-        &conex.expression,
-        &TestLiteral::StringLiteral("x".to_string()),
-    );
+    test_literal_expression(&conex.expression, &TestLiteral::StringLiteral("x"));
 
     let als = match &exp.alternative {
         StatementNode::BlockStatementNode(bs) => bs,
@@ -760,17 +754,14 @@ fn test_if_else_expression() {
         _ => panic!("expression statement is expected"),
     };
 
-    test_literal_expression(
-        &alsex.expression,
-        &TestLiteral::StringLiteral("y".to_string()),
-    );
+    test_literal_expression(&alsex.expression, &TestLiteral::StringLiteral("y"));
 }
 
 #[test]
 fn test_function_literal_parsing() {
-    let input = "fn(x, y) { x + y; }".to_string();
+    let input = "fn(x, y) { x + y; }";
 
-    let l = Lexer::new(input);
+    let l = Lexer::new(input.to_string());
     let mut p = Parser::new(l);
 
     let program = p.parse_program();
@@ -799,14 +790,8 @@ fn test_function_literal_parsing() {
         fl.parameters.len(),
     );
 
-    test_literal_expression(
-        &fl.parameters[0],
-        &TestLiteral::StringLiteral("x".to_string()),
-    );
-    test_literal_expression(
-        &fl.parameters[1],
-        &TestLiteral::StringLiteral("y".to_string()),
-    );
+    test_literal_expression(&fl.parameters[0], &TestLiteral::StringLiteral("x"));
+    test_literal_expression(&fl.parameters[1], &TestLiteral::StringLiteral("y"));
 
     let body = match &fl.body {
         StatementNode::BlockStatementNode(b) => b,
@@ -826,36 +811,36 @@ fn test_function_literal_parsing() {
 
     test_infix_expression(
         &body_stmt.expression,
-        &TestLiteral::StringLiteral("x".to_string()),
-        "+".to_string(),
-        &TestLiteral::StringLiteral("y".to_string()),
+        &TestLiteral::StringLiteral("x"),
+        "+",
+        &TestLiteral::StringLiteral("y"),
     );
 }
 
 #[test]
 fn test_function_parameter_parsing() {
     struct Test {
-        input: String,
+        input: &'static str,
         expected: Vec<&'static str>,
     };
 
     let func_test = vec![
         Test {
-            input: "fn() {};".to_string(),
+            input: "fn() {};",
             expected: vec![],
         },
         Test {
-            input: "fn(x) {};".to_string(),
+            input: "fn(x) {};",
             expected: vec!["x"],
         },
         Test {
-            input: "fn(x, y, z) {};".to_string(),
+            input: "fn(x, y, z) {};",
             expected: vec!["x", "y", "z"],
         },
     ];
 
     for tt in func_test {
-        let l = Lexer::new(tt.input);
+        let l = Lexer::new(tt.input.to_string());
         let mut p = Parser::new(l);
 
         let program = p.parse_program();
@@ -887,7 +872,7 @@ fn test_function_parameter_parsing() {
         for i in 0..(tt.expected.len()) {
             test_literal_expression(
                 &fl.parameters[i],
-                &TestLiteral::StringLiteral(tt.expected[i].to_string()),
+                &TestLiteral::StringLiteral(tt.expected[i]),
             );
         }
     }
@@ -940,7 +925,7 @@ fn test_integer_literal(en: &ExpressionNode, value: i64) {
 ///
 /// * `en` - `ExpressionNode::IdentifierNode` to be tested
 /// * `value` - the value that `en` should have
-fn test_string_literal(en: &ExpressionNode, value: String) {
+fn test_string_literal(en: &ExpressionNode, value: &'static str) {
     let id = match &en {
         ExpressionNode::IdentifierNode(idn) => idn,
         _ => panic!("unexpected node"),
@@ -987,7 +972,7 @@ fn test_boolean_literal(en: &ExpressionNode, value: bool) {
 fn test_literal_expression(en: &ExpressionNode, literal: &TestLiteral) {
     match literal {
         TestLiteral::IntegerLiteral(i) => test_integer_literal(&en, *i),
-        TestLiteral::StringLiteral(s) => test_string_literal(&en, s.to_string()),
+        TestLiteral::StringLiteral(s) => test_string_literal(&en, s),
         TestLiteral::BooleanLiteral(b) => test_boolean_literal(&en, *b),
     }
 }
@@ -996,7 +981,7 @@ fn test_literal_expression(en: &ExpressionNode, literal: &TestLiteral) {
 fn test_infix_expression(
     en: &ExpressionNode,
     ex_left: &TestLiteral,
-    ex_operator: String,
+    ex_operator: &'static str,
     ex_right: &TestLiteral,
 ) {
     let ifn = match &en {

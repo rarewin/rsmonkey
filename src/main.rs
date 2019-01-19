@@ -7,9 +7,6 @@ use std::io::Write;
 use rsmonkey::lexer::Lexer;
 use rsmonkey::parser::Parser;
 
-#[cfg(test)]
-mod test;
-
 const PROMPT: &str = ">> ";
 const MONKEY_FACE: &str = r##"            __,__
    .--.  .-"     "-.  .--.

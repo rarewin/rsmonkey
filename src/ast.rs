@@ -392,6 +392,7 @@ fn extract_string_from_statement_node(node: &StatementNode) -> String {
         StatementNode::LetStatementNode(ls) => ls.string(),
         StatementNode::ExpressionStatementNode(es) => es.string(),
         StatementNode::BlockStatementNode(bs) => bs.string(),
+        StatementNode::Null => "(null)".to_string(),
         _ => panic!("unexpected node"),
     }
 }

@@ -68,7 +68,13 @@ impl Parser {
         let mut program = Program::new();
 
         while self.cur_token.get_token_type() != TokenType::EoF {
-            program.statements.push(self.parse_statement());
+            let stmt = self.parse_statement();
+
+            if let StatementNode::Null = stmt {
+            } else {
+                program.statements.push(stmt);
+            }
+
             self.next_token();
         }
 
@@ -136,6 +142,10 @@ impl Parser {
             token: self.cur_token.clone(),
             expression: self.parse_expression(OperationPrecedence::Lowest),
         };
+
+        if let ExpressionNode::Null = stmt.expression {
+            return StatementNode::Null;
+        }
 
         if self.peek_token_is(TokenType::Semicolon) {
             self.next_token();
@@ -418,7 +428,11 @@ impl Parser {
             TokenType::LParen => self.parse_grouped_expression(),
             TokenType::If => self.parse_if_expression(),
             TokenType::Function => self.parse_function_literal(),
-            _ => ExpressionNode::Null, // panic!("unsupported by prefix_parser: {:?}", tt),
+            _ => {
+                self.errors
+                    .push(format!("unsupported by prefix_parser: {:?}", tt));
+                ExpressionNode::Null
+            }
         }
     }
 

@@ -86,23 +86,13 @@ impl Parser {
 
     /// parse let statement
     pub fn parse_let_statement(&mut self) -> StatementNode {
-        let mut stmt = LetStatement {
-            token: self.cur_token.clone(),
-            name: Identifier {
-                token: Token {
-                    token_type: TokenType::Ident,
-                    literal: "dummy".to_string(),
-                },
-                value: "dummy".to_string(),
-            },
-            value: ExpressionNode::Null,
-        };
+        let token = self.cur_token.clone();
 
         if !self.expect_peek(TokenType::Ident) {
             return StatementNode::Null;
         }
 
-        stmt.name = Identifier {
+        let name = Identifier {
             token: self.cur_token.clone(),
             value: self.cur_token.token_literal(),
         };
@@ -111,25 +101,33 @@ impl Parser {
             return StatementNode::Null;
         }
 
+        // TODO
         while !self.cur_token_is(TokenType::Semicolon) {
             self.next_token();
         }
 
-        return StatementNode::LetStatementNode(Box::new(stmt));
+        let value = ExpressionNode::Null;
+        // TODO
+
+        return StatementNode::LetStatementNode(Box::new(LetStatement { token, name, value }));
     }
 
     /// parse return statement
     pub fn parse_return_statement(&mut self) -> StatementNode {
-        let stmt = ReturnStatement {
-            token: self.cur_token.clone(),
-            return_value: ExpressionNode::Null,
-        };
+        let token = self.cur_token.clone();
 
+        // TODO
         while !self.cur_token_is(TokenType::Semicolon) {
             self.next_token();
         }
 
-        return StatementNode::ReturnStatementNode(Box::new(stmt));
+        let return_value = ExpressionNode::Null;
+        // TODO
+
+        return StatementNode::ReturnStatementNode(Box::new(ReturnStatement {
+            token,
+            return_value,
+        }));
     }
 
     /// parse expression statement
@@ -252,19 +250,15 @@ impl Parser {
 
     /// parse if expression
     pub fn parse_if_expression(&mut self) -> ExpressionNode {
-        let mut ife = IfExpression {
-            token: self.cur_token.clone(),
-            condition: ExpressionNode::Null,
-            consequence: StatementNode::Null,
-            alternative: StatementNode::Null,
-        };
+        let token = self.cur_token.clone();
 
         if !self.expect_peek(TokenType::LParen) {
             return ExpressionNode::Null;
         }
 
         self.next_token();
-        ife.condition = self.parse_expression(OperationPrecedence::Lowest);
+
+        let condition = self.parse_expression(OperationPrecedence::Lowest);
 
         if !self.expect_peek(TokenType::RParen) {
             return ExpressionNode::Null;
@@ -274,19 +268,25 @@ impl Parser {
             return ExpressionNode::Null;
         }
 
-        ife.consequence = self.parse_block_statement();
+        let consequence = self.parse_block_statement();
 
-        if self.peek_token_is(TokenType::Else) {
+        let alternative = if self.peek_token_is(TokenType::Else) {
             self.next_token();
 
             if !self.expect_peek(TokenType::LBrace) {
                 return ExpressionNode::Null;
             }
+            self.parse_block_statement()
+        } else {
+            StatementNode::Null
+        };
 
-            ife.alternative = self.parse_block_statement();
-        }
-
-        return ExpressionNode::IfExpressionNode(Box::new(ife));
+        return ExpressionNode::IfExpressionNode(Box::new(IfExpression {
+            token,
+            condition,
+            consequence,
+            alternative,
+        }));
     }
 
     /// parse block statement
@@ -390,18 +390,20 @@ impl Parser {
 
     /// parse infix expression
     pub fn parse_infix_expression(&mut self, left: ExpressionNode) -> ExpressionNode {
-        let mut ie = InfixExpression {
-            token: self.cur_token.clone(),
-            left: left,
-            operator: self.cur_token.token_literal(),
-            right: ExpressionNode::Null,
-        };
-
+        let token = self.cur_token.clone();
+        let operator = self.cur_token.token_literal();
         let precedence = self.cur_precedence();
-        self.next_token();
-        ie.right = self.parse_expression(precedence);
 
-        return ExpressionNode::InfixExpressionNode(Box::new(ie));
+        self.next_token();
+
+        let right = self.parse_expression(precedence);
+
+        return ExpressionNode::InfixExpressionNode(Box::new(InfixExpression {
+            token,
+            left,
+            operator,
+            right,
+        }));
     }
 
     /// parse prefix

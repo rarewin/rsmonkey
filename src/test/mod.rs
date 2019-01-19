@@ -611,6 +611,18 @@ fn test_operator_precedence_parsing() {
             input: "!(true == true);",
             expected: "(!(true == true))",
         },
+        Test {
+            input: "a + add(b * c) + d;",
+            expected: "((a + add((b * c))) + d)",
+        },
+        Test {
+            input: "add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8));",
+            expected: "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))",
+        },
+        Test {
+            input: "add(a + b + c * d / f + g);",
+            expected: "add((((a + b) + ((c * d) / f)) + g))",
+        },
     ];
 
     for tt in operator_precedence_test {
@@ -878,6 +890,54 @@ fn test_function_parameter_parsing() {
             );
         }
     }
+}
+
+#[test]
+fn test_call_expression_arsing() {
+    let input = "add(1, 2 * 3, 4 + 5);";
+
+    let l = Lexer::new(input.to_string());
+    let mut p = Parser::new(l);
+
+    let program = p.parse_program();
+    check_parser_errors(p);
+
+    assert!(
+        program.statements.len() == 1,
+        "program does not have the expected number of statements. {}",
+        program.statements.len()
+    );
+
+    let exps = match &program.statements[0] {
+        StatementNode::ExpressionStatementNode(exps) => exps,
+        _ => panic!("expression stateme is expected"),
+    };
+
+    let fc = match &exps.expression {
+        ExpressionNode::CallExpressionNode(fc) => fc,
+        _ => panic!("call expression is expected"),
+    };
+
+    assert!(
+        fc.arguments.len() == 3,
+        "# of arguments should be {}, but got {}",
+        3,
+        fc.arguments.len()
+    );
+
+    test_literal_expression(&fc.arguments[0], &TestLiteral::IntegerLiteral(1));
+    test_infix_expression(
+        &fc.arguments[1],
+        &TestLiteral::IntegerLiteral(2),
+        "*",
+        &TestLiteral::IntegerLiteral(3),
+    );
+    test_infix_expression(
+        &fc.arguments[2],
+        &TestLiteral::IntegerLiteral(4),
+        "+",
+        &TestLiteral::IntegerLiteral(5),
+    );
 }
 
 fn check_parser_errors(p: Parser) {

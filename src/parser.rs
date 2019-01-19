@@ -345,6 +345,49 @@ impl Parser {
         return Some(params);
     }
 
+    /// parse call expression
+    pub fn parse_call_expression(&mut self, left: ExpressionNode) -> ExpressionNode {
+        let token = self.cur_token.clone();
+        let function = left;
+
+        let arguments = match self.parse_call_arguments() {
+            Some(a) => a,
+            _ => return ExpressionNode::Null,
+        };
+
+        return ExpressionNode::CallExpressionNode(Box::new(CallExpression {
+            token,
+            function,
+            arguments,
+        }));
+    }
+
+    /// parse function call arguments
+    pub fn parse_call_arguments(&mut self) -> Option<Vec<ExpressionNode>> {
+        let mut arguments = Vec::<ExpressionNode>::new();
+
+        if self.peek_token_is(TokenType::RParen) {
+            self.next_token();
+            return Some(arguments);
+        };
+
+        self.next_token();
+
+        arguments.push(self.parse_expression(OperationPrecedence::Lowest));
+
+        while self.peek_token_is(TokenType::Comma) {
+            self.next_token();
+            self.next_token();
+            arguments.push(self.parse_expression(OperationPrecedence::Lowest));
+        }
+
+        if !self.expect_peek(TokenType::RParen) {
+            return None;
+        }
+
+        return Some(arguments);
+    }
+
     /// parse infix expression
     pub fn parse_infix_expression(&mut self, left: ExpressionNode) -> ExpressionNode {
         let mut ie = InfixExpression {
@@ -388,6 +431,7 @@ impl Parser {
             TokenType::LT => self.parse_infix_expression(left),
             TokenType::Eq => self.parse_infix_expression(left),
             TokenType::NotEq => self.parse_infix_expression(left),
+            TokenType::LParen => self.parse_call_expression(left),
             _ => panic!("unsupported by infix_parser: {:?}", tt),
         }
     }
@@ -414,6 +458,7 @@ impl Parser {
 /// get precedence of the operation `tt`
 fn get_precedence(tt: &TokenType) -> OperationPrecedence {
     match tt {
+        TokenType::LParen => OperationPrecedence::Call,
         TokenType::Eq => OperationPrecedence::Equals,
         TokenType::NotEq => OperationPrecedence::Equals,
         TokenType::LT => OperationPrecedence::LessGreater,

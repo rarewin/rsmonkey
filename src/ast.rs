@@ -20,6 +20,7 @@ pub enum ExpressionNode {
     InfixExpressionNode(Box<InfixExpression>),
     BooleanExpressionNode(Box<Boolean>),
     IfExpressionNode(Box<IfExpression>),
+    CallExpressionNode(Box<CallExpression>),
     Null,
 }
 
@@ -117,6 +118,14 @@ pub struct IfExpression {
     pub condition: ExpressionNode,
     pub consequence: StatementNode,
     pub alternative: StatementNode,
+}
+
+/// struct for call expression
+#[derive(Debug)]
+pub struct CallExpression {
+    pub token: Token,
+    pub function: ExpressionNode,
+    pub arguments: Vec<ExpressionNode>,
 }
 
 /// struct for programs
@@ -310,6 +319,36 @@ impl IfExpression {
     }
 }
 
+/// call expression
+impl CallExpression {
+    /// get string of the call expression
+    pub fn string(&self) -> String {
+        let mut ret = String::new();
+        let fs = match &self.function {
+            ExpressionNode::IdentifierNode(f) => f.string(),
+            _ => panic!("unexpected node"),
+        };
+
+        ret.push_str(&fs);
+        ret.push_str("(");
+        ret.push_str(
+            &((&self.arguments)
+                .into_iter()
+                .map(|x| extract_string_from_expression_node(x))
+                .collect::<Vec<String>>()
+                .join(", ")),
+        );
+        ret.push_str(")");
+
+        return ret;
+    }
+
+    /// get tokken's literal
+    pub fn token_literal(&self) -> String {
+        self.token.token_literal()
+    }
+}
+
 /// Program
 impl Program {
     /// constructor of Program
@@ -365,6 +404,7 @@ fn extract_string_from_expression_node(node: &ExpressionNode) -> String {
         ExpressionNode::PrefixExpressionNode(pen) => pen.string(),
         ExpressionNode::InfixExpressionNode(ien) => ien.string(),
         ExpressionNode::BooleanExpressionNode(ben) => ben.string(),
+        ExpressionNode::CallExpressionNode(cen) => cen.string(),
         _ => panic!("unexpected node (please implement extract_string_from_expression_node() for this node)"),
     }
 }

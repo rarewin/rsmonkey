@@ -101,13 +101,13 @@ impl Parser {
             return StatementNode::Null;
         }
 
-        // TODO
-        while !self.cur_token_is(TokenType::Semicolon) {
+        self.next_token();
+
+        let value = self.parse_expression(OperationPrecedence::Lowest);
+
+        if self.peek_token_is(TokenType::Semicolon) {
             self.next_token();
         }
-
-        let value = ExpressionNode::Null;
-        // TODO
 
         return StatementNode::LetStatementNode(Box::new(LetStatement { token, name, value }));
     }
@@ -116,13 +116,13 @@ impl Parser {
     pub fn parse_return_statement(&mut self) -> StatementNode {
         let token = self.cur_token.clone();
 
-        // TODO
-        while !self.cur_token_is(TokenType::Semicolon) {
+        self.next_token();
+
+        let return_value = self.parse_expression(OperationPrecedence::Lowest);
+
+        if self.peek_token_is(TokenType::Semicolon) {
             self.next_token();
         }
-
-        let return_value = ExpressionNode::Null;
-        // TODO
 
         return StatementNode::ReturnStatementNode(Box::new(ReturnStatement {
             token,

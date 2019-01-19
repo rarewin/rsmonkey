@@ -136,33 +136,49 @@ fn test_next_token() {
 
 #[test]
 fn test_let_statements() {
-    let input = r##"let x = 5;
-                    let y = 10;
-                    let foobar = 838383;"##;
+    struct Test {
+        input: &'static str,
+        expected_identifier: &'static str,
+        expected_value: TestLiteral,
+    }
+    let let_statement_test = vec![
+        Test {
+            input: "let x = 5;",
+            expected_identifier: "x",
+            expected_value: TestLiteral::IntegerLiteral(5),
+        },
+        Test {
+            input: "let y = true;",
+            expected_identifier: "y",
+            expected_value: TestLiteral::BooleanLiteral(true),
+        },
+        Test {
+            input: "let foobar = y;",
+            expected_identifier: "foobar",
+            expected_value: TestLiteral::StringLiteral("y"),
+        },
+    ];
 
-    let l = Lexer::new(input.to_string());
-    let mut p = Parser::new(l);
+    for tt in let_statement_test {
+        let l = Lexer::new(tt.input.to_string());
+        let mut p = Parser::new(l);
 
-    let program = p.parse_program();
-    check_parser_errors(p);
+        let program = p.parse_program();
+        check_parser_errors(p);
 
-    assert!(
-        program.statements.len() == 3,
-        "length of program.statements should be {}, but got {}",
-        3,
-        program.statements.len()
-    );
+        assert!(
+            program.statements.len() == 1,
+            "length of program.statements should be {}, but got {}",
+            1,
+            program.statements.len()
+        );
 
-    let tests = ["x", "y", "foobar"];
-
-    for i in 0..tests.len() {
-        let stmt = match &program.statements[i] {
+        let stmt = match &program.statements[0] {
             StatementNode::LetStatementNode(s) => s,
-            _ => panic!(),
+            _ => panic!("let statement is expected"),
         };
-        let tt = tests[i];
 
-        test_let_statement(stmt, tt);
+        test_let_statement(stmt, tt.expected_identifier, &tt.expected_value);
     }
 }
 
@@ -173,28 +189,9 @@ fn test_let_statements() {
 ///
 /// * `s` - let statement
 /// * `name` - expected string for identifer of `s`
-///
-/// # Examples
-///
+/// * `value` - expected value for right value
 /// ```
-/// extern crate rsmonkey;
-/// use rsmonkey::ast::LetStatement;
-/// use rsmonkey::token::{TokenType, Token};
-///
-/// let stmt = LetStatement {
-///    token: Token {
-///       token_type: TokenType::Ident,
-///       literal: "0".to_string(),
-///    },
-///    name: Identifier {
-///       token: Token {
-///          token_type: TokenType::Ident,
-///          literal: "0".to_string(),
-///        },
-///        value: "0".to_string(),
-/// };
-/// ```
-fn test_let_statement(s: &LetStatement, name: &str) {
+fn test_let_statement(s: &LetStatement, name: &str, value: &TestLiteral) {
     assert_eq!(
         s.name.value, name,
         "expected identifier is '{}', but got '{}'.",
@@ -207,33 +204,51 @@ fn test_let_statement(s: &LetStatement, name: &str) {
         name,
         s.name.token_literal()
     );
+    test_literal_expression(&s.value, value);
 }
 
 #[test]
 fn test_return_statements() {
-    let input = r##"
-    return 5;
-    return 10;
-    return 993322;"##;
+    struct Test {
+        input: &'static str,
+        expected_value: TestLiteral,
+    }
 
-    let l = Lexer::new(input.to_string());
-    let mut p = Parser::new(l);
+    let return_statement_test = vec![
+        Test {
+            input: "return 5;",
+            expected_value: TestLiteral::IntegerLiteral(5),
+        },
+        Test {
+            input: "return 10;",
+            expected_value: TestLiteral::IntegerLiteral(10),
+        },
+        Test {
+            input: "return 993322;",
+            expected_value: TestLiteral::IntegerLiteral(993322),
+        },
+    ];
 
-    let program = p.parse_program();
-    check_parser_errors(p);
+    for tt in return_statement_test {
+        let l = Lexer::new(tt.input.to_string());
+        let mut p = Parser::new(l);
 
-    assert!(
-        program.statements.len() == 3,
-        "length of program.statements should be {}, but got {}",
-        3,
-        program.statements.len()
-    );
+        let program = p.parse_program();
+        check_parser_errors(p);
 
-    for i in 0..program.statements.len() {
-        match &program.statements[i] {
-            StatementNode::ReturnStatementNode(_) => {}
-            _ => panic!(),
-        }
+        assert!(
+            program.statements.len() == 1,
+            "length of program.statements should be {}, but got {}",
+            1,
+            program.statements.len()
+        );
+
+        let stmt = match &program.statements[0] {
+            StatementNode::ReturnStatementNode(rs) => rs,
+            _ => panic!("return statement is expected"),
+        };
+
+        test_literal_expression(&stmt.return_value, &tt.expected_value);
     }
 }
 

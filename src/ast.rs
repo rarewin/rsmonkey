@@ -401,10 +401,13 @@ fn extract_string_from_expression_node(node: &ExpressionNode) -> String {
     match node {
         ExpressionNode::IdentifierNode(idn) => idn.string(),
         ExpressionNode::IntegerLiteralNode(iln) => iln.string(),
+        ExpressionNode::FunctionLiteralNode(fln) => fln.string(),
         ExpressionNode::PrefixExpressionNode(pen) => pen.string(),
         ExpressionNode::InfixExpressionNode(ien) => ien.string(),
         ExpressionNode::BooleanExpressionNode(ben) => ben.string(),
+        ExpressionNode::IfExpressionNode(ien) => ien.string(),
         ExpressionNode::CallExpressionNode(cen) => cen.string(),
-        _ => panic!("unexpected node (please implement extract_string_from_expression_node() for this node)"),
+        ExpressionNode::Null => "(null)".to_string(),
+        // _ => panic!("unexpected node (please implement extract_string_from_expression_node() for this node)"),
     }
 }

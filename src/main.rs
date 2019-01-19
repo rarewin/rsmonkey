@@ -5,6 +5,7 @@ use std::io;
 use std::io::Write;
 
 use rsmonkey::lexer::Lexer;
+use rsmonkey::parser::Parser;
 
 #[cfg(test)]
 mod test;
@@ -25,13 +26,18 @@ fn read_input() -> io::Result<()> {
         io::stdout().flush()?;
         io::stdin().read_line(&mut input)?;
 
-        let mut l = Lexer::new(input.to_string());
+        let l = Lexer::new(input.to_string());
+        let mut p = Parser::new(l);
 
-        while {
-            let t = l.next_token();
-            println!("{:?}", t);
-            !t.is_eof()
-        } {}
+        let program = p.parse_program();
+
+        if p.errors().len() > 0 {
+            for e in p.errors() {
+                println!("\tparser error: {}", e);
+            }
+        } else {
+            println!("{}", program.string());
+        }
 
         !input.is_empty()
     } {}

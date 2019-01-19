@@ -10,6 +10,20 @@ use rsmonkey::parser::Parser;
 #[cfg(test)]
 mod test;
 
+const PROMPT: &str = ">> ";
+const MONKEY_FACE: &str = r##"            __,__
+   .--.  .-"     "-.  .--.
+  / .. \/  .-. .-.  \/ .. \
+ | |  '|  /   Y   \  |'  | |
+ | \   \  \ 0 | 0 /  /   / |
+  \ '- ,\.-"""""""-./, -' /
+   ''-' /_   ^ ^   _\ '-''
+       |  \._   _./  |
+       \   \ '~' /   /
+        '._ '-=-' _.'
+           '-----'
+"##;
+
 fn read_input() -> io::Result<()> {
     let mut input = String::new();
     let username = env::vars().find(|x| x.0 == "USER").unwrap_or_default().1;
@@ -22,7 +36,7 @@ fn read_input() -> io::Result<()> {
 
     while {
         input.clear();
-        print!(">> ");
+        print!("{}", PROMPT);
         io::stdout().flush()?;
         io::stdin().read_line(&mut input)?;
 
@@ -33,7 +47,12 @@ fn read_input() -> io::Result<()> {
 
         if p.errors().len() > 0 {
             for e in p.errors() {
-                println!("\tparser error: {}", e);
+                println!(
+                    r##"{}
+Woops! We ran into some monkey business here!
+	parser error: {}"##,
+                    MONKEY_FACE, e
+                );
             }
         } else {
             println!("{}", program.string());

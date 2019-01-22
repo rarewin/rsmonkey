@@ -7,6 +7,7 @@ pub enum StatementNode {
     ReturnStatementNode(Box<ReturnStatement>),
     ExpressionStatementNode(Box<ExpressionStatement>),
     BlockStatementNode(Box<BlockStatement>),
+    ProgramStatementNode(Box<Program>),
     Null,
 }
 

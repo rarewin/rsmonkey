@@ -1,5 +1,5 @@
 use crate::ast::{ExpressionNode, StatementNode};
-use crate::object::Integer;
+use crate::object::{Boolean, Integer};
 use crate::object::{Object, ObjectType};
 
 #[derive(Debug)]
@@ -36,6 +36,9 @@ fn eval_expression_node(node: &ExpressionNode) -> Object {
     match node {
         ExpressionNode::IntegerLiteralNode(il) => {
             Object::IntegerObject(Integer { value: il.value })
+        }
+        ExpressionNode::BooleanExpressionNode(be) => {
+            Object::BooleanObject(Boolean { value: be.value })
         }
         _ => panic!("not implemented yet"),
     }

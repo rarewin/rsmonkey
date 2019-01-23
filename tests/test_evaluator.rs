@@ -29,6 +29,30 @@ fn test_eval_integer_expression() {
     }
 }
 
+#[test]
+fn test_eval_boolean_expression() {
+    struct Test {
+        input: &'static str,
+        expected: bool,
+    }
+
+    let boolean_expresssion_tests = vec![
+        Test {
+            input: "true",
+            expected: true,
+        },
+        Test {
+            input: "false",
+            expected: false,
+        },
+    ];
+
+    for tt in boolean_expresssion_tests {
+        let evaluated = test_eval(tt.input);
+        test_boolean_boject(evaluated, tt.expected);
+    }
+}
+
 /// eval function
 fn test_eval(input: &'static str) -> Object {
     let l = Lexer::new(input.to_string());
@@ -49,6 +73,20 @@ fn test_integer_boject(obj: Object, expected: i64) {
             "{} is expected, but got {}",
             expected,
             io.value
+        );
+    } else {
+        panic!("unexpected object");
+    }
+}
+
+/// test boolean object
+fn test_boolean_boject(obj: Object, expected: bool) {
+    if let Object::BooleanObject(bo) = obj {
+        assert!(
+            bo.value == expected,
+            "{} is expected, but got {}",
+            expected,
+            bo.value
         );
     } else {
         panic!("unexpected object");

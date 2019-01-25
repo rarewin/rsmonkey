@@ -40,6 +40,40 @@ fn eval_expression_node(node: &ExpressionNode) -> Object {
         ExpressionNode::BooleanExpressionNode(be) => {
             Object::BooleanObject(if be.value { TRUE } else { FALSE })
         }
+        ExpressionNode::PrefixExpressionNode(pe) => {
+            let right = eval_expression_node(&pe.right);
+            eval_prefix_expression_node(&pe.operator, &right)
+        }
         _ => panic!("not implemented yet"),
+    }
+}
+
+/// evaluator function for prefix expression node
+fn eval_prefix_expression_node(operator: &str, right: &Object) -> Object {
+    match operator {
+        "!" => eval_bang_operation_expression_node(right),
+        "-" => eval_minus_operation_expression_node(right),
+        _ => Object::Null,
+    }
+}
+
+/// evaluator function for bang operation expression node
+fn eval_bang_operation_expression_node(right: &Object) -> Object {
+    match right {
+        Object::BooleanObject(TRUE) => Object::BooleanObject(FALSE),
+        Object::BooleanObject(FALSE) => Object::BooleanObject(TRUE),
+        Object::Null => Object::BooleanObject(TRUE),
+        _ => Object::BooleanObject(FALSE),
+    }
+}
+
+/// evaluator function for minus operation expression node
+fn eval_minus_operation_expression_node(right: &Object) -> Object {
+    if let Object::IntegerObject(integer) = right {
+        Object::IntegerObject(Integer {
+            value: -integer.value,
+        })
+    } else {
+        Object::Null
     }
 }

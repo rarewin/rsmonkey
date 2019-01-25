@@ -24,7 +24,7 @@ pub struct Integer {
 }
 
 /// struct for Boolean object
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Boolean {
     pub value: bool,
 }

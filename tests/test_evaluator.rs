@@ -21,6 +21,14 @@ fn test_eval_integer_expression() {
             input: "10",
             expected: 10,
         },
+        Test {
+            input: "-5",
+            expected: -5,
+        },
+        Test {
+            input: "-10",
+            expected: -10,
+        },
     ];
 
     for tt in integer_expression_tests {
@@ -48,6 +56,45 @@ fn test_eval_boolean_expression() {
     ];
 
     for tt in boolean_expresssion_tests {
+        let evaluated = test_eval(tt.input);
+        test_boolean_boject(evaluated, tt.expected);
+    }
+}
+
+#[test]
+fn test_eval_bang_operator() {
+    struct Test {
+        input: &'static str,
+        expected: bool,
+    }
+
+    let bang_tests = vec![
+        Test {
+            input: "!true",
+            expected: false,
+        },
+        Test {
+            input: "!false",
+            expected: true,
+        },
+        Test {
+            input: "!5",
+            expected: false,
+        },
+        Test {
+            input: "!!true",
+            expected: true,
+        },
+        Test {
+            input: "!!false",
+            expected: false,
+        },
+        Test {
+            input: "!!5",
+            expected: true,
+        },
+    ];
+    for tt in bang_tests {
         let evaluated = test_eval(tt.input);
         test_boolean_boject(evaluated, tt.expected);
     }

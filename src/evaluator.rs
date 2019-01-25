@@ -1,6 +1,6 @@
 use crate::ast::{ExpressionNode, StatementNode};
 use crate::object::{Boolean, Integer};
-use crate::object::{Object, ObjectType};
+use crate::object::{Object, ObjectType, FALSE, TRUE};
 
 #[derive(Debug)]
 pub enum EvalNode {
@@ -38,7 +38,7 @@ fn eval_expression_node(node: &ExpressionNode) -> Object {
             Object::IntegerObject(Integer { value: il.value })
         }
         ExpressionNode::BooleanExpressionNode(be) => {
-            Object::BooleanObject(Boolean { value: be.value })
+            Object::BooleanObject(if be.value { TRUE } else { FALSE })
         }
         _ => panic!("not implemented yet"),
     }

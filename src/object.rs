@@ -13,6 +13,10 @@ pub enum ObjectType {
     BooleanType,
 }
 
+/// const boolan object
+pub const TRUE: Boolean = Boolean { value: true };
+pub const FALSE: Boolean = Boolean { value: false };
+
 /// struct for Integer object
 #[derive(Debug)]
 pub struct Integer {

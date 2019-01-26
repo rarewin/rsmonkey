@@ -1,5 +1,5 @@
 /// object
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Object {
     IntegerObject(Integer),
     BooleanObject(Boolean),
@@ -18,7 +18,7 @@ pub const TRUE: Boolean = Boolean { value: true };
 pub const FALSE: Boolean = Boolean { value: false };
 
 /// struct for Integer object
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Integer {
     pub value: i64,
 }

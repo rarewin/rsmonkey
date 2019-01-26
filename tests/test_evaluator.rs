@@ -29,11 +29,55 @@ fn test_eval_integer_expression() {
             input: "-10",
             expected: -10,
         },
+        Test {
+            input: "5 + 5 + 5 + 5 - 10",
+            expected: 10,
+        },
+        Test {
+            input: "2 * 2 * 2 * 2 * 2",
+            expected: 32,
+        },
+        Test {
+            input: "-50 + 100 + -50",
+            expected: 0,
+        },
+        Test {
+            input: "5 * 2 + 10",
+            expected: 20,
+        },
+        Test {
+            input: "5 + 2 * 10",
+            expected: 25,
+        },
+        Test {
+            input: "20 + 2 * -10",
+            expected: 0,
+        },
+        Test {
+            input: "50 / 2 * 2 + 10",
+            expected: 60,
+        },
+        Test {
+            input: "2 * (5 + 10)",
+            expected: 30,
+        },
+        Test {
+            input: "3 * 3 * 3 + 10",
+            expected: 37,
+        },
+        Test {
+            input: "3 * (3 * 3) + 10",
+            expected: 37,
+        },
+        Test {
+            input: "(5 + 10 * 2 + 15 / 3) * 2 + -10",
+            expected: 50,
+        },
     ];
 
     for tt in integer_expression_tests {
         let evaluated = test_eval(tt.input);
-        test_integer_boject(evaluated, tt.expected);
+        test_integer_object(evaluated, tt.expected);
     }
 }
 
@@ -53,11 +97,83 @@ fn test_eval_boolean_expression() {
             input: "false",
             expected: false,
         },
+        Test {
+            input: "1 < 2",
+            expected: true,
+        },
+        Test {
+            input: "1 > 2",
+            expected: false,
+        },
+        Test {
+            input: "1 < 1",
+            expected: false,
+        },
+        Test {
+            input: "1 > 1",
+            expected: false,
+        },
+        Test {
+            input: "1 == 1",
+            expected: true,
+        },
+        Test {
+            input: "1 != 1",
+            expected: false,
+        },
+        Test {
+            input: "1 == 2",
+            expected: false,
+        },
+        Test {
+            input: "1 != 2",
+            expected: true,
+        },
+        Test {
+            input: "true == true",
+            expected: true,
+        },
+        Test {
+            input: "false == false",
+            expected: true,
+        },
+        Test {
+            input: "true != true",
+            expected: false,
+        },
+        Test {
+            input: "true == false",
+            expected: false,
+        },
+        Test {
+            input: "true != false",
+            expected: true,
+        },
+        Test {
+            input: "false != true",
+            expected: true,
+        },
+        Test {
+            input: "(1 < 2) == true",
+            expected: true,
+        },
+        Test {
+            input: "(1 < 2) == false",
+            expected: false,
+        },
+        Test {
+            input: "(1 > 2) == true",
+            expected: false,
+        },
+        Test {
+            input: "(1 > 2) == false",
+            expected: true,
+        },
     ];
 
     for tt in boolean_expresssion_tests {
         let evaluated = test_eval(tt.input);
-        test_boolean_boject(evaluated, tt.expected);
+        test_boolean_object(evaluated, tt.expected);
     }
 }
 
@@ -96,7 +212,7 @@ fn test_eval_bang_operator() {
     ];
     for tt in bang_tests {
         let evaluated = test_eval(tt.input);
-        test_boolean_boject(evaluated, tt.expected);
+        test_boolean_object(evaluated, tt.expected);
     }
 }
 
@@ -113,7 +229,7 @@ fn test_eval(input: &'static str) -> Object {
 }
 
 /// test integer object
-fn test_integer_boject(obj: Object, expected: i64) {
+fn test_integer_object(obj: Object, expected: i64) {
     if let Object::IntegerObject(io) = obj {
         assert!(
             io.value == expected,
@@ -127,7 +243,7 @@ fn test_integer_boject(obj: Object, expected: i64) {
 }
 
 /// test boolean object
-fn test_boolean_boject(obj: Object, expected: bool) {
+fn test_boolean_object(obj: Object, expected: bool) {
     if let Object::BooleanObject(bo) = obj {
         assert!(
             bo.value == expected,
@@ -136,6 +252,6 @@ fn test_boolean_boject(obj: Object, expected: bool) {
             bo.value
         );
     } else {
-        panic!("unexpected object");
+        panic!("unexpected object, got {:?}", obj);
     }
 }

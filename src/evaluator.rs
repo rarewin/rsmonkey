@@ -44,6 +44,11 @@ fn eval_expression_node(node: &ExpressionNode) -> Object {
             let right = eval_expression_node(&pe.right);
             eval_prefix_expression_node(&pe.operator, &right)
         }
+        ExpressionNode::InfixExpressionNode(ie) => {
+            let left = eval_expression_node(&ie.left);
+            let right = eval_expression_node(&ie.right);
+            eval_infix_expression_node(&ie.operator, &left, &right)
+        }
         _ => panic!("not implemented yet"),
     }
 }
@@ -75,5 +80,54 @@ fn eval_minus_operation_expression_node(right: &Object) -> Object {
         })
     } else {
         Object::Null
+    }
+}
+
+/// evaluator function for infix expression node
+fn eval_infix_expression_node(operator: &str, left: &Object, right: &Object) -> Object {
+    if let Object::IntegerObject(left_integer) = left {
+        if let Object::IntegerObject(right_integer) = right {
+            return eval_integer_infix_expression(operator, &left_integer, &right_integer);
+        }
+    }
+    match operator {
+        "==" => Object::BooleanObject(Boolean {
+            value: left == right,
+        }),
+        "!=" => Object::BooleanObject(Boolean {
+            value: left != right,
+        }),
+        _ => Object::Null,
+    }
+}
+
+/// evaluator function for integer
+fn eval_integer_infix_expression(operator: &str, left: &Integer, right: &Integer) -> Object {
+    match operator {
+        "+" => Object::IntegerObject(Integer {
+            value: left.value + right.value,
+        }),
+        "-" => Object::IntegerObject(Integer {
+            value: left.value - right.value,
+        }),
+        "*" => Object::IntegerObject(Integer {
+            value: left.value * right.value,
+        }),
+        "/" => Object::IntegerObject(Integer {
+            value: left.value / right.value,
+        }),
+        "<" => Object::BooleanObject(Boolean {
+            value: left.value < right.value,
+        }),
+        ">" => Object::BooleanObject(Boolean {
+            value: left.value > right.value,
+        }),
+        "==" => Object::BooleanObject(Boolean {
+            value: left.value == right.value,
+        }),
+        "!=" => Object::BooleanObject(Boolean {
+            value: left.value != right.value,
+        }),
+        _ => Object::Null,
     }
 }

@@ -19,16 +19,21 @@ pub fn eval(node: &EvalNode) -> Object {
 /// evaluator function for statement node
 fn eval_statement_node(node: &StatementNode) -> Object {
     match node {
-        StatementNode::ProgramStatementNode(ps) => {
-            let mut result = Object::Null;
-            for stmt in &ps.statements {
-                result = eval_statement_node(stmt)
-            }
-            result
-        }
+        StatementNode::ProgramStatementNode(ps) => eval_statements(&ps.statements),
+        StatementNode::BlockStatementNode(bs) => eval_statements(&bs.statements),
         StatementNode::ExpressionStatementNode(es) => eval_expression_node(&es.expression),
+        StatementNode::Null => Object::Null,
         _ => panic!("not implemented yet"),
     }
+}
+
+/// evaluator function for statements (vector)
+fn eval_statements(list: &Vec<StatementNode>) -> Object {
+    let mut result = Object::Null;
+    for stmt in list {
+        result = eval_statement_node(stmt)
+    }
+    result
 }
 
 /// evaluator function for expression node
@@ -48,6 +53,20 @@ fn eval_expression_node(node: &ExpressionNode) -> Object {
             let left = eval_expression_node(&ie.left);
             let right = eval_expression_node(&ie.right);
             eval_infix_expression_node(&ie.operator, &left, &right)
+        }
+        ExpressionNode::IfExpressionNode(ie) => {
+            let condition = eval_expression_node(&ie.condition);
+            match condition {
+                Object::BooleanObject(b) => {
+                    if b.value == true {
+                        eval_statement_node(&ie.consequence)
+                    } else {
+                        eval_statement_node(&ie.alternative)
+                    }
+                }
+                Object::Null => eval_statement_node(&ie.alternative),
+                _ => eval_statement_node(&ie.consequence),
+            }
         }
         _ => panic!("not implemented yet"),
     }

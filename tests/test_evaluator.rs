@@ -2,7 +2,7 @@ use rsmonkey::ast::{ExpressionNode, StatementNode};
 use rsmonkey::evaluator::eval;
 use rsmonkey::evaluator::EvalNode;
 use rsmonkey::lexer::Lexer;
-use rsmonkey::object::Object;
+use rsmonkey::object::{Integer, Object};
 use rsmonkey::parser::Parser;
 
 #[test]
@@ -210,9 +210,54 @@ fn test_eval_bang_operator() {
             expected: true,
         },
     ];
+
     for tt in bang_tests {
         let evaluated = test_eval(tt.input);
         test_boolean_object(evaluated, tt.expected);
+    }
+}
+
+#[test]
+fn test_eval_if_else_expression() {
+    struct Test {
+        input: &'static str,
+        expected: Object,
+    }
+
+    let if_else_tests = vec![
+        Test {
+            input: "if (true) { 10 }",
+            expected: Object::IntegerObject(Integer { value: 10 }),
+        },
+        Test {
+            input: "if (false) { 10 }",
+            expected: Object::Null,
+        },
+        Test {
+            input: "if (1) { 10 }",
+            expected: Object::IntegerObject(Integer { value: 10 }),
+        },
+        Test {
+            input: "if (1 < 2) { 10 }",
+            expected: Object::IntegerObject(Integer { value: 10 }),
+        },
+        Test {
+            input: "if (1 > 2) { 10 }",
+            expected: Object::Null,
+        },
+        Test {
+            input: "if (1 > 2) { 10 } else { 20 }",
+            expected: Object::IntegerObject(Integer { value: 20 }),
+        },
+        Test {
+            input: "if (1 < 2) { 10 } else { 20 }",
+            expected: Object::IntegerObject(Integer { value: 10 }),
+        },
+    ];
+
+    for tt in if_else_tests {
+        let evaluated = test_eval(tt.input);
+        assert!(evaluated == tt.expected);
     }
 }
 

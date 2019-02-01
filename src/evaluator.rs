@@ -1,5 +1,5 @@
-use crate::ast::{ExpressionNode, StatementNode};
-use crate::object::{Boolean, Integer};
+use crate::ast::{BlockStatement, ExpressionNode, Program, ReturnStatement, StatementNode};
+use crate::object::{Boolean, Integer, ReturnValue};
 use crate::object::{Object, ObjectType, FALSE, TRUE};
 
 #[derive(Debug)]
@@ -19,32 +19,57 @@ pub fn eval(node: &EvalNode) -> Object {
 /// evaluator function for statement node
 fn eval_statement_node(node: &StatementNode) -> Object {
     match node {
-        StatementNode::ProgramStatementNode(ps) => eval_statements(&ps.statements),
-        StatementNode::BlockStatementNode(bs) => eval_statements(&bs.statements),
+        StatementNode::ProgramStatementNode(ps) => eval_program(&ps),
+        StatementNode::BlockStatementNode(bs) => eval_block_statement(&bs),
         StatementNode::ExpressionStatementNode(es) => eval_expression_node(&es.expression),
+        StatementNode::ReturnStatementNode(rs) => eval_return_statement(&rs),
         StatementNode::Null => Object::Null,
         _ => panic!("not implemented yet"),
     }
 }
 
-/// evaluator function for statements (vector)
-fn eval_statements(list: &Vec<StatementNode>) -> Object {
+/// evaluator function for program
+fn eval_program(prog: &Program) -> Object {
     let mut result = Object::Null;
-    for stmt in list {
-        result = eval_statement_node(stmt)
+    for stmt in &prog.statements {
+        result = eval_statement_node(stmt);
+        if let Object::ReturnValueObject(rv) = result {
+            return rv.value;
+        }
     }
     result
+}
+
+/// evaluator function for block statement
+fn eval_block_statement(bl: &BlockStatement) -> Object {
+    let mut result = Object::Null;
+    for stmt in &bl.statements {
+        result = eval_statement_node(stmt);
+        if let Object::ReturnValueObject(rv) = result {
+            return Object::ReturnValueObject(rv);
+        }
+    }
+    result
+}
+
+/// evaluator function for return statement
+fn eval_return_statement(rs: &ReturnStatement) -> Object {
+    Object::ReturnValueObject(Box::new(ReturnValue {
+        value: eval_expression_node(&rs.return_value),
+    }))
 }
 
 /// evaluator function for expression node
 fn eval_expression_node(node: &ExpressionNode) -> Object {
     match node {
         ExpressionNode::IntegerLiteralNode(il) => {
-            Object::IntegerObject(Integer { value: il.value })
+            Object::IntegerObject(Box::new(Integer { value: il.value }))
         }
-        ExpressionNode::BooleanExpressionNode(be) => {
-            Object::BooleanObject(if be.value { TRUE } else { FALSE })
-        }
+        ExpressionNode::BooleanExpressionNode(be) => Object::BooleanObject(if be.value {
+            Box::new(TRUE)
+        } else {
+            Box::new(FALSE)
+        }),
         ExpressionNode::PrefixExpressionNode(pe) => {
             let right = eval_expression_node(&pe.right);
             eval_prefix_expression_node(&pe.operator, &right)
@@ -84,19 +109,24 @@ fn eval_prefix_expression_node(operator: &str, right: &Object) -> Object {
 /// evaluator function for bang operation expression node
 fn eval_bang_operation_expression_node(right: &Object) -> Object {
     match right {
-        Object::BooleanObject(TRUE) => Object::BooleanObject(FALSE),
-        Object::BooleanObject(FALSE) => Object::BooleanObject(TRUE),
-        Object::Null => Object::BooleanObject(TRUE),
-        _ => Object::BooleanObject(FALSE),
+        Object::BooleanObject(bl) => {
+            if (*bl).value {
+                Object::BooleanObject(Box::new(FALSE))
+            } else {
+                Object::BooleanObject(Box::new(TRUE))
+            }
+        }
+        Object::Null => Object::BooleanObject(Box::new(TRUE)),
+        _ => Object::BooleanObject(Box::new(FALSE)),
     }
 }
 
 /// evaluator function for minus operation expression node
 fn eval_minus_operation_expression_node(right: &Object) -> Object {
     if let Object::IntegerObject(integer) = right {
-        Object::IntegerObject(Integer {
+        Object::IntegerObject(Box::new(Integer {
             value: -integer.value,
-        })
+        }))
     } else {
         Object::Null
     }
@@ -110,12 +140,12 @@ fn eval_infix_expression_node(operator: &str, left: &Object, right: &Object) -> 
         }
     }
     match operator {
-        "==" => Object::BooleanObject(Boolean {
+        "==" => Object::BooleanObject(Box::new(Boolean {
             value: left == right,
-        }),
-        "!=" => Object::BooleanObject(Boolean {
+        })),
+        "!=" => Object::BooleanObject(Box::new(Boolean {
             value: left != right,
-        }),
+        })),
         _ => Object::Null,
     }
 }
@@ -123,30 +153,30 @@ fn eval_infix_expression_node(operator: &str, left: &Object, right: &Object) -> 
 /// evaluator function for integer
 fn eval_integer_infix_expression(operator: &str, left: &Integer, right: &Integer) -> Object {
     match operator {
-        "+" => Object::IntegerObject(Integer {
+        "+" => Object::IntegerObject(Box::new(Integer {
             value: left.value + right.value,
-        }),
-        "-" => Object::IntegerObject(Integer {
+        })),
+        "-" => Object::IntegerObject(Box::new(Integer {
             value: left.value - right.value,
-        }),
-        "*" => Object::IntegerObject(Integer {
+        })),
+        "*" => Object::IntegerObject(Box::new(Integer {
             value: left.value * right.value,
-        }),
-        "/" => Object::IntegerObject(Integer {
+        })),
+        "/" => Object::IntegerObject(Box::new(Integer {
             value: left.value / right.value,
-        }),
-        "<" => Object::BooleanObject(Boolean {
+        })),
+        "<" => Object::BooleanObject(Box::new(Boolean {
             value: left.value < right.value,
-        }),
-        ">" => Object::BooleanObject(Boolean {
+        })),
+        ">" => Object::BooleanObject(Box::new(Boolean {
             value: left.value > right.value,
-        }),
-        "==" => Object::BooleanObject(Boolean {
+        })),
+        "==" => Object::BooleanObject(Box::new(Boolean {
             value: left.value == right.value,
-        }),
-        "!=" => Object::BooleanObject(Boolean {
+        })),
+        "!=" => Object::BooleanObject(Box::new(Boolean {
             value: left.value != right.value,
-        }),
+        })),
         _ => Object::Null,
     }
 }

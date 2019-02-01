@@ -227,7 +227,7 @@ fn test_eval_if_else_expression() {
     let if_else_tests = vec![
         Test {
             input: "if (true) { 10 }",
-            expected: Object::IntegerObject(Integer { value: 10 }),
+            expected: Object::IntegerObject(Box::new(Integer { value: 10 })),
         },
         Test {
             input: "if (false) { 10 }",
@@ -235,11 +235,11 @@ fn test_eval_if_else_expression() {
         },
         Test {
             input: "if (1) { 10 }",
-            expected: Object::IntegerObject(Integer { value: 10 }),
+            expected: Object::IntegerObject(Box::new(Integer { value: 10 })),
         },
         Test {
             input: "if (1 < 2) { 10 }",
-            expected: Object::IntegerObject(Integer { value: 10 }),
+            expected: Object::IntegerObject(Box::new(Integer { value: 10 })),
         },
         Test {
             input: "if (1 > 2) { 10 }",
@@ -247,17 +247,58 @@ fn test_eval_if_else_expression() {
         },
         Test {
             input: "if (1 > 2) { 10 } else { 20 }",
-            expected: Object::IntegerObject(Integer { value: 20 }),
+            expected: Object::IntegerObject(Box::new(Integer { value: 20 })),
         },
         Test {
             input: "if (1 < 2) { 10 } else { 20 }",
-            expected: Object::IntegerObject(Integer { value: 10 }),
+            expected: Object::IntegerObject(Box::new(Integer { value: 10 })),
         },
     ];
 
     for tt in if_else_tests {
         let evaluated = test_eval(tt.input);
         assert!(evaluated == tt.expected);
+    }
+}
+
+#[test]
+fn test_eval_return_statement() {
+    struct Test {
+        input: &'static str,
+        expected: i64,
+    }
+
+    let return_tests = vec![
+        Test {
+            input: "return 10;",
+            expected: 10,
+        },
+        Test {
+            input: "return 10; 9;",
+            expected: 10,
+        },
+        Test {
+            input: "return 2 * 5; 9;",
+            expected: 10,
+        },
+        Test {
+            input: "9; return 2 * 5; 9;",
+            expected: 10,
+        },
+        Test {
+            input: r##"if (10 > 1) {
+                         if (10 > 1) {
+                           return 10;
+                         }
+                         return 1;
+                      }"##,
+            expected: 10,
+        },
+    ];
+
+    for tt in return_tests {
+        let evaluated = test_eval(tt.input);
+        test_integer_object(evaluated, tt.expected);
     }
 }
 

@@ -4,16 +4,15 @@ pub enum Object {
     IntegerObject(Box<Integer>),
     BooleanObject(Box<Boolean>),
     ReturnValueObject(Box<ReturnValue>),
+    ErrorObject(Box<Error>),
     Null,
 }
 
-/// object type
-#[derive(Debug)]
-pub enum ObjectType {
-    IntegerType,
-    BooleanType,
-    ReturnValueType,
-}
+/// object type strings
+pub const INTEGER_OBJ: &'static str = "INTEGER";
+pub const BOOLEAN_OBJ: &'static str = "BOOLEAN";
+pub const RETURN_VALUE_OBJ: &'static str = "RETURN_VALUE";
+pub const ERROR_OBJ: &'static str = "ERROR";
 
 /// const boolan object
 pub const TRUE: Boolean = Boolean { value: true };
@@ -37,6 +36,12 @@ pub struct ReturnValue {
     pub value: Object,
 }
 
+/// struct for Error object
+#[derive(Debug, PartialEq, Eq)]
+pub struct Error {
+    pub message: String,
+}
+
 /// implementation of Integer object
 impl Integer {
     /// inspect function
@@ -45,8 +50,8 @@ impl Integer {
     }
 
     /// object type function
-    pub fn object_type(&self) -> ObjectType {
-        ObjectType::IntegerType
+    pub fn object_type(&self) -> &'static str {
+        INTEGER_OBJ
     }
 }
 
@@ -58,8 +63,8 @@ impl Boolean {
     }
 
     /// object type function
-    pub fn object_type(&self) -> ObjectType {
-        ObjectType::BooleanType
+    pub fn object_type(&self) -> &'static str {
+        BOOLEAN_OBJ
     }
 }
 
@@ -79,7 +84,20 @@ impl ReturnValue {
     }
 
     /// object type function
-    pub fn object_type(&self) -> ObjectType {
-        ObjectType::ReturnValueType
+    pub fn object_type(&self) -> &'static str {
+        RETURN_VALUE_OBJ
+    }
+}
+
+/// implementstion of Error object
+impl Error {
+    /// inspect function
+    pub fn inspect(&self) -> String {
+        format!("ERROR: {}", self.message)
+    }
+
+    /// object type function
+    pub fn object_type(&self) -> &'static str {
+        ERROR_OBJ
     }
 }

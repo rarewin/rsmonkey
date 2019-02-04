@@ -302,6 +302,51 @@ fn test_eval_return_statement() {
     }
 }
 
+/// test error handling
+#[test]
+fn test_error_handling() {
+    struct Test {
+        input: &'static str,
+        expected: &'static str,
+    }
+
+    let error_tests = vec![
+        Test {
+            input: "5 + true;",
+            expected: "type mismatch: INTEGER + BOOLEAN",
+        },
+        Test {
+            input: "5 + true; 5;",
+            expected: "type mismatch: INTEGER + BOOLEAN",
+        },
+        Test {
+            input: "-true",
+            expected: "unknown operator: -BOOLEAN",
+        },
+        Test {
+            input: "true + false;",
+            expected: "unkown operator: BOOLEAN + BOOLEAN",
+        },
+        Test {
+            input: "5; true + false; 5",
+            expected: "unkown operator: BOOLEAN + BOOLEAN",
+        },
+        Test {
+            input: "if (10 > 1) { true + false; }",
+            expected: "unkown operator: BOOLEAN + BOOLEAN",
+        },
+    ];
+
+    for tt in error_tests {
+        let evaluated = test_eval(tt.input);
+        if let Object::ErrorObject(eo) = evaluated {
+            assert_eq!(eo.message, tt.expected);
+        } else {
+            panic!("no error object returned, got {:?}", evaluated);
+        }
+    }
+}
+
 /// eval function
 fn test_eval(input: &'static str) -> Object {
     let l = Lexer::new(input.to_string());

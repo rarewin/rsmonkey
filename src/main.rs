@@ -68,7 +68,9 @@ Woops! We ran into some monkey business here!
             match evaluated {
                 Object::IntegerObject(io) => io.inspect(),
                 Object::BooleanObject(bo) => bo.inspect(),
-                _ => "".to_string(),
+                Object::ReturnValueObject(rvo) => rvo.inspect(),
+                Object::ErrorObject(eo) => eo.inspect(),
+                Object::Null => "null".into(),
             }
         );
 

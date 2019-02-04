@@ -1,6 +1,6 @@
 use crate::ast::{BlockStatement, ExpressionNode, Program, ReturnStatement, StatementNode};
-use crate::object::{Boolean, Integer, ReturnValue};
-use crate::object::{Object, ObjectType, FALSE, TRUE};
+use crate::object::{Boolean, Error, Integer, ReturnValue};
+use crate::object::{Object, FALSE, TRUE};
 
 #[derive(Debug)]
 pub enum EvalNode {
@@ -35,6 +35,8 @@ fn eval_program(prog: &Program) -> Object {
         result = eval_statement_node(stmt);
         if let Object::ReturnValueObject(rv) = result {
             return rv.value;
+        } else if let Object::ErrorObject(_) = result {
+            return result;
         }
     }
     result
@@ -47,6 +49,8 @@ fn eval_block_statement(bl: &BlockStatement) -> Object {
         result = eval_statement_node(stmt);
         if let Object::ReturnValueObject(rv) = result {
             return Object::ReturnValueObject(rv);
+        } else if let Object::ErrorObject(_) = result {
+            return result;
         }
     }
     result
@@ -72,16 +76,26 @@ fn eval_expression_node(node: &ExpressionNode) -> Object {
         }),
         ExpressionNode::PrefixExpressionNode(pe) => {
             let right = eval_expression_node(&pe.right);
+            if is_error(&right) {
+                return right;
+            }
             eval_prefix_expression_node(&pe.operator, &right)
         }
         ExpressionNode::InfixExpressionNode(ie) => {
             let left = eval_expression_node(&ie.left);
+            if is_error(&left) {
+                return left;
+            }
             let right = eval_expression_node(&ie.right);
+            if is_error(&right) {
+                return right;
+            }
             eval_infix_expression_node(&ie.operator, &left, &right)
         }
         ExpressionNode::IfExpressionNode(ie) => {
             let condition = eval_expression_node(&ie.condition);
             match condition {
+                Object::ErrorObject(_) => condition,
                 Object::BooleanObject(b) => {
                     if b.value == true {
                         eval_statement_node(&ie.consequence)
@@ -102,7 +116,13 @@ fn eval_prefix_expression_node(operator: &str, right: &Object) -> Object {
     match operator {
         "!" => eval_bang_operation_expression_node(right),
         "-" => eval_minus_operation_expression_node(right),
-        _ => Object::Null,
+        _ => Object::ErrorObject(Box::new(Error {
+            message: format!(
+                "unknown operator: {}{}",
+                operator,
+                extract_object_type(right)
+            ),
+        })),
     }
 }
 
@@ -128,7 +148,9 @@ fn eval_minus_operation_expression_node(right: &Object) -> Object {
             value: -integer.value,
         }))
     } else {
-        Object::Null
+        Object::ErrorObject(Box::new(Error {
+            message: format!("unknown operator: -{}", extract_object_type(right)),
+        }))
     }
 }
 
@@ -146,7 +168,27 @@ fn eval_infix_expression_node(operator: &str, left: &Object, right: &Object) -> 
         "!=" => Object::BooleanObject(Box::new(Boolean {
             value: left != right,
         })),
-        _ => Object::Null,
+        _ => {
+            if extract_object_type(left) != extract_object_type(right) {
+                Object::ErrorObject(Box::new(Error {
+                    message: format!(
+                        "type mismatch: {} {} {}",
+                        extract_object_type(left),
+                        operator,
+                        extract_object_type(right),
+                    ),
+                }))
+            } else {
+                Object::ErrorObject(Box::new(Error {
+                    message: format!(
+                        "unkown operator: {} {} {}",
+                        extract_object_type(left),
+                        operator,
+                        extract_object_type(right),
+                    ),
+                }))
+            }
+        }
     }
 }
 
@@ -178,5 +220,23 @@ fn eval_integer_infix_expression(operator: &str, left: &Integer, right: &Integer
             value: left.value != right.value,
         })),
         _ => Object::Null,
+    }
+}
+
+/// extract object_type()
+fn extract_object_type(obj: &Object) -> &'static str {
+    match obj {
+        Object::BooleanObject(bo) => (**bo).object_type(),
+        Object::IntegerObject(io) => (**io).object_type(),
+        _ => "not implemented yet",
+    }
+}
+
+/// check if error or not
+fn is_error(obj: &Object) -> bool {
+    if let Object::ErrorObject(_) = obj {
+        true
+    } else {
+        false
     }
 }

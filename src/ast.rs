@@ -135,60 +135,48 @@ pub struct Program {
     pub statements: Vec<StatementNode>,
 }
 
-impl LetStatement {
-    /// get string of the statement
-    pub fn string(&self) -> String {
-        format!(
-            "{} {} = {};",
-            &self.token_literal(),
-            &self.name.string(),
-            &extract_string_from_expression_node(&self.value)
-        )
-    }
-
+/// implementation of statement node
+impl StatementNode {
     /// get token's literal
     pub fn token_literal(&self) -> String {
-        self.token.token_literal()
-    }
-}
-
-/// ExpressionStatement
-impl ExpressionStatement {
-    /// get string of the statement
-    pub fn string(&self) -> String {
-        extract_string_from_expression_node(&self.expression)
-    }
-}
-
-/// ReturnStatement
-impl ReturnStatement {
-    /// get string of the statement
-    pub fn string(&self) -> String {
-        format!(
-            "{} {}",
-            &self.token.token_literal(),
-            &extract_string_from_expression_node(&self.return_value),
-        )
-    }
-}
-
-/// BlockStatement
-impl BlockStatement {
-    /// get strings of block statements
-    pub fn string(&self) -> String {
-        let mut ret = String::new();
-        for stmt in &self.statements {
-            ret.push_str(&extract_string_from_statement_node(&stmt));
+        match self {
+            StatementNode::LetStatementNode(ls) => ls.token.token_literal(),
+            StatementNode::BlockStatementNode(bs) => {
+                if bs.statements.len() > 0 {
+                    bs.statements[0].token_literal()
+                } else {
+                    "".into()
+                }
+            }
+            _ => "".into(),
         }
-        return ret;
     }
 
-    /// get the first token's literal
-    pub fn token_literal(&self) -> String {
-        if self.statements.len() > 0 {
-            extract_string_from_statement_node(&self.statements[0])
-        } else {
-            "".to_string()
+    /// get string of the statement
+    pub fn string(&self) -> String {
+        match self {
+            StatementNode::LetStatementNode(ls) => format!(
+                "{} {} = {};",
+                ls.token.token_literal(),
+                ls.name.token_literal(),
+                extract_string_from_expression_node(&ls.value),
+            ),
+            StatementNode::ExpressionStatementNode(es) => {
+                extract_string_from_expression_node(&es.expression)
+            }
+            StatementNode::ReturnStatementNode(rs) => format!(
+                "{} {}",
+                rs.token.token_literal(),
+                extract_string_from_expression_node(&rs.return_value),
+            ),
+            StatementNode::BlockStatementNode(bs) => {
+                let mut ret = String::new();
+                for stmt in &bs.statements {
+                    ret.push_str(&stmt.string());
+                }
+                ret
+            }
+            _ => "".into(),
         }
     }
 }
@@ -241,7 +229,7 @@ impl FunctionLiteral {
                 .join(", ")),
         );
         ret.push_str(") ");
-        ret.push_str(&extract_string_from_statement_node(&self.body));
+        ret.push_str(&self.body.string());
 
         return ret;
     }
@@ -309,11 +297,11 @@ impl IfExpression {
         ret.push_str(&format!(
             "if {} {}",
             extract_string_from_expression_node(&self.condition),
-            extract_string_from_statement_node(&self.consequence)
+            self.consequence.string()
         ));
 
-        if let StatementNode::BlockStatementNode(bs) = &self.alternative {
-            ret.push_str(&format!(" else {}", bs.string()))
+        if let StatementNode::BlockStatementNode(_) = &self.alternative {
+            ret.push_str(&format!(" else {}", &self.alternative.string()))
         }
 
         return ret;
@@ -363,7 +351,7 @@ impl Program {
     pub fn string(&self) -> String {
         let mut ret = String::new();
         for stmt in &self.statements {
-            ret.push_str(&extract_string_from_statement_node(&stmt));
+            ret.push_str(&stmt.string());
         }
         return ret;
     }
@@ -371,30 +359,10 @@ impl Program {
     /// get the first token's literal
     pub fn token_literal(&self) -> String {
         if self.statements.len() > 0 {
-            extract_token_literal_from_statement_node(&self.statements[0])
+            self.statements[0].token_literal()
         } else {
             "".to_string()
         }
-    }
-}
-
-/// extract token literal from StatementNode
-fn extract_token_literal_from_statement_node(node: &StatementNode) -> String {
-    match node {
-        StatementNode::LetStatementNode(ls) => ls.token.token_literal(),
-        StatementNode::ExpressionStatementNode(es) => es.token.token_literal(),
-        _ => panic!("unexpected node"),
-    }
-}
-
-/// extract string from StatementNode
-fn extract_string_from_statement_node(node: &StatementNode) -> String {
-    match node {
-        StatementNode::LetStatementNode(ls) => ls.string(),
-        StatementNode::ExpressionStatementNode(es) => es.string(),
-        StatementNode::BlockStatementNode(bs) => bs.string(),
-        StatementNode::Null => "(null)".to_string(),
-        _ => panic!("unexpected node"),
     }
 }
 

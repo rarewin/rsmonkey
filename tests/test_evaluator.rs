@@ -1,4 +1,4 @@
-use rsmonkey::ast::{ExpressionNode, StatementNode};
+use rsmonkey::ast::StatementNode;
 use rsmonkey::evaluator::eval;
 use rsmonkey::evaluator::EvalNode;
 use rsmonkey::lexer::Lexer;

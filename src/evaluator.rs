@@ -117,11 +117,7 @@ fn eval_prefix_expression_node(operator: &str, right: &Object) -> Object {
         "!" => eval_bang_operation_expression_node(right),
         "-" => eval_minus_operation_expression_node(right),
         _ => Object::ErrorObject(Box::new(Error {
-            message: format!(
-                "unknown operator: {}{}",
-                operator,
-                extract_object_type(right)
-            ),
+            message: format!("unknown operator: {}{}", operator, right.object_type()),
         })),
     }
 }
@@ -149,7 +145,7 @@ fn eval_minus_operation_expression_node(right: &Object) -> Object {
         }))
     } else {
         Object::ErrorObject(Box::new(Error {
-            message: format!("unknown operator: -{}", extract_object_type(right)),
+            message: format!("unknown operator: -{}", right.object_type()),
         }))
     }
 }
@@ -169,22 +165,22 @@ fn eval_infix_expression_node(operator: &str, left: &Object, right: &Object) -> 
             value: left != right,
         })),
         _ => {
-            if extract_object_type(left) != extract_object_type(right) {
+            if left.object_type() != right.object_type() {
                 Object::ErrorObject(Box::new(Error {
                     message: format!(
                         "type mismatch: {} {} {}",
-                        extract_object_type(left),
+                        left.object_type(),
                         operator,
-                        extract_object_type(right),
+                        right.object_type(),
                     ),
                 }))
             } else {
                 Object::ErrorObject(Box::new(Error {
                     message: format!(
                         "unkown operator: {} {} {}",
-                        extract_object_type(left),
+                        left.object_type(),
                         operator,
-                        extract_object_type(right),
+                        right.object_type(),
                     ),
                 }))
             }
@@ -220,15 +216,6 @@ fn eval_integer_infix_expression(operator: &str, left: &Integer, right: &Integer
             value: left.value != right.value,
         })),
         _ => Object::Null,
-    }
-}
-
-/// extract object_type()
-fn extract_object_type(obj: &Object) -> &'static str {
-    match obj {
-        Object::BooleanObject(bo) => (**bo).object_type(),
-        Object::IntegerObject(io) => (**io).object_type(),
-        _ => "not implemented yet",
     }
 }
 

@@ -7,10 +7,9 @@ use std::io::Write;
 use rsmonkey::lexer::Lexer;
 use rsmonkey::parser::Parser;
 
-use rsmonkey::ast::{ExpressionNode, StatementNode};
+use rsmonkey::ast::StatementNode;
 use rsmonkey::evaluator::eval;
 use rsmonkey::evaluator::EvalNode;
-use rsmonkey::object::Object;
 
 const PROMPT: &str = ">> ";
 const MONKEY_FACE: &str = r##"            __,__
@@ -63,16 +62,7 @@ Woops! We ran into some monkey business here!
             StatementNode::ProgramStatementNode(Box::new(program)),
         )));
 
-        println!(
-            "{}",
-            match evaluated {
-                Object::IntegerObject(io) => io.inspect(),
-                Object::BooleanObject(bo) => bo.inspect(),
-                Object::ReturnValueObject(rvo) => rvo.inspect(),
-                Object::ErrorObject(eo) => eo.inspect(),
-                Object::Null => "null".into(),
-            }
-        );
+        println!("{}", evaluated.inspect());
 
         !input.is_empty()
     } {}

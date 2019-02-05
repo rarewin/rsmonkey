@@ -8,6 +8,31 @@ pub enum Object {
     Null,
 }
 
+/// implementation of object
+impl Object {
+    /// inspect function
+    pub fn inspect(&self) -> String {
+        match self {
+            Object::IntegerObject(io) => format!("{}", io.value),
+            Object::BooleanObject(bo) => format!("{}", bo.value),
+            Object::ReturnValueObject(rvo) => format!("{}", rvo.value.inspect()),
+            Object::ErrorObject(eo) => format!("ERROR: {}", eo.message),
+            Object::Null => "(null)".into(),
+        }
+    }
+
+    /// object type function
+    pub fn object_type(&self) -> &'static str {
+        match self {
+            Object::IntegerObject(_) => INTEGER_OBJ,
+            Object::BooleanObject(_) => BOOLEAN_OBJ,
+            Object::ReturnValueObject(_) => RETURN_VALUE_OBJ,
+            Object::ErrorObject(_) => ERROR_OBJ,
+            Object::Null => "(null)",
+        }
+    }
+}
+
 /// object type strings
 pub const INTEGER_OBJ: &'static str = "INTEGER";
 pub const BOOLEAN_OBJ: &'static str = "BOOLEAN";
@@ -40,64 +65,4 @@ pub struct ReturnValue {
 #[derive(Debug, PartialEq, Eq)]
 pub struct Error {
     pub message: String,
-}
-
-/// implementation of Integer object
-impl Integer {
-    /// inspect function
-    pub fn inspect(&self) -> String {
-        format!("{}", self.value)
-    }
-
-    /// object type function
-    pub fn object_type(&self) -> &'static str {
-        INTEGER_OBJ
-    }
-}
-
-/// implementation of Boolean object
-impl Boolean {
-    /// inspect function
-    pub fn inspect(&self) -> String {
-        format!("{}", self.value)
-    }
-
-    /// object type function
-    pub fn object_type(&self) -> &'static str {
-        BOOLEAN_OBJ
-    }
-}
-
-/// implementstion of Return Value object
-impl ReturnValue {
-    /// inspect function
-    pub fn inspect(&self) -> String {
-        format!(
-            "{}",
-            match &self.value {
-                Object::IntegerObject(io) => (*io).inspect(),
-                Object::BooleanObject(bo) => (*bo).inspect(),
-                Object::Null => "Null".to_string(),
-                _ => "(invalid type)".to_string(),
-            }
-        )
-    }
-
-    /// object type function
-    pub fn object_type(&self) -> &'static str {
-        RETURN_VALUE_OBJ
-    }
-}
-
-/// implementstion of Error object
-impl Error {
-    /// inspect function
-    pub fn inspect(&self) -> String {
-        format!("ERROR: {}", self.message)
-    }
-
-    /// object type function
-    pub fn object_type(&self) -> &'static str {
-        ERROR_OBJ
-    }
 }

@@ -1,6 +1,6 @@
 use crate::ast::{BlockStatement, ExpressionNode, Program, ReturnStatement, StatementNode};
-use crate::object::{Boolean, Error, Integer, ReturnValue};
-use crate::object::{Object, FALSE, TRUE};
+use crate::object::Integer;
+use crate::object::Object;
 
 #[derive(Debug)]
 pub enum EvalNode {
@@ -58,22 +58,14 @@ fn eval_block_statement(bl: &BlockStatement) -> Object {
 
 /// evaluator function for return statement
 fn eval_return_statement(rs: &ReturnStatement) -> Object {
-    Object::ReturnValueObject(Box::new(ReturnValue {
-        value: eval_expression_node(&rs.return_value),
-    }))
+    Object::new_return_value(eval_expression_node(&rs.return_value))
 }
 
 /// evaluator function for expression node
 fn eval_expression_node(node: &ExpressionNode) -> Object {
     match node {
-        ExpressionNode::IntegerLiteralNode(il) => {
-            Object::IntegerObject(Box::new(Integer { value: il.value }))
-        }
-        ExpressionNode::BooleanExpressionNode(be) => Object::BooleanObject(if be.value {
-            Box::new(TRUE)
-        } else {
-            Box::new(FALSE)
-        }),
+        ExpressionNode::IntegerLiteralNode(il) => Object::new_integer(il.value),
+        ExpressionNode::BooleanExpressionNode(be) => Object::new_boolean(be.value),
         ExpressionNode::PrefixExpressionNode(pe) => {
             let right = eval_expression_node(&pe.right);
             if is_error(&right) {
@@ -116,37 +108,29 @@ fn eval_prefix_expression_node(operator: &str, right: &Object) -> Object {
     match operator {
         "!" => eval_bang_operation_expression_node(right),
         "-" => eval_minus_operation_expression_node(right),
-        _ => Object::ErrorObject(Box::new(Error {
-            message: format!("unknown operator: {}{}", operator, right.object_type()),
-        })),
+        _ => Object::new_error(format!(
+            "unknown operator: {}{}",
+            operator,
+            right.object_type()
+        )),
     }
 }
 
 /// evaluator function for bang operation expression node
 fn eval_bang_operation_expression_node(right: &Object) -> Object {
     match right {
-        Object::BooleanObject(bl) => {
-            if (*bl).value {
-                Object::BooleanObject(Box::new(FALSE))
-            } else {
-                Object::BooleanObject(Box::new(TRUE))
-            }
-        }
-        Object::Null => Object::BooleanObject(Box::new(TRUE)),
-        _ => Object::BooleanObject(Box::new(FALSE)),
+        Object::BooleanObject(bl) => Object::new_boolean(!(*bl).value),
+        Object::Null => Object::new_boolean(true),
+        _ => Object::new_boolean(false),
     }
 }
 
 /// evaluator function for minus operation expression node
 fn eval_minus_operation_expression_node(right: &Object) -> Object {
     if let Object::IntegerObject(integer) = right {
-        Object::IntegerObject(Box::new(Integer {
-            value: -integer.value,
-        }))
+        Object::new_integer(-integer.value)
     } else {
-        Object::ErrorObject(Box::new(Error {
-            message: format!("unknown operator: -{}", right.object_type()),
-        }))
+        Object::new_error(format!("unknown operator: -{}", right.object_type()))
     }
 }
 
@@ -158,31 +142,23 @@ fn eval_infix_expression_node(operator: &str, left: &Object, right: &Object) -> 
         }
     }
     match operator {
-        "==" => Object::BooleanObject(Box::new(Boolean {
-            value: left == right,
-        })),
-        "!=" => Object::BooleanObject(Box::new(Boolean {
-            value: left != right,
-        })),
+        "==" => Object::new_boolean(left == right),
+        "!=" => Object::new_boolean(left != right),
         _ => {
             if left.object_type() != right.object_type() {
-                Object::ErrorObject(Box::new(Error {
-                    message: format!(
-                        "type mismatch: {} {} {}",
-                        left.object_type(),
-                        operator,
-                        right.object_type(),
-                    ),
-                }))
+                Object::new_error(format!(
+                    "type mismatch: {} {} {}",
+                    left.object_type(),
+                    operator,
+                    right.object_type(),
+                ))
             } else {
-                Object::ErrorObject(Box::new(Error {
-                    message: format!(
-                        "unkown operator: {} {} {}",
-                        left.object_type(),
-                        operator,
-                        right.object_type(),
-                    ),
-                }))
+                Object::new_error(format!(
+                    "unkown operator: {} {} {}",
+                    left.object_type(),
+                    operator,
+                    right.object_type(),
+                ))
             }
         }
     }
@@ -191,30 +167,14 @@ fn eval_infix_expression_node(operator: &str, left: &Object, right: &Object) -> 
 /// evaluator function for integer
 fn eval_integer_infix_expression(operator: &str, left: &Integer, right: &Integer) -> Object {
     match operator {
-        "+" => Object::IntegerObject(Box::new(Integer {
-            value: left.value + right.value,
-        })),
-        "-" => Object::IntegerObject(Box::new(Integer {
-            value: left.value - right.value,
-        })),
-        "*" => Object::IntegerObject(Box::new(Integer {
-            value: left.value * right.value,
-        })),
-        "/" => Object::IntegerObject(Box::new(Integer {
-            value: left.value / right.value,
-        })),
-        "<" => Object::BooleanObject(Box::new(Boolean {
-            value: left.value < right.value,
-        })),
-        ">" => Object::BooleanObject(Box::new(Boolean {
-            value: left.value > right.value,
-        })),
-        "==" => Object::BooleanObject(Box::new(Boolean {
-            value: left.value == right.value,
-        })),
-        "!=" => Object::BooleanObject(Box::new(Boolean {
-            value: left.value != right.value,
-        })),
+        "+" => Object::new_integer(left.value + right.value),
+        "-" => Object::new_integer(left.value - right.value),
+        "*" => Object::new_integer(left.value * right.value),
+        "/" => Object::new_integer(left.value / right.value),
+        "<" => Object::new_boolean(left.value < right.value),
+        ">" => Object::new_boolean(left.value > right.value),
+        "==" => Object::new_boolean(left.value == right.value),
+        "!=" => Object::new_boolean(left.value != right.value),
         _ => Object::Null,
     }
 }

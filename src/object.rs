@@ -31,6 +31,30 @@ impl Object {
             Object::Null => "(null)",
         }
     }
+
+    /// create a new integer object
+    pub fn new_integer(value: i64) -> Object {
+        Object::IntegerObject(Box::new(Integer { value }))
+    }
+
+    /// create a new boolean object
+    pub fn new_boolean(value: bool) -> Object {
+        if value {
+            Object::BooleanObject(Box::new(TRUE))
+        } else {
+            Object::BooleanObject(Box::new(FALSE))
+        }
+    }
+
+    /// create a new error object
+    pub fn new_error(message: String) -> Object {
+        Object::ErrorObject(Box::new({ Error { message } }))
+    }
+
+    /// create a new return value object
+    pub fn new_return_value(value: Object) -> Object {
+        Object::ReturnValueObject(Box::new(ReturnValue { value }))
+    }
 }
 
 /// object type strings

@@ -73,11 +73,11 @@ fn test_let_statement(s: &LetStatement, name: &str, value: &TestLiteral) {
         name, s.name.value,
     );
     assert_eq!(
-        s.name.token_literal(),
+        s.name.token.token_literal(),
         name,
         "expected identifier is '{}', but got '{}'.",
         name,
-        s.name.token_literal()
+        s.name.token.token_literal()
     );
     test_literal_expression(&s.value, value);
 }
@@ -605,7 +605,9 @@ fn test_if_else_expression() {
         program.statements.len()
     );
 
-    let exps = match &program.statements[0] {
+    let stmt = &program.statements[0];
+
+    let exps = match &stmt {
         StatementNode::ExpressionStatementNode(es) => es,
         _ => panic!("expression stateme is expected"),
     };
@@ -658,7 +660,7 @@ fn test_if_else_expression() {
 
     test_literal_expression(&alsex.expression, &TestLiteral::StringLiteral("y"));
 
-    assert_eq!(exp.string(), "if (x < y) x else y");
+    assert_eq!(stmt.string(), "if (x < y) x else y");
 }
 
 #[test]
@@ -863,11 +865,11 @@ fn test_integer_literal(en: &ExpressionNode, value: i64) {
     );
 
     assert_eq!(
-        il.token_literal(),
+        il.token.token_literal(),
         format!("{}", value),
         "token_literal() is expected as {} bug got {}",
         format!("{}", value),
-        il.token_literal(),
+        il.token.token_literal(),
     );
 }
 
@@ -890,10 +892,10 @@ fn test_string_literal(en: &ExpressionNode, value: &'static str) {
     );
 
     assert_eq!(
-        id.token_literal(),
+        id.token.token_literal(),
         value,
         r##"token_literal() is expected as "{}" but got "{}""##,
-        id.token_literal(),
+        id.token.token_literal(),
         id.value,
     );
 }

@@ -158,17 +158,13 @@ impl StatementNode {
             StatementNode::LetStatementNode(ls) => format!(
                 "{} {} = {};",
                 ls.token.token_literal(),
-                ls.name.token_literal(),
-                extract_string_from_expression_node(&ls.value),
+                ls.name.token.token_literal(),
+                &ls.value.string(),
             ),
-            StatementNode::ExpressionStatementNode(es) => {
-                extract_string_from_expression_node(&es.expression)
+            StatementNode::ExpressionStatementNode(es) => es.expression.string(),
+            StatementNode::ReturnStatementNode(rs) => {
+                format!("{} {}", rs.token.token_literal(), &rs.return_value.string(),)
             }
-            StatementNode::ReturnStatementNode(rs) => format!(
-                "{} {}",
-                rs.token.token_literal(),
-                extract_string_from_expression_node(&rs.return_value),
-            ),
             StatementNode::BlockStatementNode(bs) => {
                 let mut ret = String::new();
                 for stmt in &bs.statements {
@@ -181,160 +177,84 @@ impl StatementNode {
     }
 }
 
-/// Identifier
-impl Identifier {
-    /// get string of the identifer
+/// implementation of expression node
+impl ExpressionNode {
+    /// get string of the expression node
     pub fn string(&self) -> String {
-        self.token_literal()
-    }
+        match self {
+            ExpressionNode::IdentifierNode(_) => self.token_literal(),
+            ExpressionNode::IntegerLiteralNode(_) => self.token_literal(),
+            ExpressionNode::FunctionLiteralNode(fln) => {
+                let mut ret = String::new();
+                ret.push_str(&self.token_literal());
+                ret.push_str("(");
+                ret.push_str(
+                    &((&fln.parameters)
+                        .into_iter()
+                        .map(|x| x.string())
+                        .collect::<Vec<String>>()
+                        .join(", ")),
+                );
+                ret.push_str(") ");
+                ret.push_str(&fln.body.string());
+                return ret;
+            }
+            ExpressionNode::PrefixExpressionNode(pen) => {
+                format!("({}{})", pen.operator, &pen.right.string())
+            }
+            ExpressionNode::InfixExpressionNode(ien) => format!(
+                "({} {} {})",
+                ien.left.string(),
+                ien.operator,
+                ien.right.string(),
+            ),
+            ExpressionNode::BooleanExpressionNode(ben) => ben.token.token_literal(),
+            ExpressionNode::IfExpressionNode(ien) => {
+                let mut ret = String::new();
 
-    /// get token's literal
-    pub fn token_literal(&self) -> String {
-        self.token.token_literal()
-    }
-}
+                ret.push_str(&format!(
+                    "if {} {}",
+                    ien.condition.string(),
+                    ien.consequence.string()
+                ));
 
-/// integer literal
-impl IntegerLiteral {
-    /// get string of the integer literal
-    pub fn string(&self) -> String {
-        self.token_literal()
-    }
+                if let StatementNode::BlockStatementNode(_) = ien.alternative {
+                    ret.push_str(&format!(" else {}", ien.alternative.string()))
+                }
+                ret
+            }
+            ExpressionNode::CallExpressionNode(cen) => {
+                let mut ret = String::new();
 
-    /// get token's literal
-    pub fn token_literal(&self) -> String {
-        self.token.token_literal()
-    }
-}
+                ret.push_str(&cen.function.string());
+                ret.push_str("(");
+                ret.push_str(
+                    &((&cen.arguments)
+                        .into_iter()
+                        .map(|x| x.string())
+                        .collect::<Vec<String>>()
+                        .join(", ")),
+                );
+                ret.push_str(")");
 
-/// function literal
-impl FunctionLiteral {
-    /// get string of the expression
-    pub fn string(&self) -> String {
-        let mut ret = String::new();
-
-        ret.push_str(&self.token_literal());
-        ret.push_str("(");
-        ret.push_str(
-            &((&self.parameters)
-                .into_iter()
-                .map(|x| {
-                    if let ExpressionNode::IdentifierNode(ident) = x {
-                        ident.string()
-                    } else {
-                        panic!("unexpected data")
-                    }
-                })
-                .collect::<Vec<String>>()
-                .join(", ")),
-        );
-        ret.push_str(") ");
-        ret.push_str(&self.body.string());
-
-        return ret;
-    }
-
-    /// get token's literal
-    pub fn token_literal(&self) -> String {
-        self.token.token_literal()
-    }
-}
-
-/// prefix expression
-impl PrefixExpression {
-    /// get string of the prefix expression
-    pub fn string(&self) -> String {
-        format!(
-            "({}{})",
-            self.operator,
-            extract_string_from_expression_node(&self.right)
-        )
-    }
-
-    /// get token's literal
-    pub fn token_literal(&self) -> String {
-        self.token.token_literal()
-    }
-}
-
-/// infix expression
-impl InfixExpression {
-    /// get string of the infix expression
-    pub fn string(&self) -> String {
-        format!(
-            "({} {} {})",
-            extract_string_from_expression_node(&self.left),
-            self.operator,
-            extract_string_from_expression_node(&self.right),
-        )
-    }
-
-    /// get token's literal
-    pub fn token_literal(&self) -> String {
-        self.token.token_literal()
-    }
-}
-
-/// boolean
-impl Boolean {
-    /// get string of the boolean value
-    pub fn string(&self) -> String {
-        self.token.token_literal()
-    }
-
-    /// get token's literal
-    pub fn token_literal(&self) -> String {
-        self.token.token_literal()
-    }
-}
-
-/// if expression
-impl IfExpression {
-    /// get string of the if expression
-    pub fn string(&self) -> String {
-        let mut ret = String::new();
-
-        ret.push_str(&format!(
-            "if {} {}",
-            extract_string_from_expression_node(&self.condition),
-            self.consequence.string()
-        ));
-
-        if let StatementNode::BlockStatementNode(_) = &self.alternative {
-            ret.push_str(&format!(" else {}", &self.alternative.string()))
+                ret
+            }
+            _ => "(unsupported string())".into(),
         }
-
-        return ret;
-    }
-}
-
-/// call expression
-impl CallExpression {
-    /// get string of the call expression
-    pub fn string(&self) -> String {
-        let mut ret = String::new();
-        let fs = match &self.function {
-            ExpressionNode::IdentifierNode(f) => f.string(),
-            _ => panic!("unexpected node"),
-        };
-
-        ret.push_str(&fs);
-        ret.push_str("(");
-        ret.push_str(
-            &((&self.arguments)
-                .into_iter()
-                .map(|x| extract_string_from_expression_node(x))
-                .collect::<Vec<String>>()
-                .join(", ")),
-        );
-        ret.push_str(")");
-
-        return ret;
     }
 
-    /// get tokken's literal
+    /// get the token's literal
     pub fn token_literal(&self) -> String {
-        self.token.token_literal()
+        match self {
+            ExpressionNode::IdentifierNode(idn) => (*idn).token.token_literal(),
+            ExpressionNode::IntegerLiteralNode(iln) => (*iln).token.token_literal(),
+            ExpressionNode::FunctionLiteralNode(fln) => (*fln).token.token_literal(),
+            ExpressionNode::PrefixExpressionNode(pen) => (*pen).token.token_literal(),
+            ExpressionNode::InfixExpressionNode(ien) => (*ien).token.token_literal(),
+            ExpressionNode::BooleanExpressionNode(ben) => (*ben).token.token_literal(),
+            ExpressionNode::CallExpressionNode(cen) => (*cen).token.token_literal(),
+            _ => "(unsupported token_literal())".into(),
+        }
     }
 }
 
@@ -363,21 +283,5 @@ impl Program {
         } else {
             "".to_string()
         }
-    }
-}
-
-/// extract string from ExpressionNode
-fn extract_string_from_expression_node(node: &ExpressionNode) -> String {
-    match node {
-        ExpressionNode::IdentifierNode(idn) => idn.string(),
-        ExpressionNode::IntegerLiteralNode(iln) => iln.string(),
-        ExpressionNode::FunctionLiteralNode(fln) => fln.string(),
-        ExpressionNode::PrefixExpressionNode(pen) => pen.string(),
-        ExpressionNode::InfixExpressionNode(ien) => ien.string(),
-        ExpressionNode::BooleanExpressionNode(ben) => ben.string(),
-        ExpressionNode::IfExpressionNode(ien) => ien.string(),
-        ExpressionNode::CallExpressionNode(cen) => cen.string(),
-        ExpressionNode::Null => "(null)".to_string(),
-        // _ => panic!("unexpected node (please implement extract_string_from_expression_node() for this node)"),
     }
 }

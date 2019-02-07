@@ -10,6 +10,7 @@ use rsmonkey::parser::Parser;
 use rsmonkey::ast::StatementNode;
 use rsmonkey::evaluator::eval;
 use rsmonkey::evaluator::EvalNode;
+use rsmonkey::object::Environment;
 
 const PROMPT: &str = ">> ";
 const MONKEY_FACE: &str = r##"            __,__
@@ -28,6 +29,7 @@ const MONKEY_FACE: &str = r##"            __,__
 fn read_input() -> io::Result<()> {
     let mut input = String::new();
     let username = env::vars().find(|x| x.0 == "USER").unwrap_or_default().1;
+    let mut env = Environment::new();
 
     println!(
         "Hello {}! This is the `RS'Monkey programming language!",
@@ -58,9 +60,12 @@ Woops! We ran into some monkey business here!
             }
         }
 
-        let evaluated = eval(&EvalNode::EvalStatementNode(Box::new(
-            StatementNode::ProgramStatementNode(Box::new(program)),
-        )));
+        let evaluated = eval(
+            &EvalNode::EvalStatementNode(Box::new(StatementNode::ProgramStatementNode(Box::new(
+                program,
+            )))),
+            &mut env,
+        );
 
         println!("{}", evaluated.inspect());
 

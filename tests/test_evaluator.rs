@@ -2,7 +2,7 @@ use rsmonkey::ast::StatementNode;
 use rsmonkey::evaluator::eval;
 use rsmonkey::evaluator::EvalNode;
 use rsmonkey::lexer::Lexer;
-use rsmonkey::object::{Integer, Object};
+use rsmonkey::object::{Environment, Integer, Object};
 use rsmonkey::parser::Parser;
 
 #[test]
@@ -335,6 +335,10 @@ fn test_error_handling() {
             input: "if (10 > 1) { true + false; }",
             expected: "unkown operator: BOOLEAN + BOOLEAN",
         },
+        Test {
+            input: "foobar",
+            expected: "identifier not found: foobar",
+        },
     ];
 
     for tt in error_tests {
@@ -347,16 +351,53 @@ fn test_error_handling() {
     }
 }
 
+/// test let statement
+#[test]
+fn test_let_statements() {
+    struct Test {
+        input: &'static str,
+        expected: i64,
+    }
+
+    let let_statement_test = vec![
+        Test {
+            input: "let a = 5; a;",
+            expected: 5,
+        },
+        Test {
+            input: "let a = 5 * 5; a;",
+            expected: 25,
+        },
+        Test {
+            input: "let a = 5; let b = a;  b;",
+            expected: 5,
+        },
+        Test {
+            input: "let a = 5; let b = a;  let c = a + b + 5; c;",
+            expected: 15,
+        },
+    ];
+
+    for tt in let_statement_test {
+        let evaluated = test_eval(tt.input);
+        test_integer_object(evaluated, tt.expected);
+    }
+}
+
 /// eval function
 fn test_eval(input: &'static str) -> Object {
     let l = Lexer::new(input.to_string());
     let mut p = Parser::new(l);
 
     let program = p.parse_program();
+    let mut env = Environment::new();
 
-    eval(&EvalNode::EvalStatementNode(Box::new(
-        StatementNode::ProgramStatementNode(Box::new(program)),
-    )))
+    eval(
+        &EvalNode::EvalStatementNode(Box::new(StatementNode::ProgramStatementNode(Box::new(
+            program,
+        )))),
+        &mut env,
+    )
 }
 
 /// test integer object

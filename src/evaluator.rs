@@ -1,6 +1,7 @@
-use crate::ast::{BlockStatement, ExpressionNode, Program, ReturnStatement, StatementNode};
-use crate::object::Integer;
-use crate::object::Object;
+use crate::ast::{
+    BlockStatement, ExpressionNode, LetStatement, Program, ReturnStatement, StatementNode,
+};
+use crate::object::{Environment, Integer, Object};
 
 #[derive(Debug)]
 pub enum EvalNode {
@@ -9,30 +10,30 @@ pub enum EvalNode {
 }
 
 /// evaluator function
-pub fn eval(node: &EvalNode) -> Object {
+pub fn eval(node: &EvalNode, env: &mut Environment) -> Object {
     match node {
-        EvalNode::EvalStatementNode(sn) => eval_statement_node(sn),
-        _ => panic!("not implemented yet"),
+        EvalNode::EvalStatementNode(sn) => eval_statement_node(sn, env),
+        EvalNode::EvalExpressionNode(en) => eval_expression_node(en, env),
     }
 }
 
 /// evaluator function for statement node
-fn eval_statement_node(node: &StatementNode) -> Object {
+fn eval_statement_node(node: &StatementNode, env: &mut Environment) -> Object {
     match node {
-        StatementNode::ProgramStatementNode(ps) => eval_program(&ps),
-        StatementNode::BlockStatementNode(bs) => eval_block_statement(&bs),
-        StatementNode::ExpressionStatementNode(es) => eval_expression_node(&es.expression),
-        StatementNode::ReturnStatementNode(rs) => eval_return_statement(&rs),
+        StatementNode::ProgramStatementNode(ps) => eval_program(&ps, env),
+        StatementNode::BlockStatementNode(bs) => eval_block_statement(&bs, env),
+        StatementNode::ExpressionStatementNode(es) => eval_expression_node(&es.expression, env),
+        StatementNode::ReturnStatementNode(rs) => eval_return_statement(&rs, env),
+        StatementNode::LetStatementNode(ls) => eval_let_statement(&ls, env),
         StatementNode::Null => Object::Null,
-        _ => panic!("not implemented yet"),
     }
 }
 
 /// evaluator function for program
-fn eval_program(prog: &Program) -> Object {
+fn eval_program(prog: &Program, env: &mut Environment) -> Object {
     let mut result = Object::Null;
     for stmt in &prog.statements {
-        result = eval_statement_node(stmt);
+        result = eval_statement_node(stmt, env);
         if let Object::ReturnValueObject(rv) = result {
             return rv.value;
         } else if let Object::ErrorObject(_) = result {
@@ -43,10 +44,10 @@ fn eval_program(prog: &Program) -> Object {
 }
 
 /// evaluator function for block statement
-fn eval_block_statement(bl: &BlockStatement) -> Object {
+fn eval_block_statement(bl: &BlockStatement, env: &mut Environment) -> Object {
     let mut result = Object::Null;
     for stmt in &bl.statements {
-        result = eval_statement_node(stmt);
+        result = eval_statement_node(stmt, env);
         if let Object::ReturnValueObject(rv) = result {
             return Object::ReturnValueObject(rv);
         } else if let Object::ErrorObject(_) = result {
@@ -57,49 +58,60 @@ fn eval_block_statement(bl: &BlockStatement) -> Object {
 }
 
 /// evaluator function for return statement
-fn eval_return_statement(rs: &ReturnStatement) -> Object {
-    Object::new_return_value(eval_expression_node(&rs.return_value))
+fn eval_return_statement(rs: &ReturnStatement, env: &mut Environment) -> Object {
+    Object::new_return_value(eval_expression_node(&rs.return_value, env))
+}
+
+/// evaluator function for let statement
+fn eval_let_statement(ls: &LetStatement, env: &mut Environment) -> Object {
+    let val = eval_expression_node(&ls.value, env);
+    if is_error(&val) {
+        return val;
+    }
+    env.set(&ls.name.value, &val);
+    return val;
 }
 
 /// evaluator function for expression node
-fn eval_expression_node(node: &ExpressionNode) -> Object {
+fn eval_expression_node(node: &ExpressionNode, env: &mut Environment) -> Object {
     match node {
         ExpressionNode::IntegerLiteralNode(il) => Object::new_integer(il.value),
         ExpressionNode::BooleanExpressionNode(be) => Object::new_boolean(be.value),
         ExpressionNode::PrefixExpressionNode(pe) => {
-            let right = eval_expression_node(&pe.right);
+            let right = eval_expression_node(&pe.right, env);
             if is_error(&right) {
                 return right;
             }
             eval_prefix_expression_node(&pe.operator, &right)
         }
         ExpressionNode::InfixExpressionNode(ie) => {
-            let left = eval_expression_node(&ie.left);
+            let left = eval_expression_node(&ie.left, env);
             if is_error(&left) {
                 return left;
             }
-            let right = eval_expression_node(&ie.right);
+            let right = eval_expression_node(&ie.right, env);
             if is_error(&right) {
                 return right;
             }
             eval_infix_expression_node(&ie.operator, &left, &right)
         }
         ExpressionNode::IfExpressionNode(ie) => {
-            let condition = eval_expression_node(&ie.condition);
+            let condition = eval_expression_node(&ie.condition, env);
             match condition {
                 Object::ErrorObject(_) => condition,
                 Object::BooleanObject(b) => {
                     if b.value == true {
-                        eval_statement_node(&ie.consequence)
+                        eval_statement_node(&ie.consequence, env)
                     } else {
-                        eval_statement_node(&ie.alternative)
+                        eval_statement_node(&ie.alternative, env)
                     }
                 }
-                Object::Null => eval_statement_node(&ie.alternative),
-                _ => eval_statement_node(&ie.consequence),
+                Object::Null => eval_statement_node(&ie.alternative, env),
+                _ => eval_statement_node(&ie.consequence, env),
             }
         }
-        _ => panic!("not implemented yet"),
+        ExpressionNode::IdentifierNode(id) => env.get(&id.value),
+        _ => panic!("not implemented yet: {:?}", node),
     }
 }
 

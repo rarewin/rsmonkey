@@ -1,5 +1,7 @@
+use std::collections::HashMap;
+
 /// object
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Object {
     IntegerObject(Box<Integer>),
     BooleanObject(Box<Boolean>),
@@ -68,25 +70,54 @@ pub const TRUE: Boolean = Boolean { value: true };
 pub const FALSE: Boolean = Boolean { value: false };
 
 /// struct for Integer object
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Integer {
     pub value: i64,
 }
 
 /// struct for Boolean object
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Boolean {
     pub value: bool,
 }
 
 /// struct for Return Value object
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct ReturnValue {
     pub value: Object,
 }
 
 /// struct for Error object
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Error {
     pub message: String,
+}
+
+/// struct for Environment
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct Environment {
+    store: HashMap<String, Object>,
+}
+
+/// implementation of Environment
+impl Environment {
+    /// create new Environment
+    pub fn new() -> Environment {
+        Environment {
+            store: HashMap::<String, Object>::new(),
+        }
+    }
+
+    /// set an element to hash map
+    pub fn set(&mut self, key: &String, value: &Object) {
+        self.store.insert(key.to_string(), value.clone());
+    }
+
+    /// get an element from hash map
+    pub fn get(&self, key: &String) -> Object {
+        match self.store.get(key) {
+            Some(o) => o.clone(),
+            _ => Object::new_error(format!("identifier not found: {}", key)),
+        }
+    }
 }

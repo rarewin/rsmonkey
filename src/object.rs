@@ -1,4 +1,4 @@
-use crate::ast::{BlockStatement, ExpressionNode, Identifier, StatementNode};
+use crate::ast::{ExpressionNode, StatementNode};
 use std::collections::HashMap;
 
 /// object
@@ -135,29 +135,48 @@ pub struct Function {
 
 /// struct for Environment
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct Environment {
-    store: HashMap<String, Object>,
+pub enum Environment {
+    Env {
+        store: HashMap<String, Object>,
+        outer: Box<Environment>,
+    },
+    NoEnv,
 }
 
 /// implementation of Environment
 impl Environment {
     /// create new Environment
     pub fn new() -> Environment {
-        Environment {
+        Environment::Env {
             store: HashMap::<String, Object>::new(),
+            outer: Box::new(Environment::NoEnv),
+        }
+    }
+
+    /// extend an Environment
+    pub fn extend(&self) -> Environment {
+        Environment::Env {
+            store: HashMap::<String, Object>::new(),
+            outer: Box::new(self.clone()),
         }
     }
 
     /// set an element to hash map
     pub fn set(&mut self, key: &String, value: &Object) {
-        self.store.insert(key.to_string(), value.clone());
+        match self {
+            Environment::Env { store, outer: _ } => store.insert(key.to_string(), value.clone()),
+            Environment::NoEnv => None,
+        };
     }
 
     /// get an element from hash map
     pub fn get(&self, key: &String) -> Object {
-        match self.store.get(key) {
-            Some(o) => o.clone(),
-            _ => Object::new_error(format!("identifier not found: {}", key)),
+        match self {
+            Environment::Env { store, outer } => match store.get(key) {
+                Some(o) => o.clone(),
+                _ => outer.get(key),
+            },
+            Environment::NoEnv => Object::new_error(format!("identifier not found: {}", key)),
         }
     }
 }

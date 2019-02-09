@@ -415,6 +415,61 @@ fn test_function_object() {
     );
 }
 
+/// test function application
+#[test]
+fn test_function_application() {
+    struct Test {
+        input: &'static str,
+        expected: i64,
+    }
+
+    let function_app_tests = vec![
+        Test {
+            input: "let identify = fn(x) {x;}; identify(5);",
+            expected: 5,
+        },
+        Test {
+            input: "let identify = fn(x) {return x;}; identify(5);",
+            expected: 5,
+        },
+        Test {
+            input: "let double = fn(x) {return x * 2;}; double(5);",
+            expected: 10,
+        },
+        Test {
+            input: "let add = fn(x, y) {return x + y;}; add(5, 5);",
+            expected: 10,
+        },
+        Test {
+            input: "let add = fn(x, y) {return x + y;}; add(5 + 5, add(5, 5));",
+            expected: 20,
+        },
+        Test {
+            input: "fn(x) {x;}(5)",
+            expected: 5,
+        },
+    ];
+
+    for tt in function_app_tests {
+        let evaluated = test_eval(tt.input);
+        test_integer_object(evaluated, tt.expected);
+    }
+}
+
+/// test closures
+#[test]
+fn test_closures() {
+    let input = r##"let newAdder = fn(x) {
+                      fn(y) { x + y; };
+                    };
+
+                    let addTwo = newAdder(2);
+                    addTwo(2);"##;
+
+    let evaluated = test_eval(input);
+    test_integer_object(evaluated, 4);
+}
+
 /// eval function
 fn test_eval(input: &'static str) -> Object {
     let l = Lexer::new(input.to_string());
@@ -441,7 +496,7 @@ fn test_integer_object(obj: Object, expected: i64) {
             io.value
         );
     } else {
-        panic!("unexpected object");
+        panic!("unexpected object: {:?} (expected: {})", obj, expected);
     }
 }
 
@@ -455,6 +510,6 @@ fn test_boolean_object(obj: Object, expected: bool) {
             bo.value
         );
     } else {
-        panic!("unexpected object, got {:?}", obj);
+        panic!("unexpected object, got {:?} (expected: {})", obj, expected);
     }
 }

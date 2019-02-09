@@ -114,6 +114,17 @@ fn eval_expression_node(node: &ExpressionNode, env: &mut Environment) -> Object 
         ExpressionNode::FunctionLiteralNode(fl) => {
             Object::new_function(&fl.parameters, &fl.body, env)
         }
+        ExpressionNode::CallExpressionNode(ce) => {
+            let function = eval_expression_node(&ce.function, env);
+            if is_error(&function) {
+                return function;
+            }
+            let args = eval_expressions(&ce.arguments, env);
+            if args.len() == 1 && is_error(&args[0]) {
+                return args[0].clone();
+            }
+            apply_function(&function, &args)
+        }
         _ => panic!("not implemented yet: {:?}", node),
     }
 }
@@ -194,11 +205,46 @@ fn eval_integer_infix_expression(operator: &str, left: &Integer, right: &Integer
     }
 }
 
+/// evaluator function for expressions
+fn eval_expressions(exps: &Vec<ExpressionNode>, env: &mut Environment) -> Vec<Object> {
+    let mut result = Vec::<Object>::new();
+
+    for e in exps {
+        let evaluated = eval_expression_node(e, env);
+        if is_error(&evaluated) {
+            return vec![evaluated];
+        }
+        result.push(evaluated);
+    }
+
+    result
+}
+
 /// check if error or not
 fn is_error(obj: &Object) -> bool {
     if let Object::ErrorObject(_) = obj {
         true
     } else {
         false
+    }
+}
+
+/// apply function
+fn apply_function(function: &Object, args: &Vec<Object>) -> Object {
+    if let Object::FunctionObject(fnc) = function {
+        let mut extended_env = Environment::extend(&fnc.env);
+        let mut idx = 0;
+        for p in &fnc.parameters {
+            extended_env.set(&p.string(), &args[idx]);
+            idx += 1;
+        }
+        let evaluated = eval_statement_node(&fnc.body, &mut extended_env);
+        if let Object::ReturnValueObject(ro) = evaluated {
+            ro.value
+        } else {
+            evaluated
+        }
+    } else {
+        Object::new_error(format!("not a function: {}", function.object_type()))
     }
 }

@@ -182,8 +182,9 @@ impl ExpressionNode {
     /// get string of the expression node
     pub fn string(&self) -> String {
         match self {
-            ExpressionNode::IdentifierNode(_) => self.token_literal(),
-            ExpressionNode::IntegerLiteralNode(_) => self.token_literal(),
+            ExpressionNode::IdentifierNode(_) | ExpressionNode::IntegerLiteralNode(_) => {
+                self.token_literal()
+            }
             ExpressionNode::FunctionLiteralNode(fln) => {
                 let mut ret = String::new();
                 ret.push_str(&self.token_literal());

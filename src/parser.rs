@@ -421,10 +421,8 @@ impl Parser {
         match tt {
             TokenType::Ident => self.parse_identifier(),
             TokenType::Int => self.parse_integer_literal(),
-            TokenType::Bang => self.parse_prefix_expression(),
-            TokenType::Minus => self.parse_prefix_expression(),
-            TokenType::True => self.parse_boolean_expression(),
-            TokenType::False => self.parse_boolean_expression(),
+            TokenType::Bang | TokenType::Minus => self.parse_prefix_expression(),
+            TokenType::True | TokenType::False => self.parse_boolean_expression(),
             TokenType::LParen => self.parse_grouped_expression(),
             TokenType::If => self.parse_if_expression(),
             TokenType::Function => self.parse_function_literal(),
@@ -439,14 +437,14 @@ impl Parser {
     /// parse infix
     fn infix_parse(&mut self, tt: TokenType, left: ExpressionNode) -> ExpressionNode {
         match tt {
-            TokenType::Plus => self.parse_infix_expression(left),
-            TokenType::Minus => self.parse_infix_expression(left),
-            TokenType::Asterisk => self.parse_infix_expression(left),
-            TokenType::Slash => self.parse_infix_expression(left),
-            TokenType::GT => self.parse_infix_expression(left),
-            TokenType::LT => self.parse_infix_expression(left),
-            TokenType::Eq => self.parse_infix_expression(left),
-            TokenType::NotEq => self.parse_infix_expression(left),
+            TokenType::Plus
+            | TokenType::Minus
+            | TokenType::Asterisk
+            | TokenType::Slash
+            | TokenType::GT
+            | TokenType::LT
+            | TokenType::Eq
+            | TokenType::NotEq => self.parse_infix_expression(left),
             TokenType::LParen => self.parse_call_expression(left),
             _ => panic!("unsupported by infix_parser: {:?}", tt),
         }
@@ -475,14 +473,10 @@ impl Parser {
 fn get_precedence(tt: &TokenType) -> OperationPrecedence {
     match tt {
         TokenType::LParen => OperationPrecedence::Call,
-        TokenType::Eq => OperationPrecedence::Equals,
-        TokenType::NotEq => OperationPrecedence::Equals,
-        TokenType::LT => OperationPrecedence::LessGreater,
-        TokenType::GT => OperationPrecedence::LessGreater,
-        TokenType::Plus => OperationPrecedence::Sum,
-        TokenType::Minus => OperationPrecedence::Sum,
-        TokenType::Slash => OperationPrecedence::Product,
-        TokenType::Asterisk => OperationPrecedence::Product,
+        TokenType::Eq | TokenType::NotEq => OperationPrecedence::Equals,
+        TokenType::LT | TokenType::GT => OperationPrecedence::LessGreater,
+        TokenType::Plus | TokenType::Minus => OperationPrecedence::Sum,
+        TokenType::Slash | TokenType::Asterisk => OperationPrecedence::Product,
         _ => OperationPrecedence::Lowest,
     }
 }

@@ -30,7 +30,7 @@ impl Object {
                         .collect::<Vec<String>>()
                         .join(", ")),
                 );
-                ret.push_str(")\n");
+                ret.push_str(") {\n");
                 ret.push_str(&fo.body.string());
                 ret.push_str("\n}");
                 ret

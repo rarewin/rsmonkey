@@ -111,6 +111,9 @@ fn eval_expression_node(node: &ExpressionNode, env: &mut Environment) -> Object 
             }
         }
         ExpressionNode::IdentifierNode(id) => env.get(&id.value),
+        ExpressionNode::FunctionLiteralNode(fl) => {
+            Object::new_function(&fl.parameters, &fl.body, env)
+        }
         _ => panic!("not implemented yet: {:?}", node),
     }
 }

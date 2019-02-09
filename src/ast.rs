@@ -1,7 +1,7 @@
 use crate::token::Token;
 
 /// statement node
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum StatementNode {
     LetStatementNode(Box<LetStatement>),
     ReturnStatementNode(Box<ReturnStatement>),
@@ -12,7 +12,7 @@ pub enum StatementNode {
 }
 
 /// expression node
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum ExpressionNode {
     IdentifierNode(Box<Identifier>),
     IntegerLiteralNode(Box<IntegerLiteral>),
@@ -38,7 +38,7 @@ pub enum OperationPrecedence {
 }
 
 /// struct for let statement
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct LetStatement {
     pub token: Token,
     pub name: Identifier,
@@ -46,42 +46,42 @@ pub struct LetStatement {
 }
 
 /// struct for return statement
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct ReturnStatement {
     pub token: Token,
     pub return_value: ExpressionNode,
 }
 
 /// struct for expression statement
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct ExpressionStatement {
     pub token: Token,
     pub expression: ExpressionNode,
 }
 
 /// struct for block statement
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct BlockStatement {
     pub token: Token,
     pub statements: Vec<StatementNode>,
 }
 
 /// struct for identifier
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Identifier {
     pub token: Token,
     pub value: String,
 }
 
 /// struct for integer literal
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct IntegerLiteral {
     pub token: Token,
     pub value: i64,
 }
 
 /// struct for function literal
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct FunctionLiteral {
     pub token: Token,
     pub parameters: Vec<ExpressionNode>,
@@ -89,7 +89,7 @@ pub struct FunctionLiteral {
 }
 
 /// struct for prefix expression
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct PrefixExpression {
     pub token: Token,
     pub operator: String,
@@ -97,7 +97,7 @@ pub struct PrefixExpression {
 }
 
 /// struct for infix expression
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct InfixExpression {
     pub token: Token,
     pub left: ExpressionNode,
@@ -106,14 +106,14 @@ pub struct InfixExpression {
 }
 
 /// struct for boolean
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Boolean {
     pub token: Token,
     pub value: bool,
 }
 
 /// struft for if expression
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct IfExpression {
     pub token: Token,
     pub condition: ExpressionNode,
@@ -122,7 +122,7 @@ pub struct IfExpression {
 }
 
 /// struct for call expression
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct CallExpression {
     pub token: Token,
     pub function: ExpressionNode,
@@ -130,7 +130,7 @@ pub struct CallExpression {
 }
 
 /// struct for programs
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Program {
     pub statements: Vec<StatementNode>,
 }

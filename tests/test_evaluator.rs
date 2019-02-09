@@ -384,6 +384,37 @@ fn test_let_statements() {
     }
 }
 
+/// test function object
+#[test]
+fn test_function_object() {
+    let input = "fn(x) {x + 2;};";
+
+    let evaluated = test_eval(input);
+
+    let f = match evaluated {
+        Object::FunctionObject(f) => f,
+        _ => panic!("function object is expected, got {:?}", evaluated),
+    };
+
+    assert!(
+        f.parameters.len() == 1,
+        "# of parameters should be 1, got {}",
+        f.parameters.len()
+    );
+
+    assert!(
+        f.parameters[0].string() == "x",
+        "parameter should be 'x', got '{}'",
+        f.parameters[0].string()
+    );
+
+    assert!(
+        f.body.string() == "(x + 2)",
+        r##"body should be "(x + 2)", got {}"##,
+        f.body.string()
+    );
+}
+
 /// eval function
 fn test_eval(input: &'static str) -> Object {
     let l = Lexer::new(input.to_string());

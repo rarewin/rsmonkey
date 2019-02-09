@@ -1,3 +1,4 @@
+use crate::ast::{BlockStatement, ExpressionNode, Identifier, StatementNode};
 use std::collections::HashMap;
 
 /// object
@@ -6,6 +7,7 @@ pub enum Object {
     IntegerObject(Box<Integer>),
     BooleanObject(Box<Boolean>),
     ReturnValueObject(Box<ReturnValue>),
+    FunctionObject(Box<Function>),
     ErrorObject(Box<Error>),
     Null,
 }
@@ -18,6 +20,21 @@ impl Object {
             Object::IntegerObject(io) => format!("{}", io.value),
             Object::BooleanObject(bo) => format!("{}", bo.value),
             Object::ReturnValueObject(rvo) => format!("{}", rvo.value.inspect()),
+            Object::FunctionObject(fo) => {
+                let mut ret = String::new();
+                ret.push_str("fn(");
+                ret.push_str(
+                    &((&fo.parameters)
+                        .into_iter()
+                        .map(|x| x.token_literal())
+                        .collect::<Vec<String>>()
+                        .join(", ")),
+                );
+                ret.push_str(")\n");
+                ret.push_str(&fo.body.string());
+                ret.push_str("\n}");
+                ret
+            }
             Object::ErrorObject(eo) => format!("ERROR: {}", eo.message),
             Object::Null => "(null)".into(),
         }
@@ -30,6 +47,7 @@ impl Object {
             Object::BooleanObject(_) => BOOLEAN_OBJ,
             Object::ReturnValueObject(_) => RETURN_VALUE_OBJ,
             Object::ErrorObject(_) => ERROR_OBJ,
+            Object::FunctionObject(_) => FUNCTION_OBJ,
             Object::Null => "(null)",
         }
     }
@@ -57,6 +75,19 @@ impl Object {
     pub fn new_return_value(value: Object) -> Object {
         Object::ReturnValueObject(Box::new(ReturnValue { value }))
     }
+
+    /// create a new function object
+    pub fn new_function(
+        parameters: &Vec<ExpressionNode>,
+        body: &StatementNode,
+        env: &Environment,
+    ) -> Object {
+        Object::FunctionObject(Box::new(Function {
+            parameters: parameters.to_vec(),
+            body: body.clone(),
+            env: env.clone(),
+        }))
+    }
 }
 
 /// object type strings
@@ -64,6 +95,7 @@ pub const INTEGER_OBJ: &'static str = "INTEGER";
 pub const BOOLEAN_OBJ: &'static str = "BOOLEAN";
 pub const RETURN_VALUE_OBJ: &'static str = "RETURN_VALUE";
 pub const ERROR_OBJ: &'static str = "ERROR";
+pub const FUNCTION_OBJ: &'static str = "FUNCTION";
 
 /// const boolan object
 pub const TRUE: Boolean = Boolean { value: true };
@@ -91,6 +123,14 @@ pub struct ReturnValue {
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Error {
     pub message: String,
+}
+
+/// struct for Function object
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct Function {
+    pub parameters: Vec<ExpressionNode>,
+    pub body: StatementNode,
+    pub env: Environment,
 }
 
 /// struct for Environment

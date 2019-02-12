@@ -141,14 +141,23 @@ impl StatementNode {
     pub fn token_literal(&self) -> String {
         match self {
             StatementNode::LetStatementNode(ls) => ls.token.token_literal(),
+            StatementNode::ReturnStatementNode(rs) => rs.token.token_literal(),
+            StatementNode::ExpressionStatementNode(es) => es.token.token_literal(),
             StatementNode::BlockStatementNode(bs) => {
                 if bs.statements.len() > 0 {
                     bs.statements[0].token_literal()
                 } else {
-                    "".into()
+                    "(empty block statement)".into()
                 }
             }
-            _ => "".into(),
+            StatementNode::ProgramStatementNode(ps) => {
+                if ps.statements.len() > 0 {
+                    ps.statements[0].token_literal()
+                } else {
+                    "(empty program statement)".into()
+                }
+            }
+            StatementNode::Null => "(null)".into(),
         }
     }
 
@@ -161,10 +170,10 @@ impl StatementNode {
                 ls.name.token.token_literal(),
                 &ls.value.string(),
             ),
-            StatementNode::ExpressionStatementNode(es) => es.expression.string(),
             StatementNode::ReturnStatementNode(rs) => {
                 format!("{} {}", rs.token.token_literal(), &rs.return_value.string(),)
             }
+            StatementNode::ExpressionStatementNode(es) => es.expression.string(),
             StatementNode::BlockStatementNode(bs) => {
                 let mut ret = String::new();
                 for stmt in &bs.statements {
@@ -172,7 +181,14 @@ impl StatementNode {
                 }
                 ret
             }
-            _ => "".into(),
+            StatementNode::ProgramStatementNode(ps) => {
+                let mut ret = String::new();
+                for stmt in &ps.statements {
+                    ret.push_str(&stmt.string());
+                }
+                ret
+            }
+            StatementNode::Null => "(null)".into(),
         }
     }
 }

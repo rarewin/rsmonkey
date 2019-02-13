@@ -64,6 +64,7 @@ impl Lexer {
             ',' => Token::new(TokenType::Comma, ","),
             ';' => Token::new(TokenType::Semicolon, ";"),
             '\0' => Token::new(TokenType::EoF, "EOF"),
+            '"' => Token::new(TokenType::StringToken, &self.read_string()),
             _ => {
                 if is_letter(self.ch) {
                     let p = self.position;
@@ -100,6 +101,16 @@ impl Lexer {
         while self.ch == ' ' || self.ch == '\t' || self.ch == '\n' || self.ch == '\r' {
             self.read_char();
         }
+    }
+
+    pub fn read_string(&mut self) -> String {
+        let mut ret = String::new();
+        self.read_char();
+        while self.ch != '"' && self.read_position < self.input.len() {
+            ret.push(self.ch);
+            self.read_char();
+        }
+        return ret;
     }
 }
 

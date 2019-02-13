@@ -159,4 +159,7 @@ pub enum TokenType {
     Else,
     /// return
     Return,
+
+    /// string
+    StringToken,
 }

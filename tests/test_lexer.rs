@@ -21,7 +21,10 @@ fn test_next_token() {
     }
 
     10 == 10;
-    10 != 9;"##;
+    10 != 9;
+
+    "foobar"
+    "foo bar""##;
 
     let tests = [
         Token::new(TokenType::Assign, "="),
@@ -114,6 +117,8 @@ fn test_next_token() {
         Token::new(TokenType::NotEq, "!="),
         Token::new(TokenType::Int, "9"),
         Token::new(TokenType::Semicolon, ";"),
+        Token::new(TokenType::StringToken, "foobar"),
+        Token::new(TokenType::StringToken, "foo bar"),
         //
         Token::new(TokenType::EoF, "EOF"),
     ];

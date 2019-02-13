@@ -76,6 +76,7 @@ fn eval_let_statement(ls: &LetStatement, env: &mut Environment) -> Object {
 fn eval_expression_node(node: &ExpressionNode, env: &mut Environment) -> Object {
     match node {
         ExpressionNode::IntegerLiteralNode(il) => Object::new_integer(il.value),
+        ExpressionNode::StringLiteralNode(sl) => Object::new_string(&sl.value),
         ExpressionNode::BooleanExpressionNode(be) => Object::new_boolean(be.value),
         ExpressionNode::PrefixExpressionNode(pe) => {
             let right = eval_expression_node(&pe.right, env);

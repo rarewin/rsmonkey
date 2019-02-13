@@ -486,6 +486,27 @@ fn test_eval(input: &'static str) -> Object {
     )
 }
 
+/// test string literal
+#[test]
+fn test_string_literal() {
+    let input = r##""Hello World!""##;
+
+    let evaluated = test_eval(input);
+
+    if let Object::StringObject(so) = evaluated {
+        assert!(
+            so.value == "Hello World!",
+            r##""Hwllo World!" is expected, but got {}"##,
+            so.value
+        );
+    } else {
+        panic!(
+            "unexpected object: {:?} (expected String Object)",
+            evaluated
+        );
+    }
+}
+
 /// test integer object
 fn test_integer_object(obj: Object, expected: i64) {
     if let Object::IntegerObject(io) = obj {

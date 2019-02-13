@@ -194,6 +194,16 @@ impl Parser {
         return ExpressionNode::IntegerLiteralNode(Box::new(lit));
     }
 
+    /// parse string literal
+    pub fn parse_string_literal(&mut self) -> ExpressionNode {
+        let sl = StringLiteral {
+            token: self.cur_token.clone(),
+            value: self.cur_token.literal.clone(),
+        };
+
+        return ExpressionNode::StringLiteralNode(Box::new(sl));
+    }
+
     /// parse function literal
     pub fn parse_function_literal(&mut self) -> ExpressionNode {
         let token = self.cur_token.clone();
@@ -421,6 +431,7 @@ impl Parser {
         match tt {
             TokenType::Ident => self.parse_identifier(),
             TokenType::Int => self.parse_integer_literal(),
+            TokenType::StringToken => self.parse_string_literal(),
             TokenType::Bang | TokenType::Minus => self.parse_prefix_expression(),
             TokenType::True | TokenType::False => self.parse_boolean_expression(),
             TokenType::LParen => self.parse_grouped_expression(),

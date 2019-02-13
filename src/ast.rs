@@ -16,6 +16,7 @@ pub enum StatementNode {
 pub enum ExpressionNode {
     IdentifierNode(Box<Identifier>),
     IntegerLiteralNode(Box<IntegerLiteral>),
+    StringLiteralNode(Box<StringLiteral>),
     FunctionLiteralNode(Box<FunctionLiteral>),
     PrefixExpressionNode(Box<PrefixExpression>),
     InfixExpressionNode(Box<InfixExpression>),
@@ -78,6 +79,13 @@ pub struct Identifier {
 pub struct IntegerLiteral {
     pub token: Token,
     pub value: i64,
+}
+
+/// struct for string literal
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct StringLiteral {
+    pub token: Token,
+    pub value: String,
 }
 
 /// struct for function literal

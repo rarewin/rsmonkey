@@ -6,6 +6,7 @@ use std::collections::HashMap;
 pub enum Object {
     IntegerObject(Box<Integer>),
     BooleanObject(Box<Boolean>),
+    StringObject(Box<StringObj>),
     ReturnValueObject(Box<ReturnValue>),
     FunctionObject(Box<Function>),
     ErrorObject(Box<Error>),
@@ -17,9 +18,10 @@ impl Object {
     /// inspect function
     pub fn inspect(&self) -> String {
         match self {
-            Object::IntegerObject(io) => format!("{}", io.value),
-            Object::BooleanObject(bo) => format!("{}", bo.value),
-            Object::ReturnValueObject(rvo) => format!("{}", rvo.value.inspect()),
+            Object::IntegerObject(io) => io.value.to_string(),
+            Object::BooleanObject(bo) => bo.value.to_string(),
+            Object::StringObject(so) => so.value.to_string(),
+            Object::ReturnValueObject(rvo) => rvo.value.inspect().into(),
             Object::FunctionObject(fo) => {
                 let mut ret = String::new();
                 ret.push_str("fn(");
@@ -45,6 +47,7 @@ impl Object {
         match self {
             Object::IntegerObject(_) => INTEGER_OBJ,
             Object::BooleanObject(_) => BOOLEAN_OBJ,
+            Object::StringObject(_) => STRING_OBJ,
             Object::ReturnValueObject(_) => RETURN_VALUE_OBJ,
             Object::ErrorObject(_) => ERROR_OBJ,
             Object::FunctionObject(_) => FUNCTION_OBJ,
@@ -55,6 +58,13 @@ impl Object {
     /// create a new integer object
     pub fn new_integer(value: i64) -> Object {
         Object::IntegerObject(Box::new(Integer { value }))
+    }
+
+    /// create a new string object
+    pub fn new_string(value: &String) -> Object {
+        Object::StringObject(Box::new(StringObj {
+            value: value.to_string(),
+        }))
     }
 
     /// create a new boolean object
@@ -93,6 +103,7 @@ impl Object {
 /// object type strings
 pub const INTEGER_OBJ: &'static str = "INTEGER";
 pub const BOOLEAN_OBJ: &'static str = "BOOLEAN";
+pub const STRING_OBJ: &'static str = "STRING";
 pub const RETURN_VALUE_OBJ: &'static str = "RETURN_VALUE";
 pub const ERROR_OBJ: &'static str = "ERROR";
 pub const FUNCTION_OBJ: &'static str = "FUNCTION";
@@ -111,6 +122,12 @@ pub struct Integer {
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Boolean {
     pub value: bool,
+}
+
+/// struct for String object
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct StringObj {
+    pub value: String,
 }
 
 /// struct for Return Value object

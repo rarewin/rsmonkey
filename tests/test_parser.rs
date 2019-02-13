@@ -196,6 +196,29 @@ fn test_integer_literal_expression() {
         "program does not have enough statements. got {}",
         program.statements.len()
     );
+
+    assert!(program.statements[0].token_literal() == "5");
+}
+
+/// test string literal
+#[test]
+fn test_string_literal_expression() {
+    let input = r##""hello world""##;
+
+    let l = Lexer::new(input.to_string());
+    let mut p = Parser::new(l);
+
+    let program = p.parse_program();
+    check_parser_errors(p);
+
+    assert_eq!(
+        program.statements.len(),
+        1,
+        "program does not have enough statements. got {}",
+        program.statements.len()
+    );
+
+    assert!(program.statements[0].token_literal() == "hello world");
 }
 
 /// test boolean

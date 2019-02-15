@@ -169,6 +169,22 @@ fn test_eval_boolean_expression() {
             input: "(1 > 2) == false",
             expected: true,
         },
+        Test {
+            input: r##""hoge" == "hoge""##,
+            expected: true,
+        },
+        Test {
+            input: r##""hoge" == "fuga""##,
+            expected: false,
+        },
+        Test {
+            input: r##""hoge" != "hoge""##,
+            expected: false,
+        },
+        Test {
+            input: r##""hoge" != "fuga""##,
+            expected: true,
+        },
     ];
 
     for tt in boolean_expresssion_tests {

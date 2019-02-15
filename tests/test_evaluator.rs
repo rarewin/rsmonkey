@@ -339,6 +339,10 @@ fn test_error_handling() {
             input: "foobar",
             expected: "identifier not found: foobar",
         },
+        Test {
+            input: r##""Hello" - "World""##,
+            expected: "unkown operator: STRING - STRING",
+        },
     ];
 
     for tt in error_tests {
@@ -490,6 +494,27 @@ fn test_eval(input: &'static str) -> Object {
 #[test]
 fn test_string_literal() {
     let input = r##""Hello World!""##;
+
+    let evaluated = test_eval(input);
+
+    if let Object::StringObject(so) = evaluated {
+        assert!(
+            so.value == "Hello World!",
+            r##""Hwllo World!" is expected, but got {}"##,
+            so.value
+        );
+    } else {
+        panic!(
+            "unexpected object: {:?} (expected String Object)",
+            evaluated
+        );
+    }
+}
+
+/// test string concatenation
+#[test]
+fn test_string_concatenation() {
+    let input = r##""Hello" + " " + "World!""##;
 
     let evaluated = test_eval(input);
 

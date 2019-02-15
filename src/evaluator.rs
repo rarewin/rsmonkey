@@ -168,6 +168,18 @@ fn eval_infix_expression_node(operator: &str, left: &Object, right: &Object) -> 
             return eval_integer_infix_expression(operator, &left_integer, &right_integer);
         }
     }
+
+    if let Object::StringObject(left_str) = left {
+        if let Object::StringObject(right_str) = right {
+            if operator == "+" {
+                let mut s = String::new();
+                s.push_str(&(*left_str).value);
+                s.push_str(&(*right_str).value);
+                return Object::new_string(&s);
+            }
+        }
+    }
+
     match operator {
         "==" => Object::new_boolean(left == right),
         "!=" => Object::new_boolean(left != right),

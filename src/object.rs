@@ -9,6 +9,7 @@ pub enum Object {
     StringObject(Box<StringObj>),
     ReturnValueObject(Box<ReturnValue>),
     FunctionObject(Box<Function>),
+    BuiltinObject(Box<Builtin>),
     ErrorObject(Box<Error>),
     Null,
 }
@@ -37,6 +38,7 @@ impl Object {
                 ret.push_str("\n}");
                 ret
             }
+            Object::BuiltinObject(_) => "builtin function".into(),
             Object::ErrorObject(eo) => format!("ERROR: {}", eo.message),
             Object::Null => "(null)".into(),
         }
@@ -51,6 +53,7 @@ impl Object {
             Object::ReturnValueObject(_) => RETURN_VALUE_OBJ,
             Object::ErrorObject(_) => ERROR_OBJ,
             Object::FunctionObject(_) => FUNCTION_OBJ,
+            Object::BuiltinObject(_) => BUILTIN_OBJ,
             Object::Null => "(null)",
         }
     }
@@ -107,6 +110,7 @@ pub const STRING_OBJ: &'static str = "STRING";
 pub const RETURN_VALUE_OBJ: &'static str = "RETURN_VALUE";
 pub const ERROR_OBJ: &'static str = "ERROR";
 pub const FUNCTION_OBJ: &'static str = "FUNCTION";
+pub const BUILTIN_OBJ: &'static str = "BUILTIN";
 
 /// const boolan object
 pub const TRUE: Boolean = Boolean { value: true };
@@ -148,6 +152,12 @@ pub struct Function {
     pub parameters: Vec<ExpressionNode>,
     pub body: StatementNode,
     pub env: Environment,
+}
+
+/// struct for Builtin object
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct Builtin {
+    pub builtin_function: Function,
 }
 
 /// struct for Environment

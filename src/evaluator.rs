@@ -244,20 +244,22 @@ fn is_error(obj: &Object) -> bool {
 
 /// apply function
 fn apply_function(function: &Object, args: &Vec<Object>) -> Object {
-    if let Object::FunctionObject(fnc) = function {
-        let mut extended_env = Environment::extend(&fnc.env);
-        let mut idx = 0;
-        for p in &fnc.parameters {
-            extended_env.set(&p.string(), &args[idx]);
-            idx += 1;
+    match function {
+        Object::FunctionObject(fnc) => {
+            let mut extended_env = Environment::extend(&fnc.env);
+            let mut idx = 0;
+            for p in &fnc.parameters {
+                extended_env.set(&p.string(), &args[idx]);
+                idx += 1;
+            }
+            let evaluated = eval_statement_node(&fnc.body, &mut extended_env);
+            if let Object::ReturnValueObject(ro) = evaluated {
+                ro.value
+            } else {
+                evaluated
+            }
         }
-        let evaluated = eval_statement_node(&fnc.body, &mut extended_env);
-        if let Object::ReturnValueObject(ro) = evaluated {
-            ro.value
-        } else {
-            evaluated
-        }
-    } else {
-        Object::new_error(format!("not a function: {}", function.object_type()))
+        Object::BuiltinObject(bio) => (bio.builtin)(args.to_vec()),
+        _ => Object::new_error(format!("not a function: {}", function.object_type())),
     }
 }

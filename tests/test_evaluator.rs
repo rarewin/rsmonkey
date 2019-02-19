@@ -5,6 +5,44 @@ use rsmonkey::lexer::Lexer;
 use rsmonkey::object::{Environment, Integer, Object};
 use rsmonkey::parser::Parser;
 
+enum TestLiteral {
+    IntegerLiteral { value: i64 },
+    StringLiteral { value: &'static str },
+    ErrorLiteral { message: &'static str },
+}
+
+impl TestLiteral {
+    fn test_literal(&self, value: &Object) {
+        match self {
+            TestLiteral::IntegerLiteral { value: v } => {
+                if let Object::IntegerObject(io) = value {
+                    assert_eq!(io.value, *v);
+                } else {
+                    panic!(
+                        "object is not integer, got {:?}, expected {:?}",
+                        value.object_type(),
+                        v
+                    );
+                }
+            }
+            TestLiteral::StringLiteral { value: s } => {
+                if let Object::StringObject(so) = value {
+                    assert_eq!(so.value, *s);
+                } else {
+                    panic!("object is not string, got {:?}", value.object_type());
+                }
+            }
+            TestLiteral::ErrorLiteral { message: m } => {
+                if let Object::ErrorObject(eo) = value {
+                    assert_eq!(eo.message, *m);
+                } else {
+                    panic!("object is not erro, got {:?}", value.object_type());
+                }
+            }
+        }
+    }
+}
+
 #[test]
 fn test_eval_integer_expression() {
     struct Test {
@@ -545,6 +583,47 @@ fn test_string_concatenation() {
             "unexpected object: {:?} (expected String Object)",
             evaluated
         );
+    }
+}
+
+/// test builtin functions
+#[test]
+fn test_builtin_functions() {
+    struct Test {
+        input: &'static str,
+        expected: TestLiteral,
+    }
+
+    let builtin_function_tests = vec![
+        Test {
+            input: r##"len("")"##,
+            expected: TestLiteral::IntegerLiteral { value: 0 },
+        },
+        Test {
+            input: r##"len("four")"##,
+            expected: TestLiteral::IntegerLiteral { value: 4 },
+        },
+        Test {
+            input: r##"len("hello world")"##,
+            expected: TestLiteral::IntegerLiteral { value: 11 },
+        },
+        Test {
+            input: "len(1)",
+            expected: TestLiteral::ErrorLiteral {
+                message: "argument to `len` not supported, got INTEGER",
+            },
+        },
+        Test {
+            input: r##"len("one", "two")"##,
+            expected: TestLiteral::ErrorLiteral {
+                message: "wrong number of arguments. got=2, expected=1",
+            },
+        },
+    ];
+
+    for tt in builtin_function_tests {
+        let evaluated = test_eval(tt.input);
+        tt.expected.test_literal(&evaluated);
     }
 }
 

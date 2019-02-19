@@ -157,7 +157,7 @@ pub struct Function {
 /// struct for Builtin object
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Builtin {
-    pub builtin_function: Function,
+    pub builtin: fn(Vec<Object>) -> Object,
 }
 
 /// struct for Environment
@@ -197,13 +197,37 @@ impl Environment {
     }
 
     /// get an element from hash map
-    pub fn get(&self, key: &String) -> Object {
-        match self {
-            Environment::Env { store, outer } => match store.get(key) {
-                Some(o) => o.clone(),
-                _ => outer.get(key),
+    pub fn get(&self, key: &str) -> Object {
+        match key {
+            // builtins
+            "len" => Object::BuiltinObject(Box::new(Builtin {
+                builtin: builtin_let,
+            })),
+            // normal function
+            _ => match self {
+                Environment::Env { store, outer } => match store.get(key) {
+                    Some(o) => o.clone(),
+                    _ => outer.get(key),
+                },
+                Environment::NoEnv => Object::new_error(format!("identifier not found: {}", key)),
             },
-            Environment::NoEnv => Object::new_error(format!("identifier not found: {}", key)),
         }
+    }
+}
+
+/// builtin function "let"
+fn builtin_let(parameters: Vec<Object>) -> Object {
+    if parameters.len() != 1 {
+        Object::new_error(format!(
+            "wrong number of arguments. got={}, expected=1",
+            parameters.len()
+        ))
+    } else if let Object::StringObject(so) = &parameters[0] {
+        Object::new_integer(so.value.len() as i64)
+    } else {
+        Object::new_error(format!(
+            "argument to `len` not supported, got {}",
+            &parameters[0].object_type()
+        ))
     }
 }

@@ -24,7 +24,9 @@ fn test_next_token() {
     10 != 9;
 
     "foobar"
-    "foo bar""##;
+    "foo bar"
+
+    [1, 2];"##;
 
     let tests = [
         Token::new(TokenType::Assign, "="),
@@ -120,6 +122,12 @@ fn test_next_token() {
         Token::new(TokenType::StringToken, "foobar"),
         Token::new(TokenType::StringToken, "foo bar"),
         //
+        Token::new(TokenType::LBracket, "["),
+        Token::new(TokenType::Int, "1"),
+        Token::new(TokenType::Comma, ","),
+        Token::new(TokenType::Int, "2"),
+        Token::new(TokenType::RBracket, "]"),
+        Token::new(TokenType::Semicolon, ";"),
         Token::new(TokenType::EoF, "EOF"),
     ];
 

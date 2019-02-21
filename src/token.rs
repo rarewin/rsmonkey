@@ -144,6 +144,10 @@ pub enum TokenType {
     LBrace,
     /// right curly brace `}`
     RBrace,
+    /// left bracket
+    LBracket,
+    /// right bracket
+    RBracket,
 
     /// function `fn`
     Function,

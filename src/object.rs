@@ -9,6 +9,7 @@ pub enum Object {
     StringObject(Box<StringObj>),
     ReturnValueObject(Box<ReturnValue>),
     FunctionObject(Box<Function>),
+    ArrayObject(Box<Array>),
     BuiltinObject(Box<Builtin>),
     ErrorObject(Box<Error>),
     Null,
@@ -38,6 +39,19 @@ impl Object {
                 ret.push_str("\n}");
                 ret
             }
+            Object::ArrayObject(ao) => {
+                let mut ret = String::new();
+                ret.push_str("[");
+                ret.push_str(
+                    &((&ao.elements)
+                        .into_iter()
+                        .map(|x| x.inspect())
+                        .collect::<Vec<String>>()
+                        .join(", ")),
+                );
+                ret.push_str("]");
+                ret
+            }
             Object::BuiltinObject(_) => "builtin function".into(),
             Object::ErrorObject(eo) => format!("ERROR: {}", eo.message),
             Object::Null => "(null)".into(),
@@ -53,6 +67,7 @@ impl Object {
             Object::ReturnValueObject(_) => RETURN_VALUE_OBJ,
             Object::ErrorObject(_) => ERROR_OBJ,
             Object::FunctionObject(_) => FUNCTION_OBJ,
+            Object::ArrayObject(_) => ARRAY_OBJ,
             Object::BuiltinObject(_) => BUILTIN_OBJ,
             Object::Null => "(null)",
         }
@@ -101,6 +116,13 @@ impl Object {
             env: env.clone(),
         }))
     }
+
+    /// create a new array object
+    pub fn new_array(elements: &Vec<Object>) -> Object {
+        Object::ArrayObject(Box::new(Array {
+            elements: elements.to_vec(),
+        }))
+    }
 }
 
 /// object type strings
@@ -110,6 +132,7 @@ pub const STRING_OBJ: &'static str = "STRING";
 pub const RETURN_VALUE_OBJ: &'static str = "RETURN_VALUE";
 pub const ERROR_OBJ: &'static str = "ERROR";
 pub const FUNCTION_OBJ: &'static str = "FUNCTION";
+pub const ARRAY_OBJ: &'static str = "ARRAY";
 pub const BUILTIN_OBJ: &'static str = "BUILTIN";
 
 /// const boolan object
@@ -138,6 +161,12 @@ pub struct StringObj {
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct ReturnValue {
     pub value: Object,
+}
+
+/// struct for Array object
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct Array {
+    pub elements: Vec<Object>,
 }
 
 /// struct for Error object
@@ -201,7 +230,7 @@ impl Environment {
         match key {
             // builtins
             "len" => Object::BuiltinObject(Box::new(Builtin {
-                builtin: builtin_let,
+                builtin: builtin_len,
             })),
             // normal function
             _ => match self {
@@ -215,8 +244,8 @@ impl Environment {
     }
 }
 
-/// builtin function "let"
-fn builtin_let(parameters: Vec<Object>) -> Object {
+/// builtin function "len"
+fn builtin_len(parameters: Vec<Object>) -> Object {
     if parameters.len() != 1 {
         Object::new_error(format!(
             "wrong number of arguments. got={}, expected=1",

@@ -23,6 +23,8 @@ pub enum ExpressionNode {
     BooleanExpressionNode(Box<Boolean>),
     IfExpressionNode(Box<IfExpression>),
     CallExpressionNode(Box<CallExpression>),
+    ArrayLiteralNode(Box<ArrayLiteral>),
+    IndexExpressionNode(Box<IndexExpression>),
     Null,
 }
 
@@ -36,6 +38,7 @@ pub enum OperationPrecedence {
     Product,     // *
     Prefix,      // -X or !X
     Call,        // function call
+    Index,       // array[index]
 }
 
 /// struct for let statement
@@ -135,6 +138,21 @@ pub struct CallExpression {
     pub token: Token,
     pub function: ExpressionNode,
     pub arguments: Vec<ExpressionNode>,
+}
+
+/// struct for array literal
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct ArrayLiteral {
+    pub token: Token,
+    pub elements: Vec<ExpressionNode>,
+}
+
+/// struct for index expression
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct IndexExpression {
+    pub token: Token,
+    pub left: ExpressionNode,
+    pub index: ExpressionNode,
 }
 
 /// struct for programs
@@ -264,7 +282,34 @@ impl ExpressionNode {
 
                 ret
             }
-            _ => "(unsupported string())".into(),
+            ExpressionNode::ArrayLiteralNode(al) => {
+                let mut ret = String::new();
+
+                ret.push_str("[");
+                ret.push_str(
+                    &((&al.elements)
+                        .into_iter()
+                        .map(|x| x.string())
+                        .collect::<Vec<String>>()
+                        .join(", ")),
+                );
+                ret.push_str("]");
+
+                ret
+            }
+            ExpressionNode::IndexExpressionNode(ien) => {
+                let mut ret = String::new();
+
+                ret.push_str("(");
+                ret.push_str(&ien.left.string());
+                ret.push_str("[");
+                ret.push_str(&ien.index.string());
+                ret.push_str("]");
+                ret.push_str(")");
+
+                ret
+            }
+            _ => panic!("not supported string(): {:?}", self),
         }
     }
 
@@ -278,7 +323,7 @@ impl ExpressionNode {
             ExpressionNode::InfixExpressionNode(ien) => (*ien).token.token_literal(),
             ExpressionNode::BooleanExpressionNode(ben) => (*ben).token.token_literal(),
             ExpressionNode::CallExpressionNode(cen) => (*cen).token.token_literal(),
-            _ => "(unsupported token_literal())".into(),
+            _ => panic!("not supported string(): {:?}", self),
         }
     }
 }

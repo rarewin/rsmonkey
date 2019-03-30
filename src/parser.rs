@@ -382,6 +382,23 @@ impl Parser {
         }));
     }
 
+    /// parse index expression
+    pub fn parse_index_expression(&mut self, left: ExpressionNode) -> ExpressionNode {
+        let token = self.cur_token.clone();
+        self.next_token();
+        let index = self.parse_expression(OperationPrecedence::Lowest);
+
+        if !self.expect_peek(TokenType::RBracket) {
+            return ExpressionNode::Null;
+        }
+
+        return ExpressionNode::IndexExpressionNode(Box::new(IndexExpression {
+            token,
+            left,
+            index,
+        }));
+    }
+
     /// parse function call arguments
     pub fn parse_call_arguments(&mut self) -> Option<Vec<ExpressionNode>> {
         let mut arguments = Vec::<ExpressionNode>::new();
@@ -426,6 +443,32 @@ impl Parser {
         }));
     }
 
+    /// parse expression list
+    fn parse_expression_list(&mut self, end: TokenType) -> Vec<ExpressionNode> {
+        let mut list = Vec::<ExpressionNode>::new();
+
+        if self.peek_token_is(end) {
+            self.next_token();
+            return list;
+        }
+
+        self.next_token();
+        list.push(self.parse_expression(OperationPrecedence::Lowest));
+
+        while self.peek_token_is(TokenType::Comma) {
+            self.next_token();
+            self.next_token();
+            list.push(self.parse_expression(OperationPrecedence::Lowest));
+        }
+
+        if !self.expect_peek(TokenType::RBracket) {
+            list.clear();
+            return list;
+        }
+
+        return list;
+    }
+
     /// parse prefix
     fn prefix_parse(&mut self, tt: TokenType) -> ExpressionNode {
         match tt {
@@ -435,6 +478,10 @@ impl Parser {
             TokenType::Bang | TokenType::Minus => self.parse_prefix_expression(),
             TokenType::True | TokenType::False => self.parse_boolean_expression(),
             TokenType::LParen => self.parse_grouped_expression(),
+            TokenType::LBracket => ExpressionNode::ArrayLiteralNode(Box::new(ArrayLiteral {
+                token: self.cur_token.clone(),
+                elements: self.parse_expression_list(TokenType::RBracket),
+            })),
             TokenType::If => self.parse_if_expression(),
             TokenType::Function => self.parse_function_literal(),
             _ => {
@@ -457,6 +504,7 @@ impl Parser {
             | TokenType::Eq
             | TokenType::NotEq => self.parse_infix_expression(left),
             TokenType::LParen => self.parse_call_expression(left),
+            TokenType::LBracket => self.parse_index_expression(left),
             _ => panic!("unsupported by infix_parser: {:?}", tt),
         }
     }
@@ -488,6 +536,7 @@ fn get_precedence(tt: &TokenType) -> OperationPrecedence {
         TokenType::LT | TokenType::GT => OperationPrecedence::LessGreater,
         TokenType::Plus | TokenType::Minus => OperationPrecedence::Sum,
         TokenType::Slash | TokenType::Asterisk => OperationPrecedence::Product,
+        TokenType::LBracket => OperationPrecedence::Index,
         _ => OperationPrecedence::Lowest,
     }
 }

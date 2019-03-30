@@ -126,7 +126,14 @@ fn eval_expression_node(node: &ExpressionNode, env: &mut Environment) -> Object 
             }
             apply_function(&function, &args)
         }
-        _ => panic!("not implemented yet: {:?}", node),
+        ExpressionNode::ArrayLiteralNode(al) => {
+            let elements = eval_expressions(&al.elements, env);
+            if elements.len() == 1 && is_error(&elements[0]) {
+                return elements[0].clone();
+            }
+            return Object::new_array(&elements);
+        }
+        _ => panic!("not implemented yet: {:#?}", node),
     }
 }
 

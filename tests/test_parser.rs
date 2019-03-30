@@ -536,6 +536,14 @@ fn test_operator_precedence_parsing() {
             input: "add(a + b + c * d / f + g);",
             expected: "add((((a + b) + ((c * d) / f)) + g))",
         },
+        Test {
+            input: "a * [1, 2, 3, 4][b * c] * d",
+            expected: "((a * ([1, 2, 3, 4][(b * c)])) * d)",
+        },
+        Test {
+            input: "add(a * b[2], b[1], 2 * [1, 2][1])",
+            expected: "add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))",
+        },
     ];
 
     for tt in operator_precedence_test {
@@ -852,6 +860,90 @@ fn test_call_expression_arsing() {
         &TestLiteral::IntegerLiteral(4),
         "+",
         &TestLiteral::IntegerLiteral(5),
+    );
+}
+
+/// test for array literal
+#[test]
+fn test_parsing_array_literal() {
+    let input = "[1, 2 * 2, 3 + 3];";
+
+    let l = Lexer::new(input.to_string());
+    let mut p = Parser::new(l);
+
+    let program = p.parse_program();
+    check_parser_errors(p);
+
+    assert!(
+        program.statements.len() == 1,
+        "program does not have the expected number of statements. {}",
+        program.statements.len()
+    );
+
+    let exps = match &program.statements[0] {
+        StatementNode::ExpressionStatementNode(e) => e,
+        _ => panic!("expression stateme is expected"),
+    };
+
+    let al = match &exps.expression {
+        ExpressionNode::ArrayLiteralNode(a) => a,
+        _ => panic!("array literal node is expectd"),
+    };
+
+    assert!(
+        al.elements.len() == 3,
+        "the # of elements of the array literal should be 3, but {}",
+        al.elements.len()
+    );
+
+    test_integer_literal(&al.elements[0], 1);
+    test_infix_expression(
+        &al.elements[1],
+        &TestLiteral::IntegerLiteral(2),
+        "*",
+        &TestLiteral::IntegerLiteral(2),
+    );
+    test_infix_expression(
+        &al.elements[2],
+        &TestLiteral::IntegerLiteral(3),
+        "+",
+        &TestLiteral::IntegerLiteral(3),
+    );
+}
+
+/// test for index expressions
+#[test]
+fn test_parsing_index_expressions() {
+    let input = "myArray[1 + 1]";
+
+    let l = Lexer::new(input.to_string());
+    let mut p = Parser::new(l);
+
+    let program = p.parse_program();
+    check_parser_errors(p);
+
+    assert!(
+        program.statements.len() == 1,
+        "program does not have the expected number of statements. {}",
+        program.statements.len()
+    );
+
+    let exps = match &program.statements[0] {
+        StatementNode::ExpressionStatementNode(e) => e,
+        _ => panic!("expression stateme is expected"),
+    };
+
+    let il = match &exps.expression {
+        ExpressionNode::IndexExpressionNode(a) => a,
+        _ => panic!("index expression node is expectd"),
+    };
+
+    test_literal_expression(&il.left, &TestLiteral::StringLiteral("myArray"));
+    test_infix_expression(
+        &il.index,
+        &TestLiteral::IntegerLiteral(1),
+        "+",
+        &TestLiteral::IntegerLiteral(1),
     );
 }
 

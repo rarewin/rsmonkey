@@ -115,7 +115,7 @@ fn test_eval_integer_expression() {
 
     for tt in integer_expression_tests {
         let evaluated = test_eval(tt.input);
-        test_integer_object(evaluated, tt.expected);
+        test_integer_object(&evaluated, tt.expected);
     }
 }
 
@@ -352,7 +352,7 @@ fn test_eval_return_statement() {
 
     for tt in return_tests {
         let evaluated = test_eval(tt.input);
-        test_integer_object(evaluated, tt.expected);
+        test_integer_object(&evaluated, tt.expected);
     }
 }
 
@@ -438,7 +438,7 @@ fn test_let_statements() {
 
     for tt in let_statement_test {
         let evaluated = test_eval(tt.input);
-        test_integer_object(evaluated, tt.expected);
+        test_integer_object(&evaluated, tt.expected);
     }
 }
 
@@ -510,7 +510,7 @@ fn test_function_application() {
 
     for tt in function_app_tests {
         let evaluated = test_eval(tt.input);
-        test_integer_object(evaluated, tt.expected);
+        test_integer_object(&evaluated, tt.expected);
     }
 }
 
@@ -525,7 +525,30 @@ fn test_closures() {
                     addTwo(2);"##;
 
     let evaluated = test_eval(input);
-    test_integer_object(evaluated, 4);
+    test_integer_object(&evaluated, 4);
+}
+
+/// test arrays
+#[test]
+fn test_array_literals() {
+    let input = r##"[1, 2 * 2, 3 + 3]"##;
+
+    let evaluated = test_eval(input);
+
+    let ao = match &evaluated {
+        Object::ArrayObject(a) => a,
+        _ => panic!("array object is expected, got {:?}", evaluated),
+    };
+
+    assert!(
+        ao.elements.len() == 3,
+        "the # of elements is expected 3, got {}",
+        ao.elements.len()
+    );
+
+    test_integer_object(&ao.elements[0], 1);
+    test_integer_object(&ao.elements[1], 4);
+    test_integer_object(&ao.elements[2], 6);
 }
 
 /// eval function
@@ -628,7 +651,7 @@ fn test_builtin_functions() {
 }
 
 /// test integer object
-fn test_integer_object(obj: Object, expected: i64) {
+fn test_integer_object(obj: &Object, expected: i64) {
     if let Object::IntegerObject(io) = obj {
         assert!(
             io.value == expected,

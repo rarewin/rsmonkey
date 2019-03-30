@@ -232,6 +232,18 @@ impl Environment {
             "len" => Object::BuiltinObject(Box::new(Builtin {
                 builtin: builtin_len,
             })),
+            "first" => Object::BuiltinObject(Box::new(Builtin {
+                builtin: builtin_first,
+            })),
+            "last" => Object::BuiltinObject(Box::new(Builtin {
+                builtin: builtin_last,
+            })),
+            "rest" => Object::BuiltinObject(Box::new(Builtin {
+                builtin: builtin_rest,
+            })),
+            "push" => Object::BuiltinObject(Box::new(Builtin {
+                builtin: builtin_push,
+            })),
             // normal function
             _ => match self {
                 Environment::Env { store, outer } => match store.get(key) {
@@ -247,16 +259,103 @@ impl Environment {
 /// builtin function "len"
 fn builtin_len(parameters: Vec<Object>) -> Object {
     if parameters.len() != 1 {
-        Object::new_error(format!(
+        return Object::new_error(format!(
             "wrong number of arguments. got={}, expected=1",
             parameters.len()
-        ))
-    } else if let Object::StringObject(so) = &parameters[0] {
-        Object::new_integer(so.value.len() as i64)
-    } else {
-        Object::new_error(format!(
+        ));
+    }
+
+    match &parameters[0] {
+        Object::StringObject(so) => Object::new_integer(so.value.len() as i64),
+        Object::ArrayObject(ao) => Object::new_integer(ao.elements.len() as i64),
+        _ => Object::new_error(format!(
             "argument to `len` not supported, got {}",
             &parameters[0].object_type()
+        )),
+    }
+}
+
+/// builtin function "first"
+fn builtin_first(parameters: Vec<Object>) -> Object {
+    if parameters.len() != 1 {
+        return Object::new_error(format!(
+            "wrong number of arguments. got={}, expected=1",
+            parameters.len()
+        ));
+    }
+
+    if let Object::ArrayObject(ao) = &parameters[0] {
+        if ao.elements.len() > 0 {
+            ao.elements[0].clone()
+        } else {
+            Object::Null
+        }
+    } else {
+        Object::new_error(format!(
+            "argument to `first` must be ARRAY, got {}",
+            parameters[0].object_type()
+        ))
+    }
+}
+
+/// builtin function "last"
+fn builtin_last(parameters: Vec<Object>) -> Object {
+    if parameters.len() != 1 {
+        return Object::new_error(format!(
+            "wrong number of arguments. got={}, expected=1",
+            parameters.len()
+        ));
+    }
+
+    if let Object::ArrayObject(ao) = &parameters[0] {
+        if ao.elements.len() > 0 {
+            ao.elements[ao.elements.len() - 1].clone()
+        } else {
+            Object::Null
+        }
+    } else {
+        Object::new_error(format!(
+            "argument to `last` must be ARRAY, got {}",
+            parameters[0].object_type()
+        ))
+    }
+}
+
+/// builtin function "rest"
+fn builtin_rest(parameters: Vec<Object>) -> Object {
+    if parameters.len() != 1 {
+        return Object::new_error(format!(
+            "wrong number of arguments. got={}, expected=1",
+            parameters.len()
+        ));
+    }
+
+    if let Object::ArrayObject(ao) = &parameters[0] {
+        if ao.elements.len() > 1 {
+            return Object::new_array(&ao.elements[1..].to_vec());
+        }
+    }
+
+    Object::Null
+}
+
+/// builtin function "push"
+fn builtin_push(parameters: Vec<Object>) -> Object {
+    if parameters.len() != 2 {
+        return Object::new_error(format!(
+            "wrong number of arguments. got={}, expected=2",
+            parameters.len()
+        ));
+    }
+
+    if let Object::ArrayObject(ao) = &parameters[0] {
+        let mut a = ao.elements.clone();
+        a.push(parameters[1].clone());
+        Object::new_array(&a)
+    } else {
+        Object::new_error(format!(
+            "first argument to `last` must be ARRAY, got {}",
+            parameters[0].object_type()
         ))
     }
 }

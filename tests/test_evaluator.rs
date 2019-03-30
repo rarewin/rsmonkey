@@ -9,6 +9,7 @@ enum TestLiteral {
     IntegerLiteral { value: i64 },
     StringLiteral { value: &'static str },
     ErrorLiteral { message: &'static str },
+    ArrayLiteral { array: Vec<TestLiteral> },
     NullLiteral,
 }
 
@@ -38,6 +39,21 @@ impl TestLiteral {
                     assert_eq!(eo.message, *m);
                 } else {
                     panic!("object is not error, got {:?}", value.object_type());
+                }
+            }
+            TestLiteral::ArrayLiteral { array } => {
+                if let Object::ArrayObject(al) = value {
+                    assert!(
+                        al.elements.len() == array.len(),
+                        "the length of array is expected {}, got {}",
+                        array.len(),
+                        al.elements.len()
+                    );
+                    for (i, a) in array.iter().enumerate() {
+                        a.test_literal(&al.elements[i]);
+                    }
+                } else {
+                    panic!("object is not array literal, got {:?}", value);
                 }
             }
             TestLiteral::NullLiteral => assert_eq!(*value, Object::Null),
@@ -695,6 +711,80 @@ fn test_builtin_functions() {
             input: r##"len("one", "two")"##,
             expected: TestLiteral::ErrorLiteral {
                 message: "wrong number of arguments. got=2, expected=1",
+            },
+        },
+        Test {
+            input: r##"len([1, 2, 3])"##,
+            expected: TestLiteral::IntegerLiteral { value: 3 },
+        },
+        Test {
+            input: r##"len([1, 2, 3, 4, 5, 6, 7])"##,
+            expected: TestLiteral::IntegerLiteral { value: 7 },
+        },
+        Test {
+            input: r##"let myArray = [1, 2];
+                       len(myArray);"##,
+            expected: TestLiteral::IntegerLiteral { value: 2 },
+        },
+        Test {
+            input: r##"let myArray = [1, 2, 3, 4, 5, 6, 7];
+                       first(myArray);"##,
+            expected: TestLiteral::IntegerLiteral { value: 1 },
+        },
+        Test {
+            input: r##"first(1);"##,
+            expected: TestLiteral::ErrorLiteral {
+                message: "argument to `first` must be ARRAY, got INTEGER",
+            },
+        },
+        Test {
+            input: r##"let myArray = [1, 2, 3, 4, 5, 6, 7];
+                       last(myArray);"##,
+            expected: TestLiteral::IntegerLiteral { value: 7 },
+        },
+        Test {
+            input: r##"last(1);"##,
+            expected: TestLiteral::ErrorLiteral {
+                message: "argument to `last` must be ARRAY, got INTEGER",
+            },
+        },
+        Test {
+            input: r##"rest([1, 2, 3, 4]);"##,
+            expected: TestLiteral::ArrayLiteral {
+                array: vec![
+                    TestLiteral::IntegerLiteral { value: 2 },
+                    TestLiteral::IntegerLiteral { value: 3 },
+                    TestLiteral::IntegerLiteral { value: 4 },
+                ],
+            },
+        },
+        Test {
+            input: r##"rest(rest([1, 2, 3, 4]));"##,
+            expected: TestLiteral::ArrayLiteral {
+                array: vec![
+                    TestLiteral::IntegerLiteral { value: 3 },
+                    TestLiteral::IntegerLiteral { value: 4 },
+                ],
+            },
+        },
+        Test {
+            input: r##"rest(rest(rest([1, 2, 3, 4])));"##,
+            expected: TestLiteral::ArrayLiteral {
+                array: vec![TestLiteral::IntegerLiteral { value: 4 }],
+            },
+        },
+        Test {
+            input: r##"rest(rest(rest(rest([1, 2, 3, 4]))));"##,
+            expected: TestLiteral::NullLiteral,
+        },
+        Test {
+            input: r##"let a = [1, 2]; push(a, 3);"##,
+            expected: TestLiteral::ArrayLiteral {
+                array: vec![
+                    TestLiteral::IntegerLiteral { value: 1 },
+                    TestLiteral::IntegerLiteral { value: 2 },
+                    TestLiteral::IntegerLiteral { value: 3 },
+                ],
             },
         },
     ];

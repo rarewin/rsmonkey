@@ -9,6 +9,7 @@ enum TestLiteral {
     IntegerLiteral { value: i64 },
     StringLiteral { value: &'static str },
     ErrorLiteral { message: &'static str },
+    NullLiteral,
 }
 
 impl TestLiteral {
@@ -36,9 +37,10 @@ impl TestLiteral {
                 if let Object::ErrorObject(eo) = value {
                     assert_eq!(eo.message, *m);
                 } else {
-                    panic!("object is not erro, got {:?}", value.object_type());
+                    panic!("object is not error, got {:?}", value.object_type());
                 }
             }
+            TestLiteral::NullLiteral => assert_eq!(*value, Object::Null),
         }
     }
 }
@@ -549,6 +551,59 @@ fn test_array_literals() {
     test_integer_object(&ao.elements[0], 1);
     test_integer_object(&ao.elements[1], 4);
     test_integer_object(&ao.elements[2], 6);
+}
+
+/// test index expressions
+#[test]
+fn test_array_index_expressions() {
+    struct Test {
+        input: &'static str,
+        expected: TestLiteral,
+    }
+
+    let index_expressions_tests = vec![
+        Test {
+            input: "[1, 2, 3][0]",
+            expected: TestLiteral::IntegerLiteral { value: 1 },
+        },
+        Test {
+            input: "[1, 2, 3][1]",
+            expected: TestLiteral::IntegerLiteral { value: 2 },
+        },
+        Test {
+            input: "[1, 2, 3][2]",
+            expected: TestLiteral::IntegerLiteral { value: 3 },
+        },
+        Test {
+            input: "[1, 2, 3][1 + 1]",
+            expected: TestLiteral::IntegerLiteral { value: 3 },
+        },
+        Test {
+            input: "let myArray = [1, 2, 3]; myArray[2]",
+            expected: TestLiteral::IntegerLiteral { value: 3 },
+        },
+        Test {
+            input: "let myArray = [1, 2, 3]; myArray[0] + myArray[1] + myArray[2];",
+            expected: TestLiteral::IntegerLiteral { value: 6 },
+        },
+        Test {
+            input: "let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i]",
+            expected: TestLiteral::IntegerLiteral { value: 2 },
+        },
+        Test {
+            input: "[1, 2, 3][3]",
+            expected: TestLiteral::NullLiteral,
+        },
+        Test {
+            input: "[1, 2, 3][-1]",
+            expected: TestLiteral::NullLiteral,
+        },
+    ];
+
+    for tt in index_expressions_tests {
+        let evaluated = test_eval(tt.input);
+        tt.expected.test_literal(&evaluated);
+    }
 }
 
 /// eval function

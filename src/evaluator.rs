@@ -1,7 +1,7 @@
 use crate::ast::{
     BlockStatement, ExpressionNode, LetStatement, Program, ReturnStatement, StatementNode,
 };
-use crate::object::{Environment, Integer, Object};
+use crate::object::{Array, Environment, Integer, Object};
 
 #[derive(Debug)]
 pub enum EvalNode {
@@ -126,6 +126,19 @@ fn eval_expression_node(node: &ExpressionNode, env: &mut Environment) -> Object 
             }
             apply_function(&function, &args)
         }
+        ExpressionNode::IndexExpressionNode(ie) => {
+            let left = eval_expression_node(&ie.left, env);
+            if is_error(&left) {
+                return left;
+            }
+
+            let index = eval_expression_node(&ie.index, env);
+            if is_error(&index) {
+                return index;
+            }
+
+            eval_index_expression(&left, &index)
+        }
         ExpressionNode::ArrayLiteralNode(al) => {
             let elements = eval_expressions(&al.elements, env);
             if elements.len() == 1 && is_error(&elements[0]) {
@@ -238,6 +251,42 @@ fn eval_expressions(exps: &Vec<ExpressionNode>, env: &mut Environment) -> Vec<Ob
     }
 
     result
+}
+
+/// evaluator function for index expression
+fn eval_index_expression(left: &Object, index: &Object) -> Object {
+    let l = match left {
+        Object::ArrayObject(ao) => ao,
+        _ => {
+            return Object::new_error(format!(
+                "index operator not supported: {}",
+                left.object_type()
+            ))
+        }
+    };
+
+    let i = match index {
+        Object::IntegerObject(io) => io,
+        _ => {
+            return Object::new_error(format!(
+                "index operator not supported: {}",
+                left.object_type()
+            ))
+        }
+    };
+    eval_array_index_expression(&l, &i)
+}
+
+/// evaluator function for array index expression
+fn eval_array_index_expression(array: &Array, index: &Integer) -> Object {
+    let idx = index.value;
+    let max = array.elements.len();
+
+    if idx < 0 || idx >= (max as i64) {
+        return Object::Null;
+    }
+
+    return array.elements[idx as usize].clone();
 }
 
 /// check if error or not

@@ -496,39 +496,45 @@ fn test_function_object() {
 fn test_function_application() {
     struct Test {
         input: &'static str,
-        expected: i64,
+        expected: TestLiteral,
     }
 
     let function_app_tests = vec![
         Test {
             input: "let identify = fn(x) {x;}; identify(5);",
-            expected: 5,
+            expected: TestLiteral::IntegerLiteral { value: 5 },
         },
         Test {
             input: "let identify = fn(x) {return x;}; identify(5);",
-            expected: 5,
+            expected: TestLiteral::IntegerLiteral { value: 5 },
         },
         Test {
             input: "let double = fn(x) {return x * 2;}; double(5);",
-            expected: 10,
+            expected: TestLiteral::IntegerLiteral { value: 10 },
         },
         Test {
             input: "let add = fn(x, y) {return x + y;}; add(5, 5);",
-            expected: 10,
+            expected: TestLiteral::IntegerLiteral { value: 10 },
         },
         Test {
             input: "let add = fn(x, y) {return x + y;}; add(5 + 5, add(5, 5));",
-            expected: 20,
+            expected: TestLiteral::IntegerLiteral { value: 20 },
         },
         Test {
             input: "fn(x) {x;}(5)",
-            expected: 5,
+            expected: TestLiteral::IntegerLiteral { value: 5 },
+        },
+        Test {
+            input: "fn(x) {x;}(5, 4)",
+            expected: TestLiteral::ErrorLiteral {
+                message: "the # of arguments is wrong, expected 1, got 2",
+            },
         },
     ];
 
     for tt in function_app_tests {
         let evaluated = test_eval(tt.input);
-        test_integer_object(&evaluated, tt.expected);
+        tt.expected.test_literal(&evaluated);
     }
 }
 

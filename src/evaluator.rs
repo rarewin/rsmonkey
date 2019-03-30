@@ -302,11 +302,16 @@ fn is_error(obj: &Object) -> bool {
 fn apply_function(function: &Object, args: &Vec<Object>) -> Object {
     match function {
         Object::FunctionObject(fnc) => {
+            if fnc.parameters.len() != args.len() {
+                return Object::new_error(format!(
+                    "the # of arguments is wrong, expected {}, got {}",
+                    fnc.parameters.len(),
+                    args.len(),
+                ));
+            }
             let mut extended_env = Environment::extend(&fnc.env);
-            let mut idx = 0;
-            for p in &fnc.parameters {
+            for (idx, p) in fnc.parameters.iter().enumerate() {
                 extended_env.set(&p.string(), &args[idx]);
-                idx += 1;
             }
             let evaluated = eval_statement_node(&fnc.body, &mut extended_env);
             if let Object::ReturnValueObject(ro) = evaluated {

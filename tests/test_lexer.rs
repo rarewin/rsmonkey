@@ -3,32 +3,33 @@ use rsmonkey::token::{Token, TokenType};
 
 #[test]
 fn test_next_token() {
-    let input = r##"=+(){},; let five = 5;
-    let ten = 10;
+    let input = r##"
+      =+(){},; let five = 5;
+      let ten = 10;
 
-    let add = fn(x, y) {
-      x + y;
-    };
+      let add = fn(x, y) {
+        x + y;
+      };
 
-    let result = add(five, ten);
-    !-/*5;
-    5 < 10 > 5;
+      let result = add(five, ten);
+      !-/*5;
+      5 < 10 > 5;
 
-    if (5 < 10) {
-      return true;
-    } else {
-      return false;
-    }
+      if (5 < 10) {
+        return true;
+      } else {
+        return false;
+      }
 
-    10 == 10;
-    10 != 9;
+      10 == 10;
+      10 != 9;
 
-    "foobar"
-    "foo bar"
+      "foobar"
+      "foo bar"
 
-    [1, 2];"##;
+      [1, 2];"##;
 
-    let tests = [
+    let tests = vec![
         Token::new(TokenType::Assign, "="),
         Token::new(TokenType::Plus, "+"),
         Token::new(TokenType::LParen, "("),
@@ -131,10 +132,16 @@ fn test_next_token() {
         Token::new(TokenType::EoF, "EOF"),
     ];
 
-    let mut l = Lexer::new(input.to_string());
+    let mut l = Lexer::new(input);
 
-    for tp in tests.iter() {
+    for (index, tp) in tests.iter().enumerate() {
         let tok = l.next_token();
-        assert_eq!(&tok, tp);
+        assert!(
+            &tok == tp,
+            "{:?} is expected, but got {:?} at {}",
+            tp,
+            &tok,
+            index
+        );
     }
 }

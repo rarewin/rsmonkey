@@ -1,17 +1,35 @@
 use crate::token::{Token, TokenType};
 
 #[derive(Debug)]
-pub struct Lexer {
-    input: String,
+pub struct Lexer<'a> {
+    input: &'a str,
     position: usize,
     read_position: usize,
     ch: char,
 }
 
-impl Lexer {
-    pub fn new(input: String) -> Lexer {
+impl<'a> Lexer<'a> {
+    /// create new Lexer
+    ///
+    /// # Argument
+    ///
+    /// * `input` - string to be tokenized
+    ///
+    /// # Return value
+    ///
+    /// crated Lexer
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use rsmonkey::lexer::Lexer;
+    ///
+    /// let input = "let 1 + 1;";
+    /// Lexer::new(input);
+    /// ```
+    pub fn new(input: &str) -> Lexer {
         let mut l = Lexer {
-            input: input,
+            input,
             position: 0,
             read_position: 0,
             ch: '\0',
@@ -21,17 +39,27 @@ impl Lexer {
         return l;
     }
 
-    pub fn read_char(&mut self) {
-        self.ch = if self.read_position >= self.input.len() {
-            '\0'
-        } else {
-            self.input.as_bytes()[self.read_position] as char
+    /// peek next character
+    ///
+    /// # Return value
+    ///
+    /// next character or '\0' if next character does not exist
+    pub fn peek_char(&mut self) -> char {
+        self.ch = match self.input.chars().nth(self.read_position) {
+            Some(c) => c,
+            _ => '\0',
         };
+        self.ch
+    }
 
+    /// read next character
+    pub fn read_char(&mut self) {
+        self.ch = self.peek_char();
         self.position = self.read_position;
         self.read_position += 1;
     }
 
+    /// get next token
     pub fn next_token(&mut self) -> Token {
         self.skip_whitespace();
         let token = match self.ch {
@@ -66,64 +94,43 @@ impl Lexer {
             ',' => Token::new(TokenType::Comma, ","),
             ';' => Token::new(TokenType::Semicolon, ";"),
             '\0' => Token::new(TokenType::EoF, "EOF"),
-            '"' => Token::new(TokenType::StringToken, &self.read_string()),
-            _ => {
-                if is_letter(self.ch) {
-                    let p = self.position;
-                    while is_letter(self.ch) {
-                        self.read_char();
-                    }
-                    let v = &self.input[p..self.position].to_string();
-                    return Token::new(lookup_ident(&v), v);
-                } else if is_digit(self.ch) {
-                    let p = self.position;
-                    while is_digit(self.ch) {
-                        self.read_char();
-                    }
-                    return Token::new(TokenType::Int, &self.input[p..self.position].to_string());
-                } else {
-                    return Token::new(TokenType::Illegal, "illegal");
+            '"' => {
+                let p = self.read_position;
+                self.read_char();
+                while self.ch != '"' && self.read_position < self.input.len() {
+                    self.read_char();
                 }
+                Token::new(TokenType::StringToken, &self.input[p..self.position])
             }
+            'a'...'z' | 'A'...'Z' | '_' => {
+                let p = self.position;
+                while self.ch.is_ascii_alphabetic() || self.ch == '_' {
+                    self.read_char();
+                }
+                let v = &self.input[p..self.position];
+                return Token::new(lookup_ident(&v), v);
+            }
+            '0'...'9' => {
+                let p = self.position;
+                while self.ch.is_ascii_digit() {
+                    self.read_char();
+                }
+                return Token::new(TokenType::Int, &self.input[p..self.position]);
+            }
+
+            _ => Token::new(TokenType::Illegal, "illegal"),
         };
         self.read_char();
 
         return token;
     }
 
-    pub fn peek_char(&mut self) -> char {
-        if self.read_position >= self.input.len() {
-            return '\0';
-        } else {
-            return self.input.as_bytes()[self.read_position] as char;
-        }
-    }
-
-    pub fn skip_whitespace(&mut self) {
-        while self.ch == ' ' || self.ch == '\t' || self.ch == '\n' || self.ch == '\r' {
+    /// skip white space
+    fn skip_whitespace(&mut self) {
+        while self.ch.is_ascii_whitespace() {
             self.read_char();
         }
     }
-
-    pub fn read_string(&mut self) -> String {
-        let mut ret = String::new();
-        self.read_char();
-        while self.ch != '"' && self.read_position < self.input.len() {
-            ret.push(self.ch);
-            self.read_char();
-        }
-        return ret;
-    }
-}
-
-/// Return true if ch is letter.
-fn is_letter(ch: char) -> bool {
-    return ('a' <= ch && ch <= 'z') || ('A' <= ch && ch <= 'Z') || ch == '_';
-}
-
-/// Retutn true if ch is digit.
-fn is_digit(ch: char) -> bool {
-    return '0' <= ch && ch <= '9';
 }
 
 /// lookup identifier

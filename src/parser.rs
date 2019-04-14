@@ -1,4 +1,4 @@
-// use crate::ast::*;
+use crate::ast::*;
 use crate::lexer::Lexer;
 use crate::token::{Token, TokenType};
 //
@@ -18,15 +18,15 @@ pub struct Parser<'a> {
 impl<'a> Parser<'a> {
     /// constructor
     pub fn new(l: Lexer) -> Parser {
-        let p = Parser {
+        let mut p = Parser {
             lexer: l,
             cur_token: Token::new(TokenType::Illegal, ""),
             peek_token: Token::new(TokenType::Illegal, ""),
             // errors: Vec::<String>::new(),
         };
 
-        // p.next_token();
-        // p.next_token();
+        p.next_token();
+        p.next_token();
 
         p
     }
@@ -35,23 +35,23 @@ impl<'a> Parser<'a> {
     //     pub fn errors(&self) -> &Vec<String> {
     //         return &self.errors;
     //     }
-    //
-    //     /// update current position
-    //     pub fn next_token(&mut self) {
-    //         self.cur_token = self.peek_token.clone();
-    //         self.peek_token = self.lexer.next_token();
-    //     }
-    //
-    //     /// check if a current token is `tt` or not
-    //     pub fn cur_token_is(&mut self, tt: TokenType) -> bool {
-    //         self.cur_token.token_type == tt
-    //     }
-    //
-    //     /// check if a peek token is `tt` or not
-    //     pub fn peek_token_is(&mut self, tt: TokenType) -> bool {
-    //         self.peek_token.token_type == tt
-    //     }
-    //
+
+    /// update current position
+    pub fn next_token(&mut self) {
+        std::mem::swap(&mut self.cur_token, &mut self.peek_token);
+        self.peek_token = self.lexer.next_token();
+    }
+
+    /// check if a current token is `tt` or not
+    pub fn cur_token_is(&mut self, tt: TokenType) -> bool {
+        self.cur_token.token_type == tt
+    }
+
+    /// check if a peek token is `tt` or not
+    pub fn peek_token_is(&mut self, tt: TokenType) -> bool {
+        self.peek_token.token_type == tt
+    }
+
     //     /// expect a specific token
     //     pub fn expect_peek(&mut self, tt: TokenType) -> bool {
     //         if self.peek_token_is(tt) {
@@ -62,25 +62,25 @@ impl<'a> Parser<'a> {
     //             false
     //         }
     //     }
-    //
-    //     /// parser Program
-    //     pub fn parse_program(&mut self) -> Program {
-    //         let mut program = Program::new();
-    //
-    //         while self.cur_token.get_token_type() != TokenType::EoF {
-    //             let stmt = self.parse_statement();
-    //
-    //             if let StatementNode::Null = stmt {
-    //             } else {
-    //                 program.statements.push(stmt);
-    //             }
-    //
-    //             self.next_token();
-    //         }
-    //
-    //         program
-    //     }
-    //
+
+    /// parser Program
+    pub fn parse_program(&mut self) -> Program {
+        let mut program = Program::new();
+
+        while self.cur_token.get_token_type() != TokenType::EoF {
+            //    let stmt = self.parse_statement();
+            //
+            //    if let StatementNode::Null = stmt {
+            //    } else {
+            //        program.statements.push(stmt);
+            //    }
+            //
+            self.next_token();
+        }
+
+        program
+    }
+
     //     /// parse statement
     //     pub fn parse_statement(&mut self) -> StatementNode {
     //         match self.cur_token.get_token_type() {

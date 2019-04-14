@@ -60,7 +60,7 @@ impl<'a> Lexer<'a> {
     }
 
     /// get next token
-    pub fn next_token(&mut self) -> Token {
+    pub fn next_token(&mut self) -> Token<'a> {
         self.skip_whitespace();
         let token = match self.ch {
             '=' => {

@@ -154,13 +154,13 @@
 //     pub left: ExpressionNode,
 //     pub index: ExpressionNode,
 // }
-//
-// /// struct for programs
-// #[derive(Debug, PartialEq, Eq, Clone)]
-// pub struct Program {
-//     pub statements: Vec<StatementNode>,
-// }
-//
+
+/// struct for programs
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct Program {
+    // statements: Vec<StatementNode>,
+}
+
 // /// implementation of statement node
 // impl StatementNode {
 //     /// get token's literal
@@ -328,30 +328,30 @@
 //     }
 // }
 //
-// /// Program
-// impl Program {
-//     /// constructor of Program
-//     pub fn new() -> Program {
-//         Program {
-//             statements: Vec::new(),
-//         }
-//     }
-//
-//     /// get strings of all statements
-//     pub fn string(&self) -> String {
-//         let mut ret = String::new();
-//         for stmt in &self.statements {
-//             ret.push_str(&stmt.string());
-//         }
-//         return ret;
-//     }
-//
-//     /// get the first token's literal
-//     pub fn token_literal(&self) -> String {
-//         if self.statements.len() > 0 {
-//             self.statements[0].token_literal()
-//         } else {
-//             "".to_string()
-//         }
-//     }
-// }
+/// Program
+impl Program {
+    /// constructor of Program
+    pub fn new() -> Program {
+        Program {
+            // statements: Vec::new(),
+        }
+    }
+
+    //     /// get strings of all statements
+    //     pub fn string(&self) -> String {
+    //         let mut ret = String::new();
+    //         for stmt in &self.statements {
+    //             ret.push_str(&stmt.string());
+    //         }
+    //         return ret;
+    //     }
+    //
+    //     /// get the first token's literal
+    //     pub fn token_literal(&self) -> String {
+    //         if self.statements.len() > 0 {
+    //             self.statements[0].token_literal()
+    //         } else {
+    //             "".to_string()
+    //         }
+    //     }
+}

@@ -1,4 +1,4 @@
-// use rsmonkey::ast::*;
+use rsmonkey::ast::*;
 use rsmonkey::lexer::Lexer;
 use rsmonkey::parser::Parser;
 // use rsmonkey::token::{Token, TokenType};
@@ -39,7 +39,8 @@ fn test_let_statements() {
         let l = Lexer::new(tt.input);
         let mut p = Parser::new(l);
 
-        //         let program = p.parse_program();
+        let program = p.parse_program();
+
         //         check_parser_errors(p);
         //
         //         assert!(

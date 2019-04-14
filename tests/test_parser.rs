@@ -1,6 +1,6 @@
 // use rsmonkey::ast::*;
-// use rsmonkey::lexer::Lexer;
-// use rsmonkey::parser::Parser;
+use rsmonkey::lexer::Lexer;
+use rsmonkey::parser::Parser;
 // use rsmonkey::token::{Token, TokenType};
 //
 // enum TestLiteral {
@@ -9,54 +9,55 @@
 //     BooleanLiteral(bool),
 // }
 //
-// #[test]
-// fn test_let_statements() {
-//     struct Test {
-//         input: &'static str,
-//         expected_identifier: &'static str,
-//         expected_value: TestLiteral,
-//     }
-//     let let_statement_test = vec![
-//         Test {
-//             input: "let x = 5;",
-//             expected_identifier: "x",
-//             expected_value: TestLiteral::IntegerLiteral(5),
-//         },
-//         Test {
-//             input: "let y = true;",
-//             expected_identifier: "y",
-//             expected_value: TestLiteral::BooleanLiteral(true),
-//         },
-//         Test {
-//             input: "let foobar = y;",
-//             expected_identifier: "foobar",
-//             expected_value: TestLiteral::StringLiteral("y"),
-//         },
-//     ];
-//
-//     for tt in let_statement_test {
-//         let l = Lexer::new(tt.input.to_string());
-//         let mut p = Parser::new(l);
-//
-//         let program = p.parse_program();
-//         check_parser_errors(p);
-//
-//         assert!(
-//             program.statements.len() == 1,
-//             "length of program.statements should be {}, but got {}",
-//             1,
-//             program.statements.len()
-//         );
-//
-//         let stmt = match &program.statements[0] {
-//             StatementNode::LetStatementNode(s) => s,
-//             _ => panic!("let statement is expected"),
-//         };
-//
-//         test_let_statement(stmt, tt.expected_identifier, &tt.expected_value);
-//     }
-// }
-//
+#[test]
+fn test_let_statements() {
+    struct Test<'a> {
+        input: &'a str,
+        //         expected_identifier: &'static str,
+        //         expected_value: TestLiteral,
+    }
+
+    let let_statement_test = vec![
+        Test {
+            input: "let x = 5;",
+            //             expected_identifier: "x",
+            //             expected_value: TestLiteral::IntegerLiteral(5),
+        },
+        //         Test {
+        //             input: "let y = true;",
+        //             expected_identifier: "y",
+        //             expected_value: TestLiteral::BooleanLiteral(true),
+        //         },
+        //         Test {
+        //             input: "let foobar = y;",
+        //             expected_identifier: "foobar",
+        //             expected_value: TestLiteral::StringLiteral("y"),
+        //         },
+    ];
+    //
+    for tt in let_statement_test {
+        let l = Lexer::new(tt.input);
+        let mut p = Parser::new(l);
+
+        //         let program = p.parse_program();
+        //         check_parser_errors(p);
+        //
+        //         assert!(
+        //             program.statements.len() == 1,
+        //             "length of program.statements should be {}, but got {}",
+        //             1,
+        //             program.statements.len()
+        //         );
+        //
+        //         let stmt = match &program.statements[0] {
+        //             StatementNode::LetStatementNode(s) => s,
+        //             _ => panic!("let statement is expected"),
+        //         };
+        //
+        //         test_let_statement(stmt, tt.expected_identifier, &tt.expected_value);
+    }
+}
+
 // /// test let statement.
 // /// get panicked if the test is failed.
 // ///

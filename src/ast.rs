@@ -1,54 +1,54 @@
-// use crate::token::Token;
+use crate::token::Token;
 //
-// /// statement node
-// #[derive(Debug, PartialEq, Eq, Clone)]
-// pub enum StatementNode {
-//     LetStatementNode(Box<LetStatement>),
-//     ReturnStatementNode(Box<ReturnStatement>),
-//     ExpressionStatementNode(Box<ExpressionStatement>),
-//     BlockStatementNode(Box<BlockStatement>),
-//     ProgramStatementNode(Box<Program>),
-//     Null,
-// }
-//
-// /// expression node
-// #[derive(Debug, PartialEq, Eq, Clone)]
-// pub enum ExpressionNode {
-//     IdentifierNode(Box<Identifier>),
-//     IntegerLiteralNode(Box<IntegerLiteral>),
-//     StringLiteralNode(Box<StringLiteral>),
-//     FunctionLiteralNode(Box<FunctionLiteral>),
-//     PrefixExpressionNode(Box<PrefixExpression>),
-//     InfixExpressionNode(Box<InfixExpression>),
-//     BooleanExpressionNode(Box<Boolean>),
-//     IfExpressionNode(Box<IfExpression>),
-//     CallExpressionNode(Box<CallExpression>),
-//     ArrayLiteralNode(Box<ArrayLiteral>),
-//     IndexExpressionNode(Box<IndexExpression>),
-//     Null,
-// }
-//
-// /// operation precedence
-// #[derive(Debug, PartialEq, PartialOrd)]
-// pub enum OperationPrecedence {
-//     Lowest,
-//     Equals,      // ==
-//     LessGreater, // > or <
-//     Sum,         // +
-//     Product,     // *
-//     Prefix,      // -X or !X
-//     Call,        // function call
-//     Index,       // array[index]
-// }
-//
-// /// struct for let statement
-// #[derive(Debug, PartialEq, Eq, Clone)]
-// pub struct LetStatement {
-//     pub token: Token,
-//     pub name: Identifier,
-//     pub value: ExpressionNode,
-// }
-//
+/// statement node
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub enum StatementNode<'a> {
+    LetStatementNode(Box<LetStatement<'a>>),
+    // ReturnStatementNode(Box<ReturnStatement>),
+    // ExpressionStatementNode(Box<ExpressionStatement>),
+    // BlockStatementNode(Box<BlockStatement>),
+    // ProgramStatementNode(Box<Program>),
+    Null,
+}
+
+/// expression node
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub enum ExpressionNode<'a> {
+    IdentifierNode(Box<Identifier<'a>>),
+    IntegerLiteralNode(Box<IntegerLiteral<'a>>),
+    //     StringLiteralNode(Box<StringLiteral>),
+    //     FunctionLiteralNode(Box<FunctionLiteral>),
+    //     PrefixExpressionNode(Box<PrefixExpression>),
+    InfixExpressionNode(Box<InfixExpression<'a>>),
+    //     BooleanExpressionNode(Box<Boolean>),
+    //     IfExpressionNode(Box<IfExpression>),
+    //     CallExpressionNode(Box<CallExpression>),
+    //     ArrayLiteralNode(Box<ArrayLiteral>),
+    //     IndexExpressionNode(Box<IndexExpression>),
+    Null,
+}
+
+/// operation precedence
+#[derive(Debug, PartialEq, PartialOrd)]
+pub enum OperationPrecedence {
+    Lowest,
+    Equals,      // ==
+    LessGreater, // > or <
+    Sum,         // +
+    Product,     // *
+    Prefix,      // -X or !X
+    Call,        // function call
+    Index,       // array[index]
+}
+
+/// struct for let statement
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct LetStatement<'a> {
+    pub token: Token<'a>,
+    pub name: Identifier<'a>,
+    pub value: ExpressionNode<'a>,
+}
+
 // /// struct for return statement
 // #[derive(Debug, PartialEq, Eq, Clone)]
 // pub struct ReturnStatement {
@@ -70,20 +70,20 @@
 //     pub statements: Vec<StatementNode>,
 // }
 //
-// /// struct for identifier
-// #[derive(Debug, PartialEq, Eq, Clone)]
-// pub struct Identifier {
-//     pub token: Token,
-//     pub value: String,
-// }
-//
-// /// struct for integer literal
-// #[derive(Debug, PartialEq, Eq, Clone)]
-// pub struct IntegerLiteral {
-//     pub token: Token,
-//     pub value: i64,
-// }
-//
+/// struct for identifier
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct Identifier<'a> {
+    pub token: Token<'a>,
+    pub value: String,
+}
+
+/// struct for integer literal
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct IntegerLiteral<'a> {
+    pub token: Token<'a>,
+    pub value: i64,
+}
+
 // /// struct for string literal
 // #[derive(Debug, PartialEq, Eq, Clone)]
 // pub struct StringLiteral {
@@ -106,16 +106,16 @@
 //     pub operator: String,
 //     pub right: ExpressionNode,
 // }
-//
-// /// struct for infix expression
-// #[derive(Debug, PartialEq, Eq, Clone)]
-// pub struct InfixExpression {
-//     pub token: Token,
-//     pub left: ExpressionNode,
-//     pub operator: String,
-//     pub right: ExpressionNode,
-// }
-//
+
+/// struct for infix expression
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct InfixExpression<'a> {
+    pub token: Token<'a>,
+    pub left: ExpressionNode<'a>,
+    pub operator: String,
+    pub right: ExpressionNode<'a>,
+}
+
 // /// struct for boolean
 // #[derive(Debug, PartialEq, Eq, Clone)]
 // pub struct Boolean {
@@ -157,8 +157,8 @@
 
 /// struct for programs
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct Program {
-    // statements: Vec<StatementNode>,
+pub struct Program<'a> {
+    pub statements: Vec<StatementNode<'a>>,
 }
 
 // /// implementation of statement node
@@ -329,11 +329,11 @@ pub struct Program {
 // }
 //
 /// Program
-impl Program {
+impl<'a> Program<'a> {
     /// constructor of Program
-    pub fn new() -> Program {
+    pub fn new() -> Program<'a> {
         Program {
-            // statements: Vec::new(),
+            statements: Vec::new(),
         }
     }
 
@@ -354,4 +354,9 @@ impl Program {
     //             "".to_string()
     //         }
     //     }
+
+    /// get statements
+    pub fn get_statements(&self) -> &Vec<StatementNode> {
+        &self.statements
+    }
 }

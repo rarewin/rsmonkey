@@ -1,5 +1,5 @@
 /// struct for tokens
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub struct Token<'a> {
     /// type of token
     pub token_type: TokenType,

@@ -3,25 +3,25 @@ use rsmonkey::lexer::Lexer;
 use rsmonkey::parser::Parser;
 // use rsmonkey::token::{Token, TokenType};
 //
-// enum TestLiteral {
-//     IntegerLiteral(i64),
-//     StringLiteral(&'static str),
-//     BooleanLiteral(bool),
-// }
-//
+enum TestLiteral {
+    IntegerLiteral(i64),
+    StringLiteral(&'static str),
+    // BooleanLiteral(bool),
+}
+
 #[test]
 fn test_let_statements() {
     struct Test<'a> {
         input: &'a str,
-        //         expected_identifier: &'static str,
-        //         expected_value: TestLiteral,
+        expected_identifier: &'static str,
+        expected_value: TestLiteral,
     }
 
     let let_statement_test = vec![
         Test {
             input: "let x = 5;",
-            //             expected_identifier: "x",
-            //             expected_value: TestLiteral::IntegerLiteral(5),
+            expected_identifier: "x",
+            expected_value: TestLiteral::IntegerLiteral(5),
         },
         //         Test {
         //             input: "let y = true;",
@@ -40,50 +40,49 @@ fn test_let_statements() {
         let mut p = Parser::new(l);
 
         let program = p.parse_program();
+        let stmts = program.get_statements();
 
-        //         check_parser_errors(p);
-        //
-        //         assert!(
-        //             program.statements.len() == 1,
-        //             "length of program.statements should be {}, but got {}",
-        //             1,
-        //             program.statements.len()
-        //         );
-        //
-        //         let stmt = match &program.statements[0] {
-        //             StatementNode::LetStatementNode(s) => s,
-        //             _ => panic!("let statement is expected"),
-        //         };
-        //
-        //         test_let_statement(stmt, tt.expected_identifier, &tt.expected_value);
+        assert!(
+            stmts.len() == 1,
+            "length of program.statements should be {}, but got {}",
+            1,
+            stmts.len()
+        );
+
+        let stmt = match &program.statements[0] {
+            StatementNode::LetStatementNode(s) => s,
+            _ => panic!("let statement is expected"),
+        };
+
+        test_let_statement(stmt, tt.expected_identifier, &tt.expected_value);
     }
 }
 
-// /// test let statement.
-// /// get panicked if the test is failed.
-// ///
-// /// # Arguments
-// ///
-// /// * `s` - let statement
-// /// * `name` - expected string for identifer of `s`
-// /// * `value` - expected value for right value
-// /// ```
-// fn test_let_statement(s: &LetStatement, name: &str, value: &TestLiteral) {
-//     assert_eq!(
-//         s.name.value, name,
-//         "expected identifier is '{}', but got '{}'.",
-//         name, s.name.value,
-//     );
-//     assert_eq!(
-//         s.name.token.token_literal(),
-//         name,
-//         "expected identifier is '{}', but got '{}'.",
-//         name,
-//         s.name.token.token_literal()
-//     );
-//     test_literal_expression(&s.value, value);
-// }
-//
+/// test let statement.
+/// get panicked if the test is failed.
+///
+/// # Arguments
+///
+/// * `s` - let statement
+/// * `name` - expected string for identifer of `s`
+/// * `value` - expected value for right value
+/// ```
+fn test_let_statement(s: &LetStatement, name: &str, value: &TestLiteral) {
+    assert_eq!(
+        s.name.value, name,
+        "expected identifier is '{}', but got '{}'.",
+        name, s.name.value,
+    );
+    assert_eq!(
+        s.name.token.token_literal(),
+        name,
+        "expected identifier is '{}', but got '{}'.",
+        name,
+        s.name.token.token_literal()
+    );
+    test_literal_expression(&s.value, value);
+}
+
 // #[test]
 // fn test_return_statements() {
 //     struct Test {
@@ -962,61 +961,61 @@ fn test_let_statements() {
 //         println!("parser error: {}", e);
 //     }
 // }
-//
-// /// test integer literal
-// ///
-// /// # Arguments
-// ///
-// /// * `en` - `ExpressionNode::IntegerLiteralNode` to be tested
-// /// * `value` - the value that `en` should have
-// fn test_integer_literal(en: &ExpressionNode, value: i64) {
-//     let il = match &en {
-//         ExpressionNode::IntegerLiteralNode(iln) => iln,
-//         _ => panic!("unexpected node"),
-//     };
-//
-//     assert_eq!(
-//         il.value, value,
-//         "integer value is expected as {} but got {}",
-//         value, il.value
-//     );
-//
-//     assert_eq!(
-//         il.token.token_literal(),
-//         format!("{}", value),
-//         "token_literal() is expected as {} bug got {}",
-//         format!("{}", value),
-//         il.token.token_literal(),
-//     );
-// }
-//
-// /// test string literal
-// ///
-// /// # Arguments
-// ///
-// /// * `en` - `ExpressionNode::IdentifierNode` to be tested
-// /// * `value` - the value that `en` should have
-// fn test_string_literal(en: &ExpressionNode, value: &'static str) {
-//     let id = match &en {
-//         ExpressionNode::IdentifierNode(idn) => idn,
-//         _ => panic!("unexpected node"),
-//     };
-//
-//     assert_eq!(
-//         id.value, value,
-//         r##"value is expected as "{}" but got "{}""##,
-//         value, id.value,
-//     );
-//
-//     assert_eq!(
-//         id.token.token_literal(),
-//         value,
-//         r##"token_literal() is expected as "{}" but got "{}""##,
-//         id.token.token_literal(),
-//         id.value,
-//     );
-// }
-//
+
+/// test integer literal
+///
+/// # Arguments
+///
+/// * `en` - `ExpressionNode::IntegerLiteralNode` to be tested
+/// * `value` - the value that `en` should have
+fn test_integer_literal(en: &ExpressionNode, value: i64) {
+    let il = match &en {
+        ExpressionNode::IntegerLiteralNode(iln) => iln,
+        _ => panic!("unexpected node"),
+    };
+
+    assert_eq!(
+        il.value, value,
+        "integer value is expected as {} but got {}",
+        value, il.value
+    );
+
+    assert_eq!(
+        il.token.token_literal(),
+        format!("{}", value),
+        "token_literal() is expected as {} bug got {}",
+        format!("{}", value),
+        il.token.token_literal(),
+    );
+}
+
+/// test string literal
+///
+/// # Arguments
+///
+/// * `en` - `ExpressionNode::IdentifierNode` to be tested
+/// * `value` - the value that `en` should have
+fn test_string_literal(en: &ExpressionNode, value: &'static str) {
+    let id = match &en {
+        ExpressionNode::IdentifierNode(idn) => idn,
+        _ => panic!("unexpected node"),
+    };
+
+    assert_eq!(
+        id.value, value,
+        r##"value is expected as "{}" but got "{}""##,
+        value, id.value,
+    );
+
+    assert_eq!(
+        id.token.token_literal(),
+        value,
+        r##"token_literal() is expected as "{}" but got "{}""##,
+        id.token.token_literal(),
+        id.value,
+    );
+}
+
 // /// test boolean literal
 // fn test_boolean_literal(en: &ExpressionNode, value: bool) {
 //     let bl = match &en {
@@ -1038,16 +1037,16 @@ fn test_let_statements() {
 //         bl.token.token_literal(),
 //     );
 // }
-//
-// /// test expression's literal
-// fn test_literal_expression(en: &ExpressionNode, literal: &TestLiteral) {
-//     match literal {
-//         TestLiteral::IntegerLiteral(i) => test_integer_literal(&en, *i),
-//         TestLiteral::StringLiteral(s) => test_string_literal(&en, s),
-//         TestLiteral::BooleanLiteral(b) => test_boolean_literal(&en, *b),
-//     }
-// }
-//
+
+/// test expression's literal
+fn test_literal_expression(en: &ExpressionNode, literal: &TestLiteral) {
+    match literal {
+        TestLiteral::IntegerLiteral(i) => test_integer_literal(&en, *i),
+        TestLiteral::StringLiteral(s) => test_string_literal(&en, s),
+        //        TestLiteral::BooleanLiteral(b) => test_boolean_literal(&en, *b),
+    }
+}
+
 // /// test infix expression
 // fn test_infix_expression(
 //     en: &ExpressionNode,

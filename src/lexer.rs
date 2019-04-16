@@ -1,6 +1,6 @@
 use crate::token::{Token, TokenType};
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct Lexer<'a> {
     input: &'a str,
     position: usize,
@@ -44,6 +44,19 @@ impl<'a> Lexer<'a> {
     /// # Return value
     ///
     /// next character or '\0' if next character does not exist
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use rsmonkey::lexer::Lexer;
+    ///
+    /// let input = "let 1 + 1;";
+    /// let mut l = Lexer::new(input);
+    ///
+    /// assert_eq!(l.peek_char(), 'e');
+    /// l.read_char();
+    /// assert_eq!(l.peek_char(), 't');
+    /// ```
     pub fn peek_char(&mut self) -> char {
         self.ch = match self.input.chars().nth(self.read_position) {
             Some(c) => c,
@@ -60,6 +73,26 @@ impl<'a> Lexer<'a> {
     }
 
     /// get next token
+    ///
+    /// # Return value
+    ///
+    /// next token
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use rsmonkey::lexer::Lexer;
+    /// use rsmonkey::token::TokenType;
+    ///
+    /// let input = "let 1 + 1;";
+    /// let mut l = Lexer::new(input);
+    ///
+    /// assert_eq!(l.next_token().get_token_type(), TokenType::Let);
+    /// assert_eq!(l.next_token().get_token_type(), TokenType::Int);
+    /// assert_eq!(l.next_token().get_token_type(), TokenType::Plus);
+    /// assert_eq!(l.next_token().get_token_type(), TokenType::Int);
+    /// assert_eq!(l.next_token().get_token_type(), TokenType::Semicolon);
+    /// ```
     pub fn next_token(&mut self) -> Token<'a> {
         self.skip_whitespace();
         let token = match self.ch {

@@ -16,11 +16,11 @@ pub enum StatementNode<'a> {
 pub enum ExpressionNode<'a> {
     IdentifierNode(Box<Identifier<'a>>),
     IntegerLiteralNode(Box<IntegerLiteral<'a>>),
-    //     StringLiteralNode(Box<StringLiteral>),
+    StringLiteralNode(Box<StringLiteral<'a>>),
     //     FunctionLiteralNode(Box<FunctionLiteral>),
     //     PrefixExpressionNode(Box<PrefixExpression>),
     InfixExpressionNode(Box<InfixExpression<'a>>),
-    //     BooleanExpressionNode(Box<Boolean>),
+    BooleanExpressionNode(Box<Boolean<'a>>),
     //     IfExpressionNode(Box<IfExpression>),
     //     CallExpressionNode(Box<CallExpression>),
     //     ArrayLiteralNode(Box<ArrayLiteral>),
@@ -84,13 +84,13 @@ pub struct IntegerLiteral<'a> {
     pub value: i64,
 }
 
-// /// struct for string literal
-// #[derive(Debug, PartialEq, Eq, Clone)]
-// pub struct StringLiteral {
-//     pub token: Token,
-//     pub value: String,
-// }
-//
+/// struct for string literal
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct StringLiteral<'a> {
+    pub token: Token<'a>,
+    pub value: String,
+}
+
 // /// struct for function literal
 // #[derive(Debug, PartialEq, Eq, Clone)]
 // pub struct FunctionLiteral {
@@ -116,13 +116,13 @@ pub struct InfixExpression<'a> {
     pub right: ExpressionNode<'a>,
 }
 
-// /// struct for boolean
-// #[derive(Debug, PartialEq, Eq, Clone)]
-// pub struct Boolean {
-//     pub token: Token,
-//     pub value: bool,
-// }
-//
+/// struct for boolean
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct Boolean<'a> {
+    pub token: Token<'a>,
+    pub value: bool,
+}
+
 // /// struft for if expression
 // #[derive(Debug, PartialEq, Eq, Clone)]
 // pub struct IfExpression {

@@ -21,7 +21,7 @@ pub struct Parser<'a> {
 impl<'a> Parser<'a> {
     /// constructor
     pub fn new(l: Lexer) -> Parser {
-        let mut p = Parser {
+        let p = Parser {
             lexer: Rc::new(Cell::new(l)),
             cur_token: Rc::new(Cell::new(Token::new(TokenType::Illegal, ""))),
             peek_token: Rc::new(Cell::new(Token::new(TokenType::Illegal, ""))),
@@ -161,7 +161,7 @@ impl<'a> Parser<'a> {
     //
     //         return StatementNode::ExpressionStatementNode(Box::new(stmt));
     //     }
-    //
+
     /// parse expression
     pub fn parse_expression(&self, precedence: OperationPrecedence) -> ExpressionNode<'a> {
         let mut ex = self.prefix_parse(self.cur_token.get().token_type.clone());
@@ -178,16 +178,16 @@ impl<'a> Parser<'a> {
         return ex;
     }
 
-    //     /// parse identifier
-    //     pub fn parse_identifier(&mut self) -> ExpressionNode {
-    //         let ident = Identifier {
-    //             token: self.cur_token.clone(),
-    //             value: self.cur_token.literal.clone(),
-    //         };
-    //
-    //         return ExpressionNode::IdentifierNode(Box::new(ident));
-    //     }
-    //
+    /// parse identifier
+    pub fn parse_identifier(&self) -> ExpressionNode<'a> {
+        let ident = Identifier {
+            token: self.cur_token.clone().get(),
+            value: self.cur_token.get().literal.to_string(),
+        };
+
+        return ExpressionNode::IdentifierNode(Box::new(ident));
+    }
+
     /// parse integer literal
     pub fn parse_integer_literal(&self) -> ExpressionNode<'a> {
         let lit = IntegerLiteral {
@@ -203,16 +203,16 @@ impl<'a> Parser<'a> {
         return ExpressionNode::IntegerLiteralNode(Box::new(lit));
     }
 
-    //     /// parse string literal
-    //     pub fn parse_string_literal(&mut self) -> ExpressionNode {
-    //         let sl = StringLiteral {
-    //             token: self.cur_token.clone(),
-    //             value: self.cur_token.literal.clone(),
-    //         };
-    //
-    //         return ExpressionNode::StringLiteralNode(Box::new(sl));
-    //     }
-    //
+    /// parse string literal
+    pub fn parse_string_literal(&self) -> ExpressionNode<'a> {
+        let sl = StringLiteral {
+            token: self.cur_token.clone().get(),
+            value: self.cur_token.get().literal.to_string(),
+        };
+
+        return ExpressionNode::StringLiteralNode(Box::new(sl));
+    }
+
     //     /// parse function literal
     //     pub fn parse_function_literal(&mut self) -> ExpressionNode {
     //         let token = self.cur_token.clone();
@@ -253,17 +253,17 @@ impl<'a> Parser<'a> {
     //
     //         return ExpressionNode::PrefixExpressionNode(Box::new(pe));
     //     }
-    //
-    //     /// parse boolean expression
-    //     pub fn parse_boolean_expression(&mut self) -> ExpressionNode {
-    //         let be = Boolean {
-    //             token: self.cur_token.clone(),
-    //             value: self.cur_token_is(TokenType::True),
-    //         };
-    //
-    //         return ExpressionNode::BooleanExpressionNode(Box::new(be));
-    //     }
-    //
+
+    /// parse boolean expression
+    pub fn parse_boolean_expression(&self) -> ExpressionNode<'a> {
+        let be = Boolean {
+            token: self.cur_token.clone().get(),
+            value: self.cur_token_is(TokenType::True),
+        };
+
+        return ExpressionNode::BooleanExpressionNode(Box::new(be));
+    }
+
     //     /// parse grouped expression
     //     pub fn parse_grouped_expression(&mut self) -> ExpressionNode {
     //         self.next_token();
@@ -481,11 +481,11 @@ impl<'a> Parser<'a> {
     /// parse prefix
     fn prefix_parse(&self, tt: TokenType) -> ExpressionNode<'a> {
         match tt {
-            // TokenType::Ident => self.parse_identifier(),
+            TokenType::Ident => self.parse_identifier(),
             TokenType::Int => self.parse_integer_literal(),
-            // TokenType::StringToken => self.parse_string_literal(),
+            TokenType::StringToken => self.parse_string_literal(),
             // TokenType::Bang | TokenType::Minus => self.parse_prefix_expression(),
-            // TokenType::True | TokenType::False => self.parse_boolean_expression(),
+            TokenType::True | TokenType::False => self.parse_boolean_expression(),
             // TokenType::LParen => self.parse_grouped_expression(),
             // TokenType::LBracket => ExpressionNode::ArrayLiteralNode(Box::new(ArrayLiteral {
             //     token: self.cur_token.clone(),

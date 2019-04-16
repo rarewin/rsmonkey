@@ -6,7 +6,7 @@ use rsmonkey::parser::Parser;
 enum TestLiteral {
     IntegerLiteral(i64),
     StringLiteral(&'static str),
-    // BooleanLiteral(bool),
+    BooleanLiteral(bool),
 }
 
 #[test]
@@ -23,21 +23,21 @@ fn test_let_statements() {
             expected_identifier: "x",
             expected_value: TestLiteral::IntegerLiteral(5),
         },
-        //         Test {
-        //             input: "let y = true;",
-        //             expected_identifier: "y",
-        //             expected_value: TestLiteral::BooleanLiteral(true),
-        //         },
-        //         Test {
-        //             input: "let foobar = y;",
-        //             expected_identifier: "foobar",
-        //             expected_value: TestLiteral::StringLiteral("y"),
-        //         },
+        Test {
+            input: "let y = true;",
+            expected_identifier: "y",
+            expected_value: TestLiteral::BooleanLiteral(true),
+        },
+        Test {
+            input: "let foobar = y;",
+            expected_identifier: "foobar",
+            expected_value: TestLiteral::StringLiteral("y"),
+        },
     ];
     //
     for tt in let_statement_test {
         let l = Lexer::new(tt.input);
-        let mut p = Parser::new(l);
+        let p = Parser::new(l);
 
         let program = p.parse_program();
         let stmts = program.get_statements();
@@ -1016,34 +1016,34 @@ fn test_string_literal(en: &ExpressionNode, value: &'static str) {
     );
 }
 
-// /// test boolean literal
-// fn test_boolean_literal(en: &ExpressionNode, value: bool) {
-//     let bl = match &en {
-//         ExpressionNode::BooleanExpressionNode(be) => be,
-//         _ => panic!("boolean expression node is expected"),
-//     };
-//
-//     assert_eq!(
-//         bl.value, value,
-//         "{:?} is expected, but got {:?}",
-//         value, bl.value,
-//     );
-//
-//     assert_eq!(
-//         bl.token.token_literal(),
-//         format!("{:?}", value),
-//         r##"{:?} is expected, but got {:?}"##,
-//         format!("{:?}", value),
-//         bl.token.token_literal(),
-//     );
-// }
+/// test boolean literal
+fn test_boolean_literal(en: &ExpressionNode, value: bool) {
+    let bl = match &en {
+        ExpressionNode::BooleanExpressionNode(be) => be,
+        _ => panic!("boolean expression node is expected, but got {:?}", en),
+    };
+
+    assert_eq!(
+        bl.value, value,
+        "{:?} is expected, but got {:?}",
+        value, bl.value,
+    );
+
+    assert_eq!(
+        bl.token.token_literal(),
+        format!("{:?}", value),
+        r##"{:?} is expected, but got {:?}"##,
+        format!("{:?}", value),
+        bl.token.token_literal(),
+    );
+}
 
 /// test expression's literal
 fn test_literal_expression(en: &ExpressionNode, literal: &TestLiteral) {
     match literal {
         TestLiteral::IntegerLiteral(i) => test_integer_literal(&en, *i),
         TestLiteral::StringLiteral(s) => test_string_literal(&en, s),
-        //        TestLiteral::BooleanLiteral(b) => test_boolean_literal(&en, *b),
+        TestLiteral::BooleanLiteral(b) => test_boolean_literal(&en, *b),
     }
 }
 

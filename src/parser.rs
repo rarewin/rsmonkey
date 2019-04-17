@@ -1,7 +1,7 @@
 use crate::ast::*;
 use crate::lexer::Lexer;
 use crate::token::{Token, TokenType};
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
 //
@@ -14,8 +14,8 @@ pub struct Parser<'a> {
     cur_token: Rc<Cell<Token<'a>>>,
     /// peek token
     peek_token: Rc<Cell<Token<'a>>>,
-    // /// error string
-    // errors: Vec<String>,
+    /// error string
+    errors: RefCell<Vec<String>>,
 }
 
 impl<'a> Parser<'a> {
@@ -25,7 +25,7 @@ impl<'a> Parser<'a> {
             lexer: Rc::new(Cell::new(l)),
             cur_token: Rc::new(Cell::new(Token::new(TokenType::Illegal, ""))),
             peek_token: Rc::new(Cell::new(Token::new(TokenType::Illegal, ""))),
-            // errors: Vec::<String>::new(),
+            errors: RefCell::new(Vec::<String>::new()),
         };
 
         p.next_token();
@@ -33,11 +33,11 @@ impl<'a> Parser<'a> {
 
         p
     }
-    //
-    //     /// error string
-    //     pub fn errors(&self) -> &Vec<String> {
-    //         return &self.errors;
-    //     }
+
+    /// error string
+    pub fn errors(&self) -> Vec<String> {
+        self.errors.borrow().to_vec()
+    }
 
     /// update current position
     pub fn next_token(&self) {
@@ -494,8 +494,9 @@ impl<'a> Parser<'a> {
             // TokenType::If => self.parse_if_expression(),
             // TokenType::Function => self.parse_function_literal(),
             _ => {
-                // self.errors
-                //     .push(format!("unsupported by prefix_parser: {:?}", tt));
+                self.errors
+                    .borrow_mut()
+                    .push(format!("unsupported by prefix_parser: {:?}", tt));
                 ExpressionNode::Null
             }
         }

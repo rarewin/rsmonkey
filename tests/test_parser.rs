@@ -40,6 +40,8 @@ fn test_let_statements() {
         let p = Parser::new(l);
 
         let program = p.parse_program();
+        check_parser_errors(&p);
+
         let stmts = program.get_statements();
 
         assert!(
@@ -947,20 +949,20 @@ fn test_let_statement(s: &LetStatement, name: &str, value: &TestLiteral) {
 //         &TestLiteral::IntegerLiteral(1),
 //     );
 // }
-//
-// fn check_parser_errors(p: Parser) {
-//     let errors = p.errors();
-//
-//     if errors.len() == 0 {
-//         return;
-//     }
-//
-//     println!("parser has {} errors", errors.len());
-//
-//     for e in errors {
-//         println!("parser error: {}", e);
-//     }
-// }
+
+fn check_parser_errors(p: &Parser) {
+    let errors = p.errors();
+
+    if errors.len() == 0 {
+        return;
+    }
+
+    println!("parser has {} errors", errors.len());
+
+    for e in errors {
+        println!("parser error: {}", e);
+    }
+}
 
 /// test integer literal
 ///

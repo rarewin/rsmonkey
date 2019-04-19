@@ -84,8 +84,8 @@ impl<'a> Token<'a> {
     /// let l = Token::new(TokenType::Ident, "hoge");
     /// assert_eq!(l.token_literal(), "hoge");
     /// ```
-    pub fn token_literal(&self) -> String {
-        self.literal.to_string()
+    pub fn token_literal(&self) -> &'a str {
+        self.literal
     }
 
     /// get type of token is `tt`

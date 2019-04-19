@@ -1,7 +1,7 @@
 use rsmonkey::ast::*;
 use rsmonkey::lexer::Lexer;
 use rsmonkey::parser::Parser;
-// use rsmonkey::token::{Token, TokenType};
+use rsmonkey::token::{Token, TokenType};
 //
 enum TestLiteral {
     IntegerLiteral(i64),
@@ -85,544 +85,544 @@ fn test_let_statement(s: &LetStatement, name: &str, value: &TestLiteral) {
     test_literal_expression(&s.value, value);
 }
 
-// #[test]
-// fn test_return_statements() {
-//     struct Test {
-//         input: &'static str,
-//         expected_value: TestLiteral,
-//     }
-//
-//     let return_statement_test = vec![
-//         Test {
-//             input: "return 5;",
-//             expected_value: TestLiteral::IntegerLiteral(5),
-//         },
-//         Test {
-//             input: "return 10;",
-//             expected_value: TestLiteral::IntegerLiteral(10),
-//         },
-//         Test {
-//             input: "return 993322;",
-//             expected_value: TestLiteral::IntegerLiteral(993322),
-//         },
-//     ];
-//
-//     for tt in return_statement_test {
-//         let l = Lexer::new(tt.input.to_string());
-//         let mut p = Parser::new(l);
-//
-//         let program = p.parse_program();
-//         check_parser_errors(p);
-//
-//         assert!(
-//             program.statements.len() == 1,
-//             "length of program.statements should be {}, but got {}",
-//             1,
-//             program.statements.len()
-//         );
-//
-//         let stmt = match &program.statements[0] {
-//             StatementNode::ReturnStatementNode(rs) => rs,
-//             _ => panic!("return statement is expected"),
-//         };
-//
-//         test_literal_expression(&stmt.return_value, &tt.expected_value);
-//     }
-// }
-//
-// #[test]
-// fn test_string() {
-//     let v = vec![StatementNode::LetStatementNode(Box::new(LetStatement {
-//         token: Token {
-//             token_type: TokenType::Let,
-//             literal: "let".to_string(),
-//         },
-//         name: Identifier {
-//             token: Token {
-//                 token_type: TokenType::Ident,
-//                 literal: "myVar".to_string(),
-//             },
-//             value: "myVar".to_string(),
-//         },
-//         value: ExpressionNode::IdentifierNode(Box::new(Identifier {
-//             token: Token {
-//                 token_type: TokenType::Ident,
-//                 literal: "anotherVar".to_string(),
-//             },
-//             value: "myVar".to_string(),
-//         })),
-//     }))];
-//
-//     let program = Program { statements: { v } };
-//
-//     assert_eq!(program.string(), "let myVar = anotherVar;");
-// }
-//
-// #[test]
-// fn test_identifier_expression() {
-//     let input = r##"foobar;"##;
-//
-//     let l = Lexer::new(input.to_string());
-//     let mut p = Parser::new(l);
-//
-//     let program = p.parse_program();
-//     check_parser_errors(p);
-//
-//     assert_eq!(
-//         program.statements.len(),
-//         1,
-//         "program does not have enough statements. got {}",
-//         program.statements.len()
-//     );
-//
-//     let stmt = match &program.statements[0] {
-//         StatementNode::ExpressionStatementNode(es) => es,
-//         _ => panic!("first statement is not expressionstatement"),
-//     };
-//
-//     assert_eq!(stmt.token.token_literal(), "foobar");
-// }
-//
-// #[test]
-// fn test_integer_literal_expression() {
-//     let input = r##"5;"##;
-//
-//     let l = Lexer::new(input.to_string());
-//     let mut p = Parser::new(l);
-//
-//     let program = p.parse_program();
-//     check_parser_errors(p);
-//
-//     assert_eq!(
-//         program.statements.len(),
-//         1,
-//         "program does not have enough statements. got {}",
-//         program.statements.len()
-//     );
-//
-//     assert!(program.statements[0].token_literal() == "5");
-// }
-//
-// /// test string literal
-// #[test]
-// fn test_string_literal_expression() {
-//     let input = r##""hello world""##;
-//
-//     let l = Lexer::new(input.to_string());
-//     let mut p = Parser::new(l);
-//
-//     let program = p.parse_program();
-//     check_parser_errors(p);
-//
-//     assert_eq!(
-//         program.statements.len(),
-//         1,
-//         "program does not have enough statements. got {}",
-//         program.statements.len()
-//     );
-//
-//     assert!(program.statements[0].token_literal() == "hello world");
-// }
-//
-// /// test boolean
-// #[test]
-// fn test_boolean_literal_expression() {
-//     struct Test {
-//         input: &'static str,
-//         value: bool,
-//     };
-//
-//     let boolean_test = vec![
-//         Test {
-//             input: "true",
-//             value: true,
-//         },
-//         Test {
-//             input: "false",
-//             value: false,
-//         },
-//     ];
-//
-//     for tt in boolean_test {
-//         let l = Lexer::new(tt.input.to_string());
-//         let mut p = Parser::new(l);
-//
-//         let program = p.parse_program();
-//         check_parser_errors(p);
-//
-//         assert_eq!(
-//             program.statements.len(),
-//             1,
-//             "program does not have enough statements. got {}",
-//             program.statements.len()
-//         );
-//
-//         let stmt = match &program.statements[0] {
-//             StatementNode::ExpressionStatementNode(es) => es,
-//             _ => panic!("first statement is not expression statement"),
-//         };
-//
-//         let exp = match &stmt.expression {
-//             ExpressionNode::BooleanExpressionNode(bn) => bn,
-//             _ => panic!("this expression statement does not have boolean expression"),
-//         };
-//
-//         assert_eq!(
-//             exp.value, tt.value,
-//             "{} is expected, but got {}",
-//             tt.value, exp.value,
-//         );
-//     }
-// }
-//
-// #[test]
-// fn test_parsing_prefix_expressions() {
-//     struct Test {
-//         input: &'static str,
-//         operator: &'static str,
-//         value: TestLiteral,
-//     };
-//
-//     let prefix_test = vec![
-//         Test {
-//             input: "!5;",
-//             operator: "!",
-//             value: TestLiteral::IntegerLiteral(5),
-//         },
-//         Test {
-//             input: "-15;",
-//             operator: "-",
-//             value: TestLiteral::IntegerLiteral(15),
-//         },
-//         Test {
-//             input: "!true;",
-//             operator: "!",
-//             value: TestLiteral::BooleanLiteral(true),
-//         },
-//         Test {
-//             input: "!false;",
-//             operator: "!",
-//             value: TestLiteral::BooleanLiteral(false),
-//         },
-//     ];
-//
-//     for tt in prefix_test {
-//         let l = Lexer::new(tt.input.to_string());
-//         let mut p = Parser::new(l);
-//
-//         let program = p.parse_program();
-//         check_parser_errors(p);
-//
-//         assert_eq!(
-//             program.statements.len(),
-//             1,
-//             "program does not have the expected number of statements. {}",
-//             program.statements.len()
-//         );
-//
-//         let stmt = match &program.statements[0] {
-//             StatementNode::ExpressionStatementNode(es) => es,
-//             _ => panic!("first statement is not expression statement"),
-//         };
-//
-//         let exp = match &stmt.expression {
-//             ExpressionNode::PrefixExpressionNode(pe) => pe,
-//             _ => panic!("this expression statement does not have prefix expression"),
-//         };
-//
-//         assert_eq!(
-//             tt.operator, exp.operator,
-//             "unexpected operator {} (expected {})",
-//             exp.operator, tt.operator
-//         );
-//
-//         test_literal_expression(&exp.right, &tt.value);
-//     }
-// }
-//
-// #[test]
-// fn test_parsing_infix_expressions() {
-//     struct Test {
-//         input: &'static str,
-//         left_value: TestLiteral,
-//         operator: &'static str,
-//         right_value: TestLiteral,
-//     };
-//
-//     let infix_test = vec![
-//         Test {
-//             input: "5 + 5;",
-//             left_value: TestLiteral::IntegerLiteral(5),
-//             operator: "+",
-//             right_value: TestLiteral::IntegerLiteral(5),
-//         },
-//         Test {
-//             input: "5 - 5;",
-//             left_value: TestLiteral::IntegerLiteral(5),
-//             operator: "-",
-//             right_value: TestLiteral::IntegerLiteral(5),
-//         },
-//         Test {
-//             input: "5 * 4;",
-//             left_value: TestLiteral::IntegerLiteral(5),
-//             operator: "*",
-//             right_value: TestLiteral::IntegerLiteral(4),
-//         },
-//         Test {
-//             input: "8 / 4;",
-//             left_value: TestLiteral::IntegerLiteral(8),
-//             operator: "/",
-//             right_value: TestLiteral::IntegerLiteral(4),
-//         },
-//         Test {
-//             input: "2 > 8;",
-//             left_value: TestLiteral::IntegerLiteral(2),
-//             operator: ">",
-//             right_value: TestLiteral::IntegerLiteral(8),
-//         },
-//         Test {
-//             input: "8 < 2;",
-//             left_value: TestLiteral::IntegerLiteral(8),
-//             operator: "<",
-//             right_value: TestLiteral::IntegerLiteral(2),
-//         },
-//         Test {
-//             input: "2 == 2;",
-//             left_value: TestLiteral::IntegerLiteral(2),
-//             operator: "==",
-//             right_value: TestLiteral::IntegerLiteral(2),
-//         },
-//         Test {
-//             input: "3 != 2;",
-//             left_value: TestLiteral::IntegerLiteral(3),
-//             operator: "!=",
-//             right_value: TestLiteral::IntegerLiteral(2),
-//         },
-//         Test {
-//             input: "true == true;",
-//             left_value: TestLiteral::BooleanLiteral(true),
-//             operator: "==",
-//             right_value: TestLiteral::BooleanLiteral(true),
-//         },
-//         Test {
-//             input: "true != false;",
-//             left_value: TestLiteral::BooleanLiteral(true),
-//             operator: "!=",
-//             right_value: TestLiteral::BooleanLiteral(false),
-//         },
-//         Test {
-//             input: "false == false;",
-//             left_value: TestLiteral::BooleanLiteral(false),
-//             operator: "==",
-//             right_value: TestLiteral::BooleanLiteral(false),
-//         },
-//     ];
-//
-//     for tt in infix_test {
-//         let l = Lexer::new(tt.input.to_string());
-//         let mut p = Parser::new(l);
-//
-//         let program = p.parse_program();
-//         check_parser_errors(p);
-//
-//         let stmt = match &program.statements[0] {
-//             StatementNode::ExpressionStatementNode(es) => es,
-//             _ => panic!("first statement is not expression statement"),
-//         };
-//
-//         test_infix_expression(
-//             &stmt.expression,
-//             &tt.left_value,
-//             tt.operator,
-//             &tt.right_value,
-//         );
-//     }
-// }
-//
-// #[test]
-// fn test_operator_precedence_parsing() {
-//     struct Test {
-//         input: &'static str,
-//         expected: &'static str,
-//     };
-//
-//     let operator_precedence_test = vec![
-//         Test {
-//             input: "-a * b;",
-//             expected: "((-a) * b)",
-//         },
-//         Test {
-//             input: "!-a",
-//             expected: "(!(-a))",
-//         },
-//         Test {
-//             input: "a + b + c",
-//             expected: "((a + b) + c)",
-//         },
-//         Test {
-//             input: "a + b - c",
-//             expected: "((a + b) - c)",
-//         },
-//         Test {
-//             input: "a * b * c",
-//             expected: "((a * b) * c)",
-//         },
-//         Test {
-//             input: "a * b / c",
-//             expected: "((a * b) / c)",
-//         },
-//         Test {
-//             input: "a + b * c + d / e - f",
-//             expected: "(((a + (b * c)) + (d / e)) - f)",
-//         },
-//         Test {
-//             input: "3 + 4; -5 * 5;",
-//             expected: "(3 + 4)((-5) * 5)",
-//         },
-//         Test {
-//             input: "5 > 4 == 3 < 4",
-//             expected: "((5 > 4) == (3 < 4))",
-//         },
-//         Test {
-//             input: "5 < 4 != 3 > 4",
-//             expected: "((5 < 4) != (3 > 4))",
-//         },
-//         Test {
-//             input: "3 + 4 * 5 == 3 * 1 + 4 * 5",
-//             expected: "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
-//         },
-//         Test {
-//             input: "true",
-//             expected: "true",
-//         },
-//         Test {
-//             input: "false",
-//             expected: "false",
-//         },
-//         Test {
-//             input: "3 > 5 == false",
-//             expected: "((3 > 5) == false)",
-//         },
-//         Test {
-//             input: "3 < 5 == true",
-//             expected: "((3 < 5) == true)",
-//         },
-//         Test {
-//             input: "1 + (2 + 3) + 4;",
-//             expected: "((1 + (2 + 3)) + 4)",
-//         },
-//         Test {
-//             input: "(5 + 5) * 2;",
-//             expected: "((5 + 5) * 2)",
-//         },
-//         Test {
-//             input: "2 / (5 + 5);",
-//             expected: "(2 / (5 + 5))",
-//         },
-//         Test {
-//             input: "-(5 + 5);",
-//             expected: "(-(5 + 5))",
-//         },
-//         Test {
-//             input: "!(true == true);",
-//             expected: "(!(true == true))",
-//         },
-//         Test {
-//             input: "a + add(b * c) + d;",
-//             expected: "((a + add((b * c))) + d)",
-//         },
-//         Test {
-//             input: "add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8));",
-//             expected: "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))",
-//         },
-//         Test {
-//             input: "add(a + b + c * d / f + g);",
-//             expected: "add((((a + b) + ((c * d) / f)) + g))",
-//         },
-//         Test {
-//             input: "a * [1, 2, 3, 4][b * c] * d",
-//             expected: "((a * ([1, 2, 3, 4][(b * c)])) * d)",
-//         },
-//         Test {
-//             input: "add(a * b[2], b[1], 2 * [1, 2][1])",
-//             expected: "add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))",
-//         },
-//     ];
-//
-//     for tt in operator_precedence_test {
-//         let l = Lexer::new(tt.input.to_string());
-//         let mut p = Parser::new(l);
-//
-//         let program = p.parse_program();
-//         check_parser_errors(p);
-//
-//         assert_eq!(
-//             program.string(),
-//             tt.expected,
-//             r##"expected "{}", got "{}""##,
-//             tt.expected,
-//             program.string(),
-//         );
-//     }
-// }
-//
-// #[test]
-// fn test_if_expression() {
-//     let input = "if (x < y) { x };";
-//
-//     let l = Lexer::new(input.to_string());
-//     let mut p = Parser::new(l);
-//
-//     let program = p.parse_program();
-//     check_parser_errors(p);
-//
-//     assert!(
-//         program.statements.len() == 1,
-//         "program does not have the expected number of statements. {}",
-//         program.statements.len()
-//     );
-//
-//     let exps = match &program.statements[0] {
-//         StatementNode::ExpressionStatementNode(es) => es,
-//         _ => panic!("expression stateme is expected"),
-//     };
-//
-//     let exp = match &exps.expression {
-//         ExpressionNode::IfExpressionNode(ie) => ie,
-//         _ => panic!("if expression is expected"),
-//     };
-//
-//     test_infix_expression(
-//         &exp.condition,
-//         &TestLiteral::StringLiteral("x"),
-//         "<",
-//         &TestLiteral::StringLiteral("y"),
-//     );
-//
-//     let cs = match &exp.consequence {
-//         StatementNode::BlockStatementNode(bs) => bs,
-//         _ => panic!("consequence does not have block statement"),
-//     };
-//
-//     assert!(
-//         cs.statements.len() == 1,
-//         "consequence does not have the expected number of statements. {}",
-//         cs.statements.len()
-//     );
-//
-//     let conex = match &cs.statements[0] {
-//         StatementNode::ExpressionStatementNode(es) => es,
-//         _ => panic!("expression statement is expected"),
-//     };
-//
-//     test_literal_expression(&conex.expression, &TestLiteral::StringLiteral("x"));
-//
-//     match &exp.alternative {
-//         StatementNode::Null => {}
-//         _ => panic!("alternative has unexpected statement node"),
-//     };
-// }
-//
+#[test]
+fn test_return_statements() {
+    struct Test {
+        input: &'static str,
+        expected_value: TestLiteral,
+    }
+
+    let return_statement_test = vec![
+        Test {
+            input: "return 5;",
+            expected_value: TestLiteral::IntegerLiteral(5),
+        },
+        Test {
+            input: "return 10;",
+            expected_value: TestLiteral::IntegerLiteral(10),
+        },
+        Test {
+            input: "return 993322;",
+            expected_value: TestLiteral::IntegerLiteral(993322),
+        },
+    ];
+
+    for tt in return_statement_test {
+        let l = Lexer::new(tt.input);
+        let p = Parser::new(l);
+
+        let program = p.parse_program();
+        check_parser_errors(&p);
+
+        assert!(
+            program.statements.len() == 1,
+            "length of program.statements should be {}, but got {}",
+            1,
+            program.statements.len()
+        );
+
+        let stmt = match &program.statements[0] {
+            StatementNode::ReturnStatementNode(rs) => rs,
+            _ => panic!("return statement is expected"),
+        };
+
+        test_literal_expression(&stmt.return_value, &tt.expected_value);
+    }
+}
+
+#[test]
+fn test_string() {
+    let v = vec![StatementNode::LetStatementNode(Box::new(LetStatement {
+        token: Token {
+            token_type: TokenType::Let,
+            literal: "let",
+        },
+        name: Identifier {
+            token: Token {
+                token_type: TokenType::Ident,
+                literal: "myVar",
+            },
+            value: "myVar",
+        },
+        value: ExpressionNode::IdentifierNode(Box::new(Identifier {
+            token: Token {
+                token_type: TokenType::Ident,
+                literal: "anotherVar",
+            },
+            value: "myVar",
+        })),
+    }))];
+
+    let program = Program { statements: { v } };
+
+    assert_eq!(program.string(), "let myVar = anotherVar;");
+}
+
+#[test]
+fn test_identifier_expression() {
+    let input = r##"foobar;"##;
+
+    let l = Lexer::new(input);
+    let p = Parser::new(l);
+
+    let program = p.parse_program();
+    check_parser_errors(&p);
+
+    assert_eq!(
+        program.statements.len(),
+        1,
+        "program does not have enough statements. got {}",
+        program.statements.len()
+    );
+
+    let stmt = match &program.statements[0] {
+        StatementNode::ExpressionStatementNode(es) => es,
+        _ => panic!("first statement is not expressionstatement"),
+    };
+
+    assert_eq!(stmt.token.token_literal(), "foobar");
+}
+
+#[test]
+fn test_integer_literal_expression() {
+    let input = r##"5;"##;
+
+    let l = Lexer::new(input);
+    let p = Parser::new(l);
+
+    let program = p.parse_program();
+    check_parser_errors(&p);
+
+    assert_eq!(
+        program.statements.len(),
+        1,
+        "program does not have enough statements. got {}",
+        program.statements.len()
+    );
+
+    assert!(program.statements[0].token_literal() == "5");
+}
+
+/// test string literal
+#[test]
+fn test_string_literal_expression() {
+    let input = r##""hello world""##;
+
+    let l = Lexer::new(input);
+    let p = Parser::new(l);
+
+    let program = p.parse_program();
+    check_parser_errors(&p);
+
+    assert_eq!(
+        program.statements.len(),
+        1,
+        "program does not have enough statements. got {}",
+        program.statements.len()
+    );
+
+    assert!(program.statements[0].token_literal() == "hello world");
+}
+
+/// test boolean
+#[test]
+fn test_boolean_literal_expression() {
+    struct Test {
+        input: &'static str,
+        value: bool,
+    };
+
+    let boolean_test = vec![
+        Test {
+            input: "true",
+            value: true,
+        },
+        Test {
+            input: "false",
+            value: false,
+        },
+    ];
+
+    for tt in boolean_test {
+        let l = Lexer::new(tt.input);
+        let p = Parser::new(l);
+
+        let program = p.parse_program();
+        check_parser_errors(&p);
+
+        assert_eq!(
+            program.statements.len(),
+            1,
+            "program does not have enough statements. got {}",
+            program.statements.len()
+        );
+
+        let stmt = match &program.statements[0] {
+            StatementNode::ExpressionStatementNode(es) => es,
+            _ => panic!("first statement is not expression statement"),
+        };
+
+        let exp = match &stmt.expression {
+            ExpressionNode::BooleanExpressionNode(bn) => bn,
+            _ => panic!("this expression statement does not have boolean expression"),
+        };
+
+        assert_eq!(
+            exp.value, tt.value,
+            "{} is expected, but got {}",
+            tt.value, exp.value,
+        );
+    }
+}
+
+#[test]
+fn test_parsing_prefix_expressions() {
+    struct Test {
+        input: &'static str,
+        operator: &'static str,
+        value: TestLiteral,
+    };
+
+    let prefix_test = vec![
+        Test {
+            input: "!5;",
+            operator: "!",
+            value: TestLiteral::IntegerLiteral(5),
+        },
+        Test {
+            input: "-15;",
+            operator: "-",
+            value: TestLiteral::IntegerLiteral(15),
+        },
+        Test {
+            input: "!true;",
+            operator: "!",
+            value: TestLiteral::BooleanLiteral(true),
+        },
+        Test {
+            input: "!false;",
+            operator: "!",
+            value: TestLiteral::BooleanLiteral(false),
+        },
+    ];
+
+    for tt in prefix_test {
+        let l = Lexer::new(tt.input);
+        let p = Parser::new(l);
+
+        let program = p.parse_program();
+        check_parser_errors(&p);
+
+        assert_eq!(
+            program.statements.len(),
+            1,
+            "program does not have the expected number of statements. {}",
+            program.statements.len()
+        );
+
+        let stmt = match &program.statements[0] {
+            StatementNode::ExpressionStatementNode(es) => es,
+            _ => panic!("first statement is not expression statement"),
+        };
+
+        let exp = match &stmt.expression {
+            ExpressionNode::PrefixExpressionNode(pe) => pe,
+            _ => panic!("this expression statement does not have prefix expression"),
+        };
+
+        assert_eq!(
+            tt.operator, exp.operator,
+            "unexpected operator {} (expected {})",
+            exp.operator, tt.operator
+        );
+
+        test_literal_expression(&exp.right, &tt.value);
+    }
+}
+
+#[test]
+fn test_parsing_infix_expressions() {
+    struct Test {
+        input: &'static str,
+        left_value: TestLiteral,
+        operator: &'static str,
+        right_value: TestLiteral,
+    };
+
+    let infix_test = vec![
+        Test {
+            input: "5 + 5;",
+            left_value: TestLiteral::IntegerLiteral(5),
+            operator: "+",
+            right_value: TestLiteral::IntegerLiteral(5),
+        },
+        Test {
+            input: "5 - 5;",
+            left_value: TestLiteral::IntegerLiteral(5),
+            operator: "-",
+            right_value: TestLiteral::IntegerLiteral(5),
+        },
+        Test {
+            input: "5 * 4;",
+            left_value: TestLiteral::IntegerLiteral(5),
+            operator: "*",
+            right_value: TestLiteral::IntegerLiteral(4),
+        },
+        Test {
+            input: "8 / 4;",
+            left_value: TestLiteral::IntegerLiteral(8),
+            operator: "/",
+            right_value: TestLiteral::IntegerLiteral(4),
+        },
+        Test {
+            input: "2 > 8;",
+            left_value: TestLiteral::IntegerLiteral(2),
+            operator: ">",
+            right_value: TestLiteral::IntegerLiteral(8),
+        },
+        Test {
+            input: "8 < 2;",
+            left_value: TestLiteral::IntegerLiteral(8),
+            operator: "<",
+            right_value: TestLiteral::IntegerLiteral(2),
+        },
+        Test {
+            input: "2 == 2;",
+            left_value: TestLiteral::IntegerLiteral(2),
+            operator: "==",
+            right_value: TestLiteral::IntegerLiteral(2),
+        },
+        Test {
+            input: "3 != 2;",
+            left_value: TestLiteral::IntegerLiteral(3),
+            operator: "!=",
+            right_value: TestLiteral::IntegerLiteral(2),
+        },
+        Test {
+            input: "true == true;",
+            left_value: TestLiteral::BooleanLiteral(true),
+            operator: "==",
+            right_value: TestLiteral::BooleanLiteral(true),
+        },
+        Test {
+            input: "true != false;",
+            left_value: TestLiteral::BooleanLiteral(true),
+            operator: "!=",
+            right_value: TestLiteral::BooleanLiteral(false),
+        },
+        Test {
+            input: "false == false;",
+            left_value: TestLiteral::BooleanLiteral(false),
+            operator: "==",
+            right_value: TestLiteral::BooleanLiteral(false),
+        },
+    ];
+
+    for tt in infix_test {
+        let l = Lexer::new(tt.input);
+        let p = Parser::new(l);
+
+        let program = p.parse_program();
+        check_parser_errors(&p);
+
+        let stmt = match &program.statements[0] {
+            StatementNode::ExpressionStatementNode(es) => es,
+            _ => panic!("first statement is not expression statement"),
+        };
+
+        test_infix_expression(
+            &stmt.expression,
+            &tt.left_value,
+            tt.operator,
+            &tt.right_value,
+        );
+    }
+}
+
+#[test]
+fn test_operator_precedence_parsing() {
+    struct Test {
+        input: &'static str,
+        expected: &'static str,
+    };
+
+    let operator_precedence_test = vec![
+        Test {
+            input: "-a * b;",
+            expected: "((-a) * b)",
+        },
+        Test {
+            input: "!-a",
+            expected: "(!(-a))",
+        },
+        Test {
+            input: "a + b + c",
+            expected: "((a + b) + c)",
+        },
+        Test {
+            input: "a + b - c",
+            expected: "((a + b) - c)",
+        },
+        Test {
+            input: "a * b * c",
+            expected: "((a * b) * c)",
+        },
+        Test {
+            input: "a * b / c",
+            expected: "((a * b) / c)",
+        },
+        Test {
+            input: "a + b * c + d / e - f",
+            expected: "(((a + (b * c)) + (d / e)) - f)",
+        },
+        Test {
+            input: "3 + 4; -5 * 5;",
+            expected: "(3 + 4)((-5) * 5)",
+        },
+        Test {
+            input: "5 > 4 == 3 < 4",
+            expected: "((5 > 4) == (3 < 4))",
+        },
+        Test {
+            input: "5 < 4 != 3 > 4",
+            expected: "((5 < 4) != (3 > 4))",
+        },
+        Test {
+            input: "3 + 4 * 5 == 3 * 1 + 4 * 5",
+            expected: "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
+        },
+        Test {
+            input: "true",
+            expected: "true",
+        },
+        Test {
+            input: "false",
+            expected: "false",
+        },
+        Test {
+            input: "3 > 5 == false",
+            expected: "((3 > 5) == false)",
+        },
+        Test {
+            input: "3 < 5 == true",
+            expected: "((3 < 5) == true)",
+        },
+        Test {
+            input: "1 + (2 + 3) + 4;",
+            expected: "((1 + (2 + 3)) + 4)",
+        },
+        Test {
+            input: "(5 + 5) * 2;",
+            expected: "((5 + 5) * 2)",
+        },
+        Test {
+            input: "2 / (5 + 5);",
+            expected: "(2 / (5 + 5))",
+        },
+        Test {
+            input: "-(5 + 5);",
+            expected: "(-(5 + 5))",
+        },
+        Test {
+            input: "!(true == true);",
+            expected: "(!(true == true))",
+        },
+        Test {
+            input: "a + add(b * c) + d;",
+            expected: "((a + add((b * c))) + d)",
+        },
+        Test {
+            input: "add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8));",
+            expected: "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))",
+        },
+        Test {
+            input: "add(a + b + c * d / f + g);",
+            expected: "add((((a + b) + ((c * d) / f)) + g))",
+        },
+        Test {
+            input: "a * [1, 2, 3, 4][b * c] * d",
+            expected: "((a * ([1, 2, 3, 4][(b * c)])) * d)",
+        },
+        Test {
+            input: "add(a * b[2], b[1], 2 * [1, 2][1])",
+            expected: "add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))",
+        },
+    ];
+
+    for tt in operator_precedence_test {
+        let l = Lexer::new(tt.input);
+        let p = Parser::new(l);
+
+        let program = p.parse_program();
+        check_parser_errors(&p);
+
+        assert_eq!(
+            program.string(),
+            tt.expected,
+            r##"expected "{}", got "{}""##,
+            tt.expected,
+            program.string(),
+        );
+    }
+}
+
+#[test]
+fn test_if_expression() {
+    let input = "if (x < y) { x };";
+
+    let l = Lexer::new(input);
+    let p = Parser::new(l);
+
+    let program = p.parse_program();
+    check_parser_errors(&p);
+
+    assert!(
+        program.statements.len() == 1,
+        "program does not have the expected number of statements. {}",
+        program.statements.len()
+    );
+
+    let exps = match &program.statements[0] {
+        StatementNode::ExpressionStatementNode(es) => es,
+        _ => panic!("expression stateme is expected"),
+    };
+
+    let exp = match &exps.expression {
+        ExpressionNode::IfExpressionNode(ie) => ie,
+        _ => panic!("if expression is expected"),
+    };
+
+    test_infix_expression(
+        &exp.condition,
+        &TestLiteral::StringLiteral("x"),
+        "<",
+        &TestLiteral::StringLiteral("y"),
+    );
+
+    let cs = match &exp.consequence {
+        StatementNode::BlockStatementNode(bs) => bs,
+        _ => panic!("consequence does not have block statement"),
+    };
+
+    assert!(
+        cs.statements.len() == 1,
+        "consequence does not have the expected number of statements. {}",
+        cs.statements.len()
+    );
+
+    let conex = match &cs.statements[0] {
+        StatementNode::ExpressionStatementNode(es) => es,
+        _ => panic!("expression statement is expected"),
+    };
+
+    test_literal_expression(&conex.expression, &TestLiteral::StringLiteral("x"));
+
+    match &exp.alternative {
+        StatementNode::Null => {}
+        _ => panic!("alternative has unexpected statement node"),
+    };
+}
+
 // #[test]
 // fn test_if_else_expression() {
 //     let input = "if (x < y) { x; } else { y };";
@@ -1049,25 +1049,25 @@ fn test_literal_expression(en: &ExpressionNode, literal: &TestLiteral) {
     }
 }
 
-// /// test infix expression
-// fn test_infix_expression(
-//     en: &ExpressionNode,
-//     ex_left: &TestLiteral,
-//     ex_operator: &'static str,
-//     ex_right: &TestLiteral,
-// ) {
-//     let ifn = match &en {
-//         ExpressionNode::InfixExpressionNode(ie) => ie,
-//         _ => panic!("not infix expression {:?}", en),
-//     };
-//
-//     test_literal_expression(&ifn.left, &ex_left);
-//
-//     assert_eq!(
-//         ifn.operator, ex_operator,
-//         "unexpected operator {} (expected {})",
-//         ifn.operator, ex_operator,
-//     );
-//
-//     test_literal_expression(&ifn.right, &ex_right);
-// }
+/// test infix expression
+fn test_infix_expression(
+    en: &ExpressionNode,
+    ex_left: &TestLiteral,
+    ex_operator: &'static str,
+    ex_right: &TestLiteral,
+) {
+    let ifn = match &en {
+        ExpressionNode::InfixExpressionNode(ie) => ie,
+        _ => panic!("not infix expression {:?}", en),
+    };
+
+    test_literal_expression(&ifn.left, &ex_left);
+
+    assert_eq!(
+        ifn.operator, ex_operator,
+        "unexpected operator {} (expected {})",
+        ifn.operator, ex_operator,
+    );
+
+    test_literal_expression(&ifn.right, &ex_right);
+}

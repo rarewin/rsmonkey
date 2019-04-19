@@ -65,7 +65,7 @@ impl<'a> Parser<'a> {
             self.next_token();
             true
         } else {
-            // self.peek_error(tt);
+            self.peek_error(tt);
             false
         }
     }
@@ -87,24 +87,23 @@ impl<'a> Parser<'a> {
     }
 
     /// parse statement
-    pub fn parse_statement(&self) -> StatementNode {
+    pub fn parse_statement(&self) -> StatementNode<'a> {
         match self.cur_token.get().token_type {
             TokenType::Let => self.parse_let_statement(),
-            // TokenType::Return => self.parse_return_statement(),
-            // _ => self.parse_expression_statement(),
-            _ => StatementNode::Null,
+            TokenType::Return => self.parse_return_statement(),
+            _ => self.parse_expression_statement(),
         }
     }
 
     /// parse let statement
-    pub fn parse_let_statement(&self) -> StatementNode {
+    pub fn parse_let_statement(&self) -> StatementNode<'a> {
         if !self.expect_peek(TokenType::Ident) {
             return StatementNode::Null;
         }
 
         let name = {
             let token = self.cur_token.clone().get();
-            let value = self.cur_token.get().token_literal();
+            let value = self.cur_token.get().literal;
 
             Identifier { token, value }
         };
@@ -126,41 +125,41 @@ impl<'a> Parser<'a> {
         return StatementNode::LetStatementNode(Box::new(LetStatement { token, name, value }));
     }
 
-    //     /// parse return statement
-    //     pub fn parse_return_statement(&mut self) -> StatementNode {
-    //         let token = self.cur_token.clone();
-    //
-    //         self.next_token();
-    //
-    //         let return_value = self.parse_expression(OperationPrecedence::Lowest);
-    //
-    //         if self.peek_token_is(TokenType::Semicolon) {
-    //             self.next_token();
-    //         }
-    //
-    //         return StatementNode::ReturnStatementNode(Box::new(ReturnStatement {
-    //             token,
-    //             return_value,
-    //         }));
-    //     }
-    //
-    //     /// parse expression statement
-    //     pub fn parse_expression_statement(&mut self) -> StatementNode {
-    //         let stmt = ExpressionStatement {
-    //             token: self.cur_token.clone(),
-    //             expression: self.parse_expression(OperationPrecedence::Lowest),
-    //         };
-    //
-    //         if let ExpressionNode::Null = stmt.expression {
-    //             return StatementNode::Null;
-    //         }
-    //
-    //         if self.peek_token_is(TokenType::Semicolon) {
-    //             self.next_token();
-    //         }
-    //
-    //         return StatementNode::ExpressionStatementNode(Box::new(stmt));
-    //     }
+    /// parse return statement
+    pub fn parse_return_statement(&self) -> StatementNode<'a> {
+        let token = self.cur_token.clone().get();
+
+        self.next_token();
+
+        let return_value = self.parse_expression(OperationPrecedence::Lowest);
+
+        if self.peek_token_is(TokenType::Semicolon) {
+            self.next_token();
+        }
+
+        return StatementNode::ReturnStatementNode(Box::new(ReturnStatement {
+            token,
+            return_value,
+        }));
+    }
+
+    /// parse expression statement
+    pub fn parse_expression_statement(&self) -> StatementNode<'a> {
+        let stmt = ExpressionStatement {
+            token: self.cur_token.clone().get(),
+            expression: self.parse_expression(OperationPrecedence::Lowest),
+        };
+
+        if let ExpressionNode::Null = stmt.expression {
+            return StatementNode::Null;
+        }
+
+        if self.peek_token_is(TokenType::Semicolon) {
+            self.next_token();
+        }
+
+        return StatementNode::ExpressionStatementNode(Box::new(stmt));
+    }
 
     /// parse expression
     pub fn parse_expression(&self, precedence: OperationPrecedence) -> ExpressionNode<'a> {
@@ -182,7 +181,7 @@ impl<'a> Parser<'a> {
     pub fn parse_identifier(&self) -> ExpressionNode<'a> {
         let ident = Identifier {
             token: self.cur_token.clone().get(),
-            value: self.cur_token.get().literal.to_string(),
+            value: self.cur_token.get().literal,
         };
 
         return ExpressionNode::IdentifierNode(Box::new(ident));
@@ -213,46 +212,46 @@ impl<'a> Parser<'a> {
         return ExpressionNode::StringLiteralNode(Box::new(sl));
     }
 
-    //     /// parse function literal
-    //     pub fn parse_function_literal(&mut self) -> ExpressionNode {
-    //         let token = self.cur_token.clone();
-    //
-    //         if !self.expect_peek(TokenType::LParen) {
-    //             return ExpressionNode::Null;
-    //         }
-    //
-    //         let parameters = match self.parse_function_parameters() {
-    //             Some(p) => p,
-    //             _ => return ExpressionNode::Null,
-    //         };
-    //
-    //         if !self.expect_peek(TokenType::LBrace) {
-    //             return ExpressionNode::Null;
-    //         }
-    //
-    //         let body = self.parse_block_statement();
-    //
-    //         return ExpressionNode::FunctionLiteralNode(Box::new(FunctionLiteral {
-    //             token,
-    //             parameters,
-    //             body,
-    //         }));
-    //     }
-    //
-    //     /// parse prefix expression
-    //     pub fn parse_prefix_expression(&mut self) -> ExpressionNode {
-    //         let mut pe = PrefixExpression {
-    //             token: self.cur_token.clone(),
-    //             operator: self.cur_token.token_literal(),
-    //             right: ExpressionNode::Null,
-    //         };
-    //
-    //         self.next_token();
-    //
-    //         pe.right = self.parse_expression(OperationPrecedence::Prefix);
-    //
-    //         return ExpressionNode::PrefixExpressionNode(Box::new(pe));
-    //     }
+    /// parse function literal
+    pub fn parse_function_literal(&self) -> ExpressionNode<'a> {
+        let token = self.cur_token.clone().get();
+
+        if !self.expect_peek(TokenType::LParen) {
+            return ExpressionNode::Null;
+        }
+
+        let parameters = match self.parse_function_parameters() {
+            Some(p) => p,
+            _ => return ExpressionNode::Null,
+        };
+
+        if !self.expect_peek(TokenType::LBrace) {
+            return ExpressionNode::Null;
+        }
+
+        let body = self.parse_block_statement();
+
+        return ExpressionNode::FunctionLiteralNode(Box::new(FunctionLiteral {
+            token,
+            parameters,
+            body,
+        }));
+    }
+
+    /// parse prefix expression
+    pub fn parse_prefix_expression(&self) -> ExpressionNode<'a> {
+        let mut pe = PrefixExpression {
+            token: self.cur_token.clone().get(),
+            operator: self.cur_token.get().token_literal(),
+            right: ExpressionNode::Null,
+        };
+
+        self.next_token();
+
+        pe.right = self.parse_expression(OperationPrecedence::Prefix);
+
+        return ExpressionNode::PrefixExpressionNode(Box::new(pe));
+    }
 
     /// parse boolean expression
     pub fn parse_boolean_expression(&self) -> ExpressionNode<'a> {
@@ -264,175 +263,175 @@ impl<'a> Parser<'a> {
         return ExpressionNode::BooleanExpressionNode(Box::new(be));
     }
 
-    //     /// parse grouped expression
-    //     pub fn parse_grouped_expression(&mut self) -> ExpressionNode {
-    //         self.next_token();
-    //
-    //         let exp = self.parse_expression(OperationPrecedence::Lowest);
-    //
-    //         if !self.expect_peek(TokenType::RParen) {
-    //             return ExpressionNode::Null;
-    //         }
-    //
-    //         return exp;
-    //     }
-    //
-    //     /// parse if expression
-    //     pub fn parse_if_expression(&mut self) -> ExpressionNode {
-    //         let token = self.cur_token.clone();
-    //
-    //         if !self.expect_peek(TokenType::LParen) {
-    //             return ExpressionNode::Null;
-    //         }
-    //
-    //         self.next_token();
-    //
-    //         let condition = self.parse_expression(OperationPrecedence::Lowest);
-    //
-    //         if !self.expect_peek(TokenType::RParen) {
-    //             return ExpressionNode::Null;
-    //         }
-    //
-    //         if !self.expect_peek(TokenType::LBrace) {
-    //             return ExpressionNode::Null;
-    //         }
-    //
-    //         let consequence = self.parse_block_statement();
-    //
-    //         let alternative = if self.peek_token_is(TokenType::Else) {
-    //             self.next_token();
-    //
-    //             if !self.expect_peek(TokenType::LBrace) {
-    //                 return ExpressionNode::Null;
-    //             }
-    //             self.parse_block_statement()
-    //         } else {
-    //             StatementNode::Null
-    //         };
-    //
-    //         return ExpressionNode::IfExpressionNode(Box::new(IfExpression {
-    //             token,
-    //             condition,
-    //             consequence,
-    //             alternative,
-    //         }));
-    //     }
-    //
-    //     /// parse block statement
-    //     pub fn parse_block_statement(&mut self) -> StatementNode {
-    //         let mut block = BlockStatement {
-    //             token: self.cur_token.clone(),
-    //             statements: Vec::<StatementNode>::new(),
-    //         };
-    //
-    //         self.next_token();
-    //
-    //         while !self.cur_token_is(TokenType::RBrace) && !self.cur_token_is(TokenType::EoF) {
-    //             let stmt = self.parse_statement();
-    //
-    //             if let StatementNode::Null = stmt {
-    //                 return StatementNode::Null;
-    //             }
-    //
-    //             block.statements.push(stmt);
-    //             self.next_token();
-    //         }
-    //
-    //         return StatementNode::BlockStatementNode(Box::new(block));
-    //     }
-    //
-    //     /// parse function parameters
-    //     pub fn parse_function_parameters(&mut self) -> Option<Vec<ExpressionNode>> {
-    //         let mut params = Vec::<ExpressionNode>::new();
-    //
-    //         if self.peek_token_is(TokenType::RParen) {
-    //             self.next_token();
-    //             return Some(params);
-    //         }
-    //
-    //         self.next_token();
-    //
-    //         params.push(ExpressionNode::IdentifierNode(Box::new(Identifier {
-    //             token: self.cur_token.clone(),
-    //             value: self.cur_token.literal.clone(),
-    //         })));
-    //
-    //         while self.peek_token_is(TokenType::Comma) {
-    //             self.next_token();
-    //             self.next_token();
-    //
-    //             params.push(ExpressionNode::IdentifierNode(Box::new(Identifier {
-    //                 token: self.cur_token.clone(),
-    //                 value: self.cur_token.literal.clone(),
-    //             })));
-    //         }
-    //
-    //         if !self.expect_peek(TokenType::RParen) {
-    //             return None;
-    //         }
-    //
-    //         return Some(params);
-    //     }
-    //
-    //     /// parse call expression
-    //     pub fn parse_call_expression(&mut self, left: ExpressionNode) -> ExpressionNode {
-    //         let token = self.cur_token.clone();
-    //         let function = left;
-    //
-    //         let arguments = match self.parse_call_arguments() {
-    //             Some(a) => a,
-    //             _ => return ExpressionNode::Null,
-    //         };
-    //
-    //         return ExpressionNode::CallExpressionNode(Box::new(CallExpression {
-    //             token,
-    //             function,
-    //             arguments,
-    //         }));
-    //     }
-    //
-    //     /// parse index expression
-    //     pub fn parse_index_expression(&mut self, left: ExpressionNode) -> ExpressionNode {
-    //         let token = self.cur_token.clone();
-    //         self.next_token();
-    //         let index = self.parse_expression(OperationPrecedence::Lowest);
-    //
-    //         if !self.expect_peek(TokenType::RBracket) {
-    //             return ExpressionNode::Null;
-    //         }
-    //
-    //         return ExpressionNode::IndexExpressionNode(Box::new(IndexExpression {
-    //             token,
-    //             left,
-    //             index,
-    //         }));
-    //     }
-    //
-    //     /// parse function call arguments
-    //     pub fn parse_call_arguments(&mut self) -> Option<Vec<ExpressionNode>> {
-    //         let mut arguments = Vec::<ExpressionNode>::new();
-    //
-    //         if self.peek_token_is(TokenType::RParen) {
-    //             self.next_token();
-    //             return Some(arguments);
-    //         };
-    //
-    //         self.next_token();
-    //
-    //         arguments.push(self.parse_expression(OperationPrecedence::Lowest));
-    //
-    //         while self.peek_token_is(TokenType::Comma) {
-    //             self.next_token();
-    //             self.next_token();
-    //             arguments.push(self.parse_expression(OperationPrecedence::Lowest));
-    //         }
-    //
-    //         if !self.expect_peek(TokenType::RParen) {
-    //             return None;
-    //         }
-    //
-    //         return Some(arguments);
-    //     }
+    /// parse grouped expression
+    pub fn parse_grouped_expression(&self) -> ExpressionNode<'a> {
+        self.next_token();
+
+        let exp = self.parse_expression(OperationPrecedence::Lowest);
+
+        if !self.expect_peek(TokenType::RParen) {
+            return ExpressionNode::Null;
+        }
+
+        return exp;
+    }
+
+    /// parse if expression
+    pub fn parse_if_expression(&self) -> ExpressionNode<'a> {
+        let token = self.cur_token.clone().get();
+
+        if !self.expect_peek(TokenType::LParen) {
+            return ExpressionNode::Null;
+        }
+
+        self.next_token();
+
+        let condition = self.parse_expression(OperationPrecedence::Lowest);
+
+        if !self.expect_peek(TokenType::RParen) {
+            return ExpressionNode::Null;
+        }
+
+        if !self.expect_peek(TokenType::LBrace) {
+            return ExpressionNode::Null;
+        }
+
+        let consequence = self.parse_block_statement();
+
+        let alternative = if self.peek_token_is(TokenType::Else) {
+            self.next_token();
+
+            if !self.expect_peek(TokenType::LBrace) {
+                return ExpressionNode::Null;
+            }
+            self.parse_block_statement()
+        } else {
+            StatementNode::Null
+        };
+
+        return ExpressionNode::IfExpressionNode(Box::new(IfExpression {
+            token,
+            condition,
+            consequence,
+            alternative,
+        }));
+    }
+
+    /// parse block statement
+    pub fn parse_block_statement(&self) -> StatementNode<'a> {
+        let mut block = BlockStatement {
+            token: self.cur_token.clone().get(),
+            statements: Vec::<StatementNode>::new(),
+        };
+
+        self.next_token();
+
+        while !self.cur_token_is(TokenType::RBrace) && !self.cur_token_is(TokenType::EoF) {
+            let stmt = self.parse_statement();
+
+            if let StatementNode::Null = stmt {
+                return StatementNode::Null;
+            }
+
+            block.statements.push(stmt);
+            self.next_token();
+        }
+
+        return StatementNode::BlockStatementNode(Box::new(block));
+    }
+
+    /// parse function parameters
+    pub fn parse_function_parameters(&self) -> Option<Vec<ExpressionNode<'a>>> {
+        let mut params = Vec::<ExpressionNode>::new();
+
+        if self.peek_token_is(TokenType::RParen) {
+            self.next_token();
+            return Some(params);
+        }
+
+        self.next_token();
+
+        params.push(ExpressionNode::IdentifierNode(Box::new(Identifier {
+            token: self.cur_token.clone().get(),
+            value: self.cur_token.get().token_literal(),
+        })));
+
+        while self.peek_token_is(TokenType::Comma) {
+            self.next_token();
+            self.next_token();
+
+            params.push(ExpressionNode::IdentifierNode(Box::new(Identifier {
+                token: self.cur_token.clone().get(),
+                value: self.cur_token.get().token_literal(),
+            })));
+        }
+
+        if !self.expect_peek(TokenType::RParen) {
+            return None;
+        }
+
+        return Some(params);
+    }
+
+    /// parse call expression
+    pub fn parse_call_expression(&self, left: ExpressionNode<'a>) -> ExpressionNode<'a> {
+        let token = self.cur_token.clone().get();
+        let function = left;
+
+        let arguments = match self.parse_call_arguments() {
+            Some(a) => a,
+            _ => return ExpressionNode::Null,
+        };
+
+        return ExpressionNode::CallExpressionNode(Box::new(CallExpression {
+            token,
+            function,
+            arguments,
+        }));
+    }
+
+    /// parse index expression
+    pub fn parse_index_expression(&self, left: ExpressionNode<'a>) -> ExpressionNode<'a> {
+        let token = self.cur_token.clone().get();
+        self.next_token();
+        let index = self.parse_expression(OperationPrecedence::Lowest);
+
+        if !self.expect_peek(TokenType::RBracket) {
+            return ExpressionNode::Null;
+        }
+
+        return ExpressionNode::IndexExpressionNode(Box::new(IndexExpression {
+            token,
+            left,
+            index,
+        }));
+    }
+
+    /// parse function call arguments
+    pub fn parse_call_arguments(&self) -> Option<Vec<ExpressionNode<'a>>> {
+        let mut arguments = Vec::<ExpressionNode>::new();
+
+        if self.peek_token_is(TokenType::RParen) {
+            self.next_token();
+            return Some(arguments);
+        };
+
+        self.next_token();
+
+        arguments.push(self.parse_expression(OperationPrecedence::Lowest));
+
+        while self.peek_token_is(TokenType::Comma) {
+            self.next_token();
+            self.next_token();
+            arguments.push(self.parse_expression(OperationPrecedence::Lowest));
+        }
+
+        if !self.expect_peek(TokenType::RParen) {
+            return None;
+        }
+
+        return Some(arguments);
+    }
 
     /// parse infix expression
     pub fn parse_infix_expression(&self, left: ExpressionNode<'a>) -> ExpressionNode<'a> {
@@ -453,7 +452,7 @@ impl<'a> Parser<'a> {
     }
 
     /// parse expression list
-    fn parse_expression_list(&self, end: TokenType) -> Vec<ExpressionNode> {
+    fn parse_expression_list(&self, end: TokenType) -> Vec<ExpressionNode<'a>> {
         let mut list = Vec::<ExpressionNode>::new();
 
         if self.peek_token_is(end) {
@@ -484,15 +483,15 @@ impl<'a> Parser<'a> {
             TokenType::Ident => self.parse_identifier(),
             TokenType::Int => self.parse_integer_literal(),
             TokenType::StringToken => self.parse_string_literal(),
-            // TokenType::Bang | TokenType::Minus => self.parse_prefix_expression(),
+            TokenType::Bang | TokenType::Minus => self.parse_prefix_expression(),
             TokenType::True | TokenType::False => self.parse_boolean_expression(),
-            // TokenType::LParen => self.parse_grouped_expression(),
-            // TokenType::LBracket => ExpressionNode::ArrayLiteralNode(Box::new(ArrayLiteral {
-            //     token: self.cur_token.clone(),
-            //     elements: self.parse_expression_list(TokenType::RBracket),
-            // })),
-            // TokenType::If => self.parse_if_expression(),
-            // TokenType::Function => self.parse_function_literal(),
+            TokenType::LParen => self.parse_grouped_expression(),
+            TokenType::LBracket => ExpressionNode::ArrayLiteralNode(Box::new(ArrayLiteral {
+                token: self.cur_token.clone().get(),
+                elements: self.parse_expression_list(TokenType::RBracket),
+            })),
+            TokenType::If => self.parse_if_expression(),
+            TokenType::Function => self.parse_function_literal(),
             _ => {
                 self.errors
                     .borrow_mut()
@@ -513,19 +512,20 @@ impl<'a> Parser<'a> {
             | TokenType::LT
             | TokenType::Eq
             | TokenType::NotEq => self.parse_infix_expression(left),
-            // TokenType::LParen => self.parse_call_expression(left),
-            // TokenType::LBracket => self.parse_index_expression(left),
+            TokenType::LParen => self.parse_call_expression(left),
+            TokenType::LBracket => self.parse_index_expression(left),
             _ => panic!("unsupported by infix_parser: {:?}", tt),
         }
     }
 
-    //     /// set error caused by peek token
-    //     pub fn peek_error(&mut self, t: TokenType) {
-    //         self.errors.push(format!(
-    //             "expected next token to be {:?}, got {:?} instead",
-    //             t, self.peek_token.token_type
-    //         ));
-    //     }
+    /// set error caused by peek token
+    pub fn peek_error(&self, t: TokenType) {
+        self.errors.borrow_mut().push(format!(
+            "expected next token to be {:?}, got {:?} instead",
+            t,
+            self.peek_token.get().token_type
+        ));
+    }
 
     /// get precedence of the peek token
     pub fn peek_precedence(&self) -> OperationPrecedence {

@@ -3,6 +3,7 @@ extern crate rsmonkey;
 use std::env;
 use std::io;
 use std::io::Write;
+use std::rc::Rc;
 
 use rsmonkey::lexer::Lexer;
 use rsmonkey::parser::Parser;
@@ -29,7 +30,7 @@ const MONKEY_FACE: &str = r##"            __,__
 fn read_input() -> io::Result<()> {
     let mut input = String::new();
     let username = env::vars().find(|x| x.0 == "USER").unwrap_or_default().1;
-    let mut env = Environment::new();
+    let env = Rc::new(Environment::new());
 
     println!(
         "Hello {}! This is the `RS'Monkey programming language!",
@@ -64,7 +65,7 @@ Woops! We ran into some monkey business here!
             &EvalNode::EvalStatementNode(Box::new(StatementNode::ProgramStatementNode(Box::new(
                 program,
             )))),
-            &mut env,
+            env.clone(),
         );
 
         println!("{}", evaluated.inspect());

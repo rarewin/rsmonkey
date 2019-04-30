@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use rsmonkey::ast::StatementNode;
 use rsmonkey::evaluator::eval;
 use rsmonkey::evaluator::EvalNode;
@@ -541,12 +543,24 @@ fn test_function_application() {
 /// test closures
 #[test]
 fn test_closures() {
-    let input = r##"let newAdder = fn(x) {
-                      fn(y) { x + y; };
-                    };
+    let input = r##"
+      let y = 5;
+      let hoge = fn(x) {x + y};
+      let y = 10;
+      hoge(5);
+    "##;
 
-                    let addTwo = newAdder(2);
-                    addTwo(2);"##;
+    let evaluated = test_eval(input);
+    test_integer_object(&evaluated, 15);
+
+    let input = r##"
+      let newAdder = fn(x) {
+         fn(y) { x + y; };
+      };
+
+      let addTwo = newAdder(2);
+      addTwo(2);
+    "##;
 
     let evaluated = test_eval(input);
     test_integer_object(&evaluated, 4);
@@ -634,13 +648,13 @@ fn test_eval(input: &'static str) -> Object {
     let mut p = Parser::new(l);
 
     let program = p.parse_program();
-    let mut env = Environment::new();
+    let env = Rc::new(Environment::new());
 
     eval(
         &EvalNode::EvalStatementNode(Box::new(StatementNode::ProgramStatementNode(Box::new(
             program,
         )))),
-        &mut env,
+        env,
     )
 }
 

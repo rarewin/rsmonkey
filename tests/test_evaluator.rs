@@ -4,11 +4,12 @@ use rsmonkey::ast::StatementNode;
 use rsmonkey::evaluator::eval;
 use rsmonkey::evaluator::EvalNode;
 use rsmonkey::lexer::Lexer;
-use rsmonkey::object::{Environment, Integer, Object};
+use rsmonkey::object::{Environment, Object};
 use rsmonkey::parser::Parser;
 
 enum TestLiteral {
     IntegerLiteral { value: i64 },
+    BooleanLiteral { value: bool },
     StringLiteral { value: &'static str },
     ErrorLiteral { message: &'static str },
     ArrayLiteral { array: Vec<TestLiteral> },
@@ -27,6 +28,13 @@ impl TestLiteral {
                         value.object_type(),
                         v
                     );
+                }
+            }
+            TestLiteral::BooleanLiteral { value: v } => {
+                if let Object::BooleanObject(bo) = value {
+                    assert_eq!(bo.value, *v);
+                } else {
+                    panic!("object is not boolean, got {:?}", value.object_type());
                 }
             }
             TestLiteral::StringLiteral { value: s } => {
@@ -67,75 +75,75 @@ impl TestLiteral {
 fn test_eval_integer_expression() {
     struct Test {
         input: &'static str,
-        expected: i64,
+        expected: TestLiteral,
     }
 
     let integer_expression_tests = vec![
         Test {
             input: "5",
-            expected: 5,
+            expected: TestLiteral::IntegerLiteral { value: 5 },
         },
         Test {
             input: "10",
-            expected: 10,
+            expected: TestLiteral::IntegerLiteral { value: 10 },
         },
         Test {
             input: "-5",
-            expected: -5,
+            expected: TestLiteral::IntegerLiteral { value: -5 },
         },
         Test {
             input: "-10",
-            expected: -10,
+            expected: TestLiteral::IntegerLiteral { value: -10 },
         },
         Test {
             input: "5 + 5 + 5 + 5 - 10",
-            expected: 10,
+            expected: TestLiteral::IntegerLiteral { value: 10 },
         },
         Test {
             input: "2 * 2 * 2 * 2 * 2",
-            expected: 32,
+            expected: TestLiteral::IntegerLiteral { value: 32 },
         },
         Test {
             input: "-50 + 100 + -50",
-            expected: 0,
+            expected: TestLiteral::IntegerLiteral { value: 0 },
         },
         Test {
             input: "5 * 2 + 10",
-            expected: 20,
+            expected: TestLiteral::IntegerLiteral { value: 20 },
         },
         Test {
             input: "5 + 2 * 10",
-            expected: 25,
+            expected: TestLiteral::IntegerLiteral { value: 25 },
         },
         Test {
             input: "20 + 2 * -10",
-            expected: 0,
+            expected: TestLiteral::IntegerLiteral { value: 0 },
         },
         Test {
             input: "50 / 2 * 2 + 10",
-            expected: 60,
+            expected: TestLiteral::IntegerLiteral { value: 60 },
         },
         Test {
             input: "2 * (5 + 10)",
-            expected: 30,
+            expected: TestLiteral::IntegerLiteral { value: 30 },
         },
         Test {
             input: "3 * 3 * 3 + 10",
-            expected: 37,
+            expected: TestLiteral::IntegerLiteral { value: 37 },
         },
         Test {
             input: "3 * (3 * 3) + 10",
-            expected: 37,
+            expected: TestLiteral::IntegerLiteral { value: 37 },
         },
         Test {
             input: "(5 + 10 * 2 + 15 / 3) * 2 + -10",
-            expected: 50,
+            expected: TestLiteral::IntegerLiteral { value: 50 },
         },
     ];
 
     for tt in integer_expression_tests {
         let evaluated = test_eval(tt.input);
-        test_integer_object(&evaluated, tt.expected);
+        tt.expected.test_literal(&evaluated);
     }
 }
 
@@ -143,111 +151,111 @@ fn test_eval_integer_expression() {
 fn test_eval_boolean_expression() {
     struct Test {
         input: &'static str,
-        expected: bool,
+        expected: TestLiteral,
     }
 
     let boolean_expresssion_tests = vec![
         Test {
             input: "true",
-            expected: true,
+            expected: TestLiteral::BooleanLiteral { value: true },
         },
         Test {
             input: "false",
-            expected: false,
+            expected: TestLiteral::BooleanLiteral { value: false },
         },
         Test {
             input: "1 < 2",
-            expected: true,
+            expected: TestLiteral::BooleanLiteral { value: true },
         },
         Test {
             input: "1 > 2",
-            expected: false,
+            expected: TestLiteral::BooleanLiteral { value: false },
         },
         Test {
             input: "1 < 1",
-            expected: false,
+            expected: TestLiteral::BooleanLiteral { value: false },
         },
         Test {
             input: "1 > 1",
-            expected: false,
+            expected: TestLiteral::BooleanLiteral { value: false },
         },
         Test {
             input: "1 == 1",
-            expected: true,
+            expected: TestLiteral::BooleanLiteral { value: true },
         },
         Test {
             input: "1 != 1",
-            expected: false,
+            expected: TestLiteral::BooleanLiteral { value: false },
         },
         Test {
             input: "1 == 2",
-            expected: false,
+            expected: TestLiteral::BooleanLiteral { value: false },
         },
         Test {
             input: "1 != 2",
-            expected: true,
+            expected: TestLiteral::BooleanLiteral { value: true },
         },
         Test {
             input: "true == true",
-            expected: true,
+            expected: TestLiteral::BooleanLiteral { value: true },
         },
         Test {
             input: "false == false",
-            expected: true,
+            expected: TestLiteral::BooleanLiteral { value: true },
         },
         Test {
             input: "true != true",
-            expected: false,
+            expected: TestLiteral::BooleanLiteral { value: false },
         },
         Test {
             input: "true == false",
-            expected: false,
+            expected: TestLiteral::BooleanLiteral { value: false },
         },
         Test {
             input: "true != false",
-            expected: true,
+            expected: TestLiteral::BooleanLiteral { value: true },
         },
         Test {
             input: "false != true",
-            expected: true,
+            expected: TestLiteral::BooleanLiteral { value: true },
         },
         Test {
             input: "(1 < 2) == true",
-            expected: true,
+            expected: TestLiteral::BooleanLiteral { value: true },
         },
         Test {
             input: "(1 < 2) == false",
-            expected: false,
+            expected: TestLiteral::BooleanLiteral { value: false },
         },
         Test {
             input: "(1 > 2) == true",
-            expected: false,
+            expected: TestLiteral::BooleanLiteral { value: false },
         },
         Test {
             input: "(1 > 2) == false",
-            expected: true,
+            expected: TestLiteral::BooleanLiteral { value: true },
         },
         Test {
             input: r##""hoge" == "hoge""##,
-            expected: true,
+            expected: TestLiteral::BooleanLiteral { value: true },
         },
         Test {
             input: r##""hoge" == "fuga""##,
-            expected: false,
+            expected: TestLiteral::BooleanLiteral { value: false },
         },
         Test {
             input: r##""hoge" != "hoge""##,
-            expected: false,
+            expected: TestLiteral::BooleanLiteral { value: false },
         },
         Test {
             input: r##""hoge" != "fuga""##,
-            expected: true,
+            expected: TestLiteral::BooleanLiteral { value: true },
         },
     ];
 
     for tt in boolean_expresssion_tests {
         let evaluated = test_eval(tt.input);
-        test_boolean_object(evaluated, tt.expected);
+        tt.expected.test_literal(&evaluated);
     }
 }
 
@@ -255,39 +263,39 @@ fn test_eval_boolean_expression() {
 fn test_eval_bang_operator() {
     struct Test {
         input: &'static str,
-        expected: bool,
+        expected: TestLiteral,
     }
 
     let bang_tests = vec![
         Test {
             input: "!true",
-            expected: false,
+            expected: TestLiteral::BooleanLiteral { value: false },
         },
         Test {
             input: "!false",
-            expected: true,
+            expected: TestLiteral::BooleanLiteral { value: true },
         },
         Test {
             input: "!5",
-            expected: false,
+            expected: TestLiteral::BooleanLiteral { value: false },
         },
         Test {
             input: "!!true",
-            expected: true,
+            expected: TestLiteral::BooleanLiteral { value: true },
         },
         Test {
             input: "!!false",
-            expected: false,
+            expected: TestLiteral::BooleanLiteral { value: false },
         },
         Test {
             input: "!!5",
-            expected: true,
+            expected: TestLiteral::BooleanLiteral { value: true },
         },
     ];
 
     for tt in bang_tests {
         let evaluated = test_eval(tt.input);
-        test_boolean_object(evaluated, tt.expected);
+        tt.expected.test_literal(&evaluated);
     }
 }
 
@@ -295,43 +303,43 @@ fn test_eval_bang_operator() {
 fn test_eval_if_else_expression() {
     struct Test {
         input: &'static str,
-        expected: Object,
+        expected: TestLiteral,
     }
 
     let if_else_tests = vec![
         Test {
             input: "if (true) { 10 }",
-            expected: Object::IntegerObject(Box::new(Integer { value: 10 })),
+            expected: TestLiteral::IntegerLiteral { value: 10 },
         },
         Test {
             input: "if (false) { 10 }",
-            expected: Object::Null,
+            expected: TestLiteral::NullLiteral,
         },
         Test {
             input: "if (1) { 10 }",
-            expected: Object::IntegerObject(Box::new(Integer { value: 10 })),
+            expected: TestLiteral::IntegerLiteral { value: 10 },
         },
         Test {
             input: "if (1 < 2) { 10 }",
-            expected: Object::IntegerObject(Box::new(Integer { value: 10 })),
+            expected: TestLiteral::IntegerLiteral { value: 10 },
         },
         Test {
             input: "if (1 > 2) { 10 }",
-            expected: Object::Null,
+            expected: TestLiteral::NullLiteral,
         },
         Test {
             input: "if (1 > 2) { 10 } else { 20 }",
-            expected: Object::IntegerObject(Box::new(Integer { value: 20 })),
+            expected: TestLiteral::IntegerLiteral { value: 20 },
         },
         Test {
             input: "if (1 < 2) { 10 } else { 20 }",
-            expected: Object::IntegerObject(Box::new(Integer { value: 10 })),
+            expected: TestLiteral::IntegerLiteral { value: 10 },
         },
     ];
 
     for tt in if_else_tests {
         let evaluated = test_eval(tt.input);
-        assert!(evaluated == tt.expected);
+        tt.expected.test_literal(&evaluated);
     }
 }
 
@@ -339,25 +347,25 @@ fn test_eval_if_else_expression() {
 fn test_eval_return_statement() {
     struct Test {
         input: &'static str,
-        expected: i64,
+        expected: TestLiteral,
     }
 
     let return_tests = vec![
         Test {
             input: "return 10;",
-            expected: 10,
+            expected: TestLiteral::IntegerLiteral { value: 10 },
         },
         Test {
             input: "return 10; 9;",
-            expected: 10,
+            expected: TestLiteral::IntegerLiteral { value: 10 },
         },
         Test {
             input: "return 2 * 5; 9;",
-            expected: 10,
+            expected: TestLiteral::IntegerLiteral { value: 10 },
         },
         Test {
             input: "9; return 2 * 5; 9;",
-            expected: 10,
+            expected: TestLiteral::IntegerLiteral { value: 10 },
         },
         Test {
             input: r##"if (10 > 1) {
@@ -366,13 +374,13 @@ fn test_eval_return_statement() {
                          }
                          return 1;
                       }"##,
-            expected: 10,
+            expected: TestLiteral::IntegerLiteral { value: 10 },
         },
     ];
 
     for tt in return_tests {
         let evaluated = test_eval(tt.input);
-        test_integer_object(&evaluated, tt.expected);
+        tt.expected.test_literal(&evaluated);
     }
 }
 
@@ -381,51 +389,63 @@ fn test_eval_return_statement() {
 fn test_error_handling() {
     struct Test {
         input: &'static str,
-        expected: &'static str,
+        expected: TestLiteral,
     }
 
     let error_tests = vec![
         Test {
             input: "5 + true;",
-            expected: "type mismatch: INTEGER + BOOLEAN",
+            expected: TestLiteral::ErrorLiteral {
+                message: "type mismatch: INTEGER + BOOLEAN",
+            },
         },
         Test {
             input: "5 + true; 5;",
-            expected: "type mismatch: INTEGER + BOOLEAN",
+            expected: TestLiteral::ErrorLiteral {
+                message: "type mismatch: INTEGER + BOOLEAN",
+            },
         },
         Test {
             input: "-true",
-            expected: "unknown operator: -BOOLEAN",
+            expected: TestLiteral::ErrorLiteral {
+                message: "unknown operator: -BOOLEAN",
+            },
         },
         Test {
             input: "true + false;",
-            expected: "unkown operator: BOOLEAN + BOOLEAN",
+            expected: TestLiteral::ErrorLiteral {
+                message: "unkown operator: BOOLEAN + BOOLEAN",
+            },
         },
         Test {
             input: "5; true + false; 5",
-            expected: "unkown operator: BOOLEAN + BOOLEAN",
+            expected: TestLiteral::ErrorLiteral {
+                message: "unkown operator: BOOLEAN + BOOLEAN",
+            },
         },
         Test {
             input: "if (10 > 1) { true + false; }",
-            expected: "unkown operator: BOOLEAN + BOOLEAN",
+            expected: TestLiteral::ErrorLiteral {
+                message: "unkown operator: BOOLEAN + BOOLEAN",
+            },
         },
         Test {
             input: "foobar",
-            expected: "identifier not found: foobar",
+            expected: TestLiteral::ErrorLiteral {
+                message: "identifier not found: foobar",
+            },
         },
         Test {
             input: r##""Hello" - "World""##,
-            expected: "unkown operator: STRING - STRING",
+            expected: TestLiteral::ErrorLiteral {
+                message: "unkown operator: STRING - STRING",
+            },
         },
     ];
 
     for tt in error_tests {
         let evaluated = test_eval(tt.input);
-        if let Object::ErrorObject(eo) = evaluated {
-            assert_eq!(eo.message, tt.expected);
-        } else {
-            panic!("no error object returned, got {:?}", evaluated);
-        }
+        tt.expected.test_literal(&evaluated);
     }
 }
 
@@ -434,31 +454,31 @@ fn test_error_handling() {
 fn test_let_statements() {
     struct Test {
         input: &'static str,
-        expected: i64,
+        expected: TestLiteral,
     }
 
     let let_statement_test = vec![
         Test {
             input: "let a = 5; a;",
-            expected: 5,
+            expected: TestLiteral::IntegerLiteral { value: 5 },
         },
         Test {
             input: "let a = 5 * 5; a;",
-            expected: 25,
+            expected: TestLiteral::IntegerLiteral { value: 25 },
         },
         Test {
             input: "let a = 5; let b = a;  b;",
-            expected: 5,
+            expected: TestLiteral::IntegerLiteral { value: 5 },
         },
         Test {
             input: "let a = 5; let b = a;  let c = a + b + 5; c;",
-            expected: 15,
+            expected: TestLiteral::IntegerLiteral { value: 15 },
         },
     ];
 
     for tt in let_statement_test {
         let evaluated = test_eval(tt.input);
-        test_integer_object(&evaluated, tt.expected);
+        tt.expected.test_literal(&evaluated);
     }
 }
 
@@ -551,7 +571,9 @@ fn test_closures() {
     "##;
 
     let evaluated = test_eval(input);
-    test_integer_object(&evaluated, 15);
+    let expected = TestLiteral::IntegerLiteral { value: 15 };
+
+    expected.test_literal(&evaluated);
 
     let input = r##"
       let newAdder = fn(x) {
@@ -563,7 +585,9 @@ fn test_closures() {
     "##;
 
     let evaluated = test_eval(input);
-    test_integer_object(&evaluated, 4);
+    let expected = TestLiteral::IntegerLiteral { value: 4 };
+
+    expected.test_literal(&evaluated);
 }
 
 /// test arrays
@@ -584,9 +608,9 @@ fn test_array_literals() {
         ao.elements.len()
     );
 
-    test_integer_object(&ao.elements[0], 1);
-    test_integer_object(&ao.elements[1], 4);
-    test_integer_object(&ao.elements[2], 6);
+    (TestLiteral::IntegerLiteral { value: 1 }).test_literal(&ao.elements[0]);
+    (TestLiteral::IntegerLiteral { value: 4 }).test_literal(&ao.elements[1]);
+    (TestLiteral::IntegerLiteral { value: 6 }).test_literal(&ao.elements[2]);
 }
 
 /// test index expressions
@@ -662,42 +686,24 @@ fn test_eval(input: &'static str) -> Object {
 #[test]
 fn test_string_literal() {
     let input = r##""Hello World!""##;
-
     let evaluated = test_eval(input);
 
-    if let Object::StringObject(so) = evaluated {
-        assert!(
-            so.value == "Hello World!",
-            r##""Hwllo World!" is expected, but got {}"##,
-            so.value
-        );
-    } else {
-        panic!(
-            "unexpected object: {:?} (expected String Object)",
-            evaluated
-        );
+    TestLiteral::StringLiteral {
+        value: "Hello World!",
     }
+    .test_literal(&evaluated);
 }
 
 /// test string concatenation
 #[test]
 fn test_string_concatenation() {
     let input = r##""Hello" + " " + "World!""##;
-
     let evaluated = test_eval(input);
 
-    if let Object::StringObject(so) = evaluated {
-        assert!(
-            so.value == "Hello World!",
-            r##""Hwllo World!" is expected, but got {}"##,
-            so.value
-        );
-    } else {
-        panic!(
-            "unexpected object: {:?} (expected String Object)",
-            evaluated
-        );
+    TestLiteral::StringLiteral {
+        value: "Hello World!",
     }
+    .test_literal(&evaluated);
 }
 
 /// test builtin functions
@@ -812,33 +818,5 @@ fn test_builtin_functions() {
     for tt in builtin_function_tests {
         let evaluated = test_eval(tt.input);
         tt.expected.test_literal(&evaluated);
-    }
-}
-
-/// test integer object
-fn test_integer_object(obj: &Object, expected: i64) {
-    if let Object::IntegerObject(io) = obj {
-        assert!(
-            io.value == expected,
-            "{} is expected, but got {}",
-            expected,
-            io.value
-        );
-    } else {
-        panic!("unexpected object: {:?} (expected: {})", obj, expected);
-    }
-}
-
-/// test boolean object
-fn test_boolean_object(obj: Object, expected: bool) {
-    if let Object::BooleanObject(bo) = obj {
-        assert!(
-            bo.value == expected,
-            "{} is expected, but got {}",
-            expected,
-            bo.value
-        );
-    } else {
-        panic!("unexpected object, got {:?} (expected: {})", obj, expected);
     }
 }

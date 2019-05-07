@@ -1,11 +1,13 @@
+use std::cell::Cell;
+
 use crate::token::{Token, TokenType};
 
 #[derive(Debug)]
 pub struct Lexer {
     input: String,
-    position: usize,
-    read_position: usize,
-    ch: char,
+    position: Cell<usize>,
+    read_position: Cell<usize>,
+    ch: Cell<char>,
 }
 
 impl Lexer {
@@ -14,16 +16,16 @@ impl Lexer {
         let ch = input.as_bytes()[0] as char;
         Lexer {
             input,
-            position: 0,
-            read_position: 1,
-            ch,
+            position: Cell::new(0),
+            read_position: Cell::new(1),
+            ch: Cell::new(ch),
         }
     }
 
     /// get next token
-    pub fn next_token(&mut self) -> Token {
+    pub fn next_token(&self) -> Token {
         self.skip_whitespace();
-        let token = match self.ch {
+        let token = match self.ch.get() {
             '=' => {
                 if self.peek_char() == '=' {
                     self.read_char();
@@ -56,27 +58,27 @@ impl Lexer {
             ';' => Token::new(TokenType::Semicolon, ";"),
             '\0' => Token::new(TokenType::EoF, "EOF"),
             '"' => {
-                let p = self.read_position;
+                let p = self.read_position.get();
                 self.read_char();
-                while self.ch != '"' && self.read_position < self.input.len() {
+                while self.ch.get() != '"' && self.read_position.get() < self.input.len() {
                     self.read_char();
                 }
-                Token::new(TokenType::StringToken, &self.input[p..self.position])
+                Token::new(TokenType::StringToken, &self.input[p..self.position.get()])
             }
             'a'...'z' | 'A'...'Z' | '_' => {
-                let p = self.position;
-                while self.ch.is_ascii_alphabetic() || self.ch == '_' {
+                let p = self.position.get();
+                while self.ch.get().is_ascii_alphabetic() || self.ch.get() == '_' {
                     self.read_char();
                 }
-                let v = &self.input[p..self.position];
+                let v = &self.input[p..self.position.get()];
                 return Token::new(lookup_ident(v), v); // don't need to read char more
             }
             '0'...'9' => {
-                let p = self.position;
-                while self.ch.is_ascii_digit() {
+                let p = self.position.get();
+                while self.ch.get().is_ascii_digit() {
                     self.read_char();
                 }
-                return Token::new(TokenType::Int, &self.input[p..self.position]); // don't need to read char more
+                return Token::new(TokenType::Int, &self.input[p..self.position.get()]); // don't need to read char more
             }
             _ => Token::new(TokenType::Illegal, "illegal"),
         };
@@ -85,24 +87,25 @@ impl Lexer {
         token
     }
 
-    fn read_char(&mut self) {
-        self.ch = self.peek_char();
-
-        self.position = self.read_position;
-        self.read_position += 1;
+    /// read one character
+    fn read_char(&self) {
+        self.ch.set(self.peek_char());
+        self.position.set(self.read_position.get());
+        self.read_position.set(self.read_position.get() + 1);
     }
 
-    fn peek_char(&mut self) -> char {
-        if self.read_position >= self.input.len() {
+    /// peek the next character
+    fn peek_char(&self) -> char {
+        if self.read_position.get() >= self.input.len() {
             '\0'
         } else {
-            self.input.as_bytes()[self.read_position] as char
+            self.input.as_bytes()[self.read_position.get()] as char
         }
     }
 
     /// skip white spaces
-    fn skip_whitespace(&mut self) {
-        while self.ch.is_ascii_whitespace() {
+    fn skip_whitespace(&self) {
+        while self.ch.get().is_ascii_whitespace() {
             self.read_char();
         }
     }

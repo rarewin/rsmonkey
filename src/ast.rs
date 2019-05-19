@@ -227,21 +227,16 @@ impl ExpressionNode {
             ExpressionNode::IdentifierNode(_) | ExpressionNode::IntegerLiteralNode(_) => {
                 self.token_literal()
             }
-            ExpressionNode::FunctionLiteralNode(fln) => {
-                let mut ret = String::new();
-                ret.push_str(&self.token_literal());
-                ret.push_str("(");
-                ret.push_str(
-                    &((&fln.parameters)
-                        .into_iter()
-                        .map(|x| x.string())
-                        .collect::<Vec<String>>()
-                        .join(", ")),
-                );
-                ret.push_str(") ");
-                ret.push_str(&fln.body.string());
-                return ret;
-            }
+            ExpressionNode::FunctionLiteralNode(fln) => format!(
+                "{}({}){}",
+                &self.token_literal(),
+                &((&fln.parameters)
+                    .into_iter()
+                    .map(|x| x.string())
+                    .collect::<Vec<String>>()
+                    .join(", ")),
+                &fln.body.string()
+            ),
             ExpressionNode::PrefixExpressionNode(pen) => {
                 format!("({}{})", pen.operator, &pen.right.string())
             }
@@ -252,63 +247,37 @@ impl ExpressionNode {
                 ien.right.string(),
             ),
             ExpressionNode::BooleanExpressionNode(ben) => ben.token.token_literal(),
-            ExpressionNode::IfExpressionNode(ien) => {
-                let mut ret = String::new();
-
-                ret.push_str(&format!(
-                    "if {} {}",
-                    ien.condition.string(),
-                    ien.consequence.string()
-                ));
-
+            ExpressionNode::IfExpressionNode(ien) => format!(
+                "if {} {}{}",
+                ien.condition.string(),
+                ien.consequence.string(),
                 if let StatementNode::BlockStatementNode(_) = ien.alternative {
-                    ret.push_str(&format!(" else {}", ien.alternative.string()))
+                    format!(" else {}", ien.alternative.string())
+                } else {
+                    "".to_string()
                 }
-                ret
-            }
-            ExpressionNode::CallExpressionNode(cen) => {
-                let mut ret = String::new();
-
-                ret.push_str(&cen.function.string());
-                ret.push_str("(");
-                ret.push_str(
-                    &((&cen.arguments)
-                        .into_iter()
-                        .map(|x| x.string())
-                        .collect::<Vec<String>>()
-                        .join(", ")),
-                );
-                ret.push_str(")");
-
-                ret
-            }
-            ExpressionNode::ArrayLiteralNode(al) => {
-                let mut ret = String::new();
-
-                ret.push_str("[");
-                ret.push_str(
-                    &((&al.elements)
-                        .into_iter()
-                        .map(|x| x.string())
-                        .collect::<Vec<String>>()
-                        .join(", ")),
-                );
-                ret.push_str("]");
-
-                ret
-            }
+            ),
+            ExpressionNode::CallExpressionNode(cen) => format!(
+                "{}({})",
+                &cen.function.string(),
+                &((&cen.arguments)
+                    .into_iter()
+                    .map(|x| x.string())
+                    .collect::<Vec<String>>()
+                    .join(", "))
+            ),
+            ExpressionNode::ArrayLiteralNode(al) => format!(
+                "[{}]",
+                &((&al.elements)
+                    .into_iter()
+                    .map(|x| x.string())
+                    .collect::<Vec<String>>()
+                    .join(", "))
+            ),
             ExpressionNode::IndexExpressionNode(ien) => {
-                let mut ret = String::new();
-
-                ret.push_str("(");
-                ret.push_str(&ien.left.string());
-                ret.push_str("[");
-                ret.push_str(&ien.index.string());
-                ret.push_str("]");
-                ret.push_str(")");
-
-                ret
+                format!("({}[{}])", &ien.left.string(), &ien.index.string())
             }
+
             _ => panic!("not supported string(): {:?}", self),
         }
     }

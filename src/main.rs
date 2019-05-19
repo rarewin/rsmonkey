@@ -2,7 +2,7 @@ extern crate rsmonkey;
 
 use std::env;
 use std::io;
-use std::io::Write;
+use std::io::{BufRead, BufReader, Write};
 use std::rc::Rc;
 
 use rsmonkey::lexer::Lexer;
@@ -27,8 +27,7 @@ const MONKEY_FACE: &str = r##"            __,__
            '-----'
 "##;
 
-fn read_input() -> io::Result<()> {
-    let mut input = String::new();
+fn read_input() {
     let username = env::vars().find(|x| x.0 == "USER").unwrap_or_default().1;
     let env = Rc::new(Environment::new());
 
@@ -38,44 +37,50 @@ fn read_input() -> io::Result<()> {
     );
     println!("Feel free to type in commands");
 
-    while {
-        input.clear();
-        print!("{}", PROMPT);
-        io::stdout().flush()?;
-        io::stdin().read_line(&mut input)?;
+    let stdin = io::stdin();
+    let stdin = stdin.lock();
+    let stdin = BufReader::new(stdin);
+    let mut lines = stdin.lines();
 
-        let l = Lexer::new(input.to_string());
-        let mut p = Parser::new(l);
+    let stdout = io::stdout();
+    let mut stdout = stdout.lock();
 
-        let program = p.parse_program();
+    loop {
+        stdout.write(PROMPT.as_bytes()).unwrap();
+        stdout.flush().unwrap();
 
-        if p.errors().len() > 0 {
-            for e in p.errors() {
-                println!(
-                    r##"{}
+        if let Some(Ok(input)) = lines.next() {
+            let l = Lexer::new(input.to_string());
+            let mut p = Parser::new(l);
+
+            let program = p.parse_program();
+
+            if p.errors().len() > 0 {
+                for e in p.errors() {
+                    println!(
+                        r##"{}
 Woops! We ran into some monkey business here!
 	parser error: {}"##,
-                    MONKEY_FACE, e
-                );
-                continue;
+                        MONKEY_FACE, e
+                    );
+                    continue;
+                }
             }
+
+            let evaluated = eval(
+                &EvalNode::EvalStatementNode(Box::new(StatementNode::ProgramStatementNode(
+                    Box::new(program),
+                ))),
+                env.clone(),
+            );
+
+            println!("{}", evaluated.inspect());
+        } else {
+            break;
         }
-
-        let evaluated = eval(
-            &EvalNode::EvalStatementNode(Box::new(StatementNode::ProgramStatementNode(Box::new(
-                program,
-            )))),
-            env.clone(),
-        );
-
-        println!("{}", evaluated.inspect());
-
-        !input.is_empty()
-    } {}
-
-    Ok(())
+    }
 }
 
 fn main() {
-    read_input().unwrap();
+    read_input();
 }

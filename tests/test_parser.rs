@@ -73,11 +73,11 @@ fn test_let_statement(s: &LetStatement, name: &str, value: &TestLiteral) {
         name, s.name.value,
     );
     assert_eq!(
-        s.name.token.token_literal(),
+        s.name.token.get_literal(),
         name,
         "expected identifier is '{}', but got '{}'.",
         name,
-        s.name.token.token_literal()
+        s.name.token.get_literal()
     );
     test_literal_expression(&s.value, value);
 }
@@ -168,7 +168,7 @@ fn test_identifier_expression() {
         _ => panic!("first statement is not expressionstatement"),
     };
 
-    assert_eq!(stmt.token.token_literal(), "foobar");
+    assert_eq!(stmt.token.get_literal(), "foobar");
 }
 
 #[test]
@@ -188,7 +188,7 @@ fn test_integer_literal_expression() {
         program.statements.len()
     );
 
-    assert!(program.statements[0].token_literal() == "5");
+    assert!(program.statements[0].get_literal() == "5");
 }
 
 /// test string literal
@@ -209,7 +209,7 @@ fn test_string_literal_expression() {
         program.statements.len()
     );
 
-    assert!(program.statements[0].token_literal() == "hello world");
+    assert!(program.statements[0].get_literal() == "hello world");
 }
 
 /// test boolean
@@ -971,11 +971,11 @@ fn test_integer_literal(en: &ExpressionNode, value: i64) {
     );
 
     assert_eq!(
-        il.token.token_literal(),
+        il.token.get_literal(),
         format!("{}", value),
-        "token_literal() is expected as {} bug got {}",
+        "get_literal() is expected as {} bug got {}",
         format!("{}", value),
-        il.token.token_literal(),
+        il.token.get_literal(),
     );
 }
 
@@ -998,10 +998,10 @@ fn test_string_literal(en: &ExpressionNode, value: &'static str) {
     );
 
     assert_eq!(
-        id.token.token_literal(),
+        id.token.get_literal(),
         value,
-        r##"token_literal() is expected as "{}" but got "{}""##,
-        id.token.token_literal(),
+        r##"get_literal() is expected as "{}" but got "{}""##,
+        id.token.get_literal(),
         id.value,
     );
 }
@@ -1020,11 +1020,11 @@ fn test_boolean_literal(en: &ExpressionNode, value: bool) {
     );
 
     assert_eq!(
-        bl.token.token_literal(),
+        bl.token.get_literal(),
         format!("{:?}", value),
         r##"{:?} is expected, but got {:?}"##,
         format!("{:?}", value),
-        bl.token.token_literal(),
+        bl.token.get_literal(),
     );
 }
 

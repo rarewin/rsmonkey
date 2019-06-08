@@ -87,9 +87,12 @@ impl Token {
     /// use rsmonkey::token::{TokenType, Token};
     ///
     /// let l = Token::new(TokenType::Ident, "hoge");
-    /// assert_eq!(l.token_literal(), "hoge");
+    /// assert_eq!(l.get_literal(), "hoge");
+    ///
+    /// let n = Token::new(TokenType::Int, "100");
+    /// assert_eq!(n.get_literal(), "100");
     /// ```
-    pub fn token_literal(&self) -> String {
+    pub fn get_literal(&self) -> String {
         self.literal.clone()
     }
 

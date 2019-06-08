@@ -164,21 +164,21 @@ pub struct Program {
 /// implementation of statement node
 impl StatementNode {
     /// get token's literal
-    pub fn token_literal(&self) -> String {
+    pub fn get_literal(&self) -> String {
         match self {
-            StatementNode::LetStatementNode(ls) => ls.token.token_literal(),
-            StatementNode::ReturnStatementNode(rs) => rs.token.token_literal(),
-            StatementNode::ExpressionStatementNode(es) => es.token.token_literal(),
+            StatementNode::LetStatementNode(ls) => ls.token.get_literal(),
+            StatementNode::ReturnStatementNode(rs) => rs.token.get_literal(),
+            StatementNode::ExpressionStatementNode(es) => es.token.get_literal(),
             StatementNode::BlockStatementNode(bs) => {
                 if bs.statements.len() > 0 {
-                    bs.statements[0].token_literal()
+                    bs.statements[0].get_literal()
                 } else {
                     "(empty block statement)".into()
                 }
             }
             StatementNode::ProgramStatementNode(ps) => {
                 if ps.statements.len() > 0 {
-                    ps.statements[0].token_literal()
+                    ps.statements[0].get_literal()
                 } else {
                     "(empty program statement)".into()
                 }
@@ -192,12 +192,12 @@ impl StatementNode {
         match self {
             StatementNode::LetStatementNode(ls) => format!(
                 "{} {} = {};",
-                ls.token.token_literal(),
-                ls.name.token.token_literal(),
+                ls.token.get_literal(),
+                ls.name.token.get_literal(),
                 &ls.value.string(),
             ),
             StatementNode::ReturnStatementNode(rs) => {
-                format!("{} {}", rs.token.token_literal(), &rs.return_value.string(),)
+                format!("{} {}", rs.token.get_literal(), &rs.return_value.string(),)
             }
             StatementNode::ExpressionStatementNode(es) => es.expression.string(),
             StatementNode::BlockStatementNode(bs) => {
@@ -225,11 +225,11 @@ impl ExpressionNode {
     pub fn string(&self) -> String {
         match self {
             ExpressionNode::IdentifierNode(_) | ExpressionNode::IntegerLiteralNode(_) => {
-                self.token_literal()
+                self.get_literal()
             }
             ExpressionNode::FunctionLiteralNode(fln) => format!(
                 "{}({}){}",
-                &self.token_literal(),
+                &self.get_literal(),
                 &((&fln.parameters)
                     .into_iter()
                     .map(|x| x.string())
@@ -246,7 +246,7 @@ impl ExpressionNode {
                 ien.operator,
                 ien.right.string(),
             ),
-            ExpressionNode::BooleanExpressionNode(ben) => ben.token.token_literal(),
+            ExpressionNode::BooleanExpressionNode(ben) => ben.token.get_literal(),
             ExpressionNode::IfExpressionNode(ien) => format!(
                 "if {} {}{}",
                 ien.condition.string(),
@@ -283,15 +283,15 @@ impl ExpressionNode {
     }
 
     /// get the token's literal
-    pub fn token_literal(&self) -> String {
+    pub fn get_literal(&self) -> String {
         match self {
-            ExpressionNode::IdentifierNode(idn) => (*idn).token.token_literal(),
-            ExpressionNode::IntegerLiteralNode(iln) => (*iln).token.token_literal(),
-            ExpressionNode::FunctionLiteralNode(fln) => (*fln).token.token_literal(),
-            ExpressionNode::PrefixExpressionNode(pen) => (*pen).token.token_literal(),
-            ExpressionNode::InfixExpressionNode(ien) => (*ien).token.token_literal(),
-            ExpressionNode::BooleanExpressionNode(ben) => (*ben).token.token_literal(),
-            ExpressionNode::CallExpressionNode(cen) => (*cen).token.token_literal(),
+            ExpressionNode::IdentifierNode(idn) => (*idn).token.get_literal(),
+            ExpressionNode::IntegerLiteralNode(iln) => (*iln).token.get_literal(),
+            ExpressionNode::FunctionLiteralNode(fln) => (*fln).token.get_literal(),
+            ExpressionNode::PrefixExpressionNode(pen) => (*pen).token.get_literal(),
+            ExpressionNode::InfixExpressionNode(ien) => (*ien).token.get_literal(),
+            ExpressionNode::BooleanExpressionNode(ben) => (*ben).token.get_literal(),
+            ExpressionNode::CallExpressionNode(cen) => (*cen).token.get_literal(),
             _ => panic!("not supported string(): {:?}", self),
         }
     }
@@ -316,9 +316,9 @@ impl Program {
     }
 
     /// get the first token's literal
-    pub fn token_literal(&self) -> String {
+    pub fn get_literal(&self) -> String {
         if self.statements.len() > 0 {
-            self.statements[0].token_literal()
+            self.statements[0].get_literal()
         } else {
             "".to_string()
         }

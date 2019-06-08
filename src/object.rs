@@ -32,7 +32,7 @@ impl Object {
                 ret.push_str(
                     &((&fo.parameters)
                         .into_iter()
-                        .map(|x| x.token_literal())
+                        .map(|x| x.get_literal())
                         .collect::<Vec<String>>()
                         .join(", ")),
                 );

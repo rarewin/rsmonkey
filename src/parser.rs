@@ -100,7 +100,7 @@ impl Parser {
 
         let name = Identifier {
             token: self.cur_token.clone(),
-            value: self.cur_token.token_literal(),
+            value: self.cur_token.get_literal(),
         };
 
         if !self.expect_peek(TokenType::Assign) {
@@ -174,7 +174,7 @@ impl Parser {
     pub fn parse_identifier(&mut self) -> ExpressionNode {
         let ident = Identifier {
             token: self.cur_token.clone(),
-            value: self.cur_token.token_literal(),
+            value: self.cur_token.get_literal(),
         };
 
         return ExpressionNode::IdentifierNode(Box::new(ident));
@@ -186,7 +186,7 @@ impl Parser {
             token: self.cur_token.clone(),
             value: self
                 .cur_token
-                .token_literal()
+                .get_literal()
                 .parse()
                 .expect("failed to parse as i64"),
         };
@@ -198,7 +198,7 @@ impl Parser {
     pub fn parse_string_literal(&mut self) -> ExpressionNode {
         let sl = StringLiteral {
             token: self.cur_token.clone(),
-            value: self.cur_token.token_literal(),
+            value: self.cur_token.get_literal(),
         };
 
         return ExpressionNode::StringLiteralNode(Box::new(sl));
@@ -234,7 +234,7 @@ impl Parser {
     pub fn parse_prefix_expression(&mut self) -> ExpressionNode {
         let mut pe = PrefixExpression {
             token: self.cur_token.clone(),
-            operator: self.cur_token.token_literal(),
+            operator: self.cur_token.get_literal(),
             right: ExpressionNode::Null,
         };
 
@@ -345,7 +345,7 @@ impl Parser {
 
         params.push(ExpressionNode::IdentifierNode(Box::new(Identifier {
             token: self.cur_token.clone(),
-            value: self.cur_token.token_literal(),
+            value: self.cur_token.get_literal(),
         })));
 
         while self.peek_token_is(TokenType::Comma) {
@@ -354,7 +354,7 @@ impl Parser {
 
             params.push(ExpressionNode::IdentifierNode(Box::new(Identifier {
                 token: self.cur_token.clone(),
-                value: self.cur_token.token_literal(),
+                value: self.cur_token.get_literal(),
             })));
         }
 
@@ -428,7 +428,7 @@ impl Parser {
     /// parse infix expression
     pub fn parse_infix_expression(&mut self, left: ExpressionNode) -> ExpressionNode {
         let token = self.cur_token.clone();
-        let operator = self.cur_token.token_literal();
+        let operator = self.cur_token.get_literal();
         let precedence = self.cur_precedence();
 
         self.next_token();

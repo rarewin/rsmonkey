@@ -44,12 +44,12 @@ impl Parser {
 
     /// check if a current token is `tt` or not
     pub fn cur_token_is(&mut self, tt: TokenType) -> bool {
-        self.cur_token.token_type == tt
+        self.cur_token.get_token_type() == tt
     }
 
     /// check if a peek token is `tt` or not
     pub fn peek_token_is(&mut self, tt: TokenType) -> bool {
-        self.peek_token.token_type == tt
+        self.peek_token.get_token_type() == tt
     }
 
     /// expect a specific token
@@ -156,7 +156,7 @@ impl Parser {
 
     /// parse expression
     pub fn parse_expression(&mut self, precedence: OperationPrecedence) -> ExpressionNode {
-        let mut ex = self.prefix_parse(self.cur_token.token_type.clone());
+        let mut ex = self.prefix_parse(self.cur_token.get_token_type().clone());
 
         if let ExpressionNode::Null = ex {
             return ex;
@@ -164,7 +164,7 @@ impl Parser {
 
         while !self.peek_token_is(TokenType::Semicolon) && precedence < self.peek_precedence() {
             self.next_token();
-            ex = self.infix_parse(self.cur_token.token_type, ex);
+            ex = self.infix_parse(self.cur_token.get_token_type(), ex);
         }
 
         return ex;
@@ -174,7 +174,7 @@ impl Parser {
     pub fn parse_identifier(&mut self) -> ExpressionNode {
         let ident = Identifier {
             token: self.cur_token.clone(),
-            value: self.cur_token.literal.clone(),
+            value: self.cur_token.token_literal(),
         };
 
         return ExpressionNode::IdentifierNode(Box::new(ident));
@@ -186,7 +186,7 @@ impl Parser {
             token: self.cur_token.clone(),
             value: self
                 .cur_token
-                .literal
+                .token_literal()
                 .parse()
                 .expect("failed to parse as i64"),
         };
@@ -198,7 +198,7 @@ impl Parser {
     pub fn parse_string_literal(&mut self) -> ExpressionNode {
         let sl = StringLiteral {
             token: self.cur_token.clone(),
-            value: self.cur_token.literal.clone(),
+            value: self.cur_token.token_literal(),
         };
 
         return ExpressionNode::StringLiteralNode(Box::new(sl));
@@ -345,7 +345,7 @@ impl Parser {
 
         params.push(ExpressionNode::IdentifierNode(Box::new(Identifier {
             token: self.cur_token.clone(),
-            value: self.cur_token.literal.clone(),
+            value: self.cur_token.token_literal(),
         })));
 
         while self.peek_token_is(TokenType::Comma) {
@@ -354,7 +354,7 @@ impl Parser {
 
             params.push(ExpressionNode::IdentifierNode(Box::new(Identifier {
                 token: self.cur_token.clone(),
-                value: self.cur_token.literal.clone(),
+                value: self.cur_token.token_literal(),
             })));
         }
 
@@ -513,18 +513,19 @@ impl Parser {
     pub fn peek_error(&mut self, t: TokenType) {
         self.errors.push(format!(
             "expected next token to be {:?}, got {:?} instead",
-            t, self.peek_token.token_type
+            t,
+            self.peek_token.get_token_type()
         ));
     }
 
     /// get precedence of the peek token
     pub fn peek_precedence(&self) -> OperationPrecedence {
-        return get_precedence(&self.peek_token.token_type);
+        return get_precedence(&self.peek_token.get_token_type());
     }
 
     /// get precedence of the current token
     pub fn cur_precedence(&self) -> OperationPrecedence {
-        return get_precedence(&self.cur_token.token_type);
+        return get_precedence(&self.cur_token.get_token_type());
     }
 }
 

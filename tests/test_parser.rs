@@ -130,22 +130,13 @@ fn test_return_statements() {
 #[test]
 fn test_string() {
     let v = vec![StatementNode::LetStatementNode(Box::new(LetStatement {
-        token: Token {
-            token_type: TokenType::Let,
-            literal: "let".to_string(),
-        },
+        token: Token::new(TokenType::Let, "let"),
         name: Identifier {
-            token: Token {
-                token_type: TokenType::Ident,
-                literal: "myVar".to_string(),
-            },
+            token: Token::new(TokenType::Ident, "myVar"),
             value: "myVar".to_string(),
         },
         value: ExpressionNode::IdentifierNode(Box::new(Identifier {
-            token: Token {
-                token_type: TokenType::Ident,
-                literal: "anotherVar".to_string(),
-            },
+            token: Token::new(TokenType::Ident, "anotherVar"),
             value: "myVar".to_string(),
         })),
     }))];

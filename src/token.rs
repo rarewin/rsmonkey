@@ -2,9 +2,9 @@
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Token {
     /// type of token
-    pub token_type: TokenType,
+    token_type: TokenType,
     /// literal string
-    pub literal: String,
+    literal: String,
 }
 
 impl Token {
@@ -78,18 +78,38 @@ impl Token {
     ///
     /// # Return value
     ///
+    /// return literal string of Token.
+    ///
+    /// # Example
+    ///
     /// ```
     /// extern crate rsmonkey;
     /// use rsmonkey::token::{TokenType, Token};
     ///
     /// let l = Token::new(TokenType::Ident, "hoge");
-    /// assert_eq!(l.token_literal(), "hoge");
+    /// assert_eq!(l.get_literal(), "hoge");
+    ///
+    /// let n = Token::new(TokenType::Int, "100");
+    /// assert_eq!(n.get_literal(), "100");
     /// ```
-    pub fn token_literal(&self) -> String {
-        self.literal.to_string()
+    pub fn get_literal(&self) -> String {
+        self.literal.clone()
     }
 
-    /// get type of token is `tt`
+    /// get type of token
+    ///
+    /// # Return value
+    ///
+    /// token type of Token.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use rsmonkey::token::{TokenType, Token};
+    ///
+    /// let l = Token::new(TokenType::Ident, "hoge");
+    /// assert_eq!(l.get_token_type(), TokenType::Ident);
+    /// ```
     pub fn get_token_type(&self) -> TokenType {
         self.token_type
     }

@@ -12,10 +12,10 @@ pub struct Lexer {
 
 impl Lexer {
     /// create new lexer
-    pub fn new(input: String) -> Lexer {
+    pub fn new(input: &str) -> Lexer {
         let ch = input.as_bytes()[0] as char;
         Lexer {
-            input,
+            input: input.to_string(),
             position: Cell::new(0),
             read_position: Cell::new(1),
             ch: Cell::new(ch),

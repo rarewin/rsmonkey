@@ -668,7 +668,7 @@ fn test_array_index_expressions() {
 
 /// eval function
 fn test_eval(input: &'static str) -> Object {
-    let l = Lexer::new(input.to_string());
+    let l = Lexer::new(input);
     let mut p = Parser::new(l);
 
     let program = p.parse_program();

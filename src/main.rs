@@ -50,7 +50,7 @@ fn read_input() {
         stdout.flush().unwrap();
 
         if let Some(Ok(input)) = lines.next() {
-            let l = Lexer::new(input.to_string());
+            let l = Lexer::new(&input);
             let mut p = Parser::new(l);
 
             let program = p.parse_program();

@@ -35,7 +35,7 @@ fn test_let_statements() {
     ];
 
     for tt in let_statement_test {
-        let l = Lexer::new(tt.input.to_string());
+        let l = Lexer::new(tt.input);
         let mut p = Parser::new(l);
 
         let program = p.parse_program();
@@ -105,7 +105,7 @@ fn test_return_statements() {
     ];
 
     for tt in return_statement_test {
-        let l = Lexer::new(tt.input.to_string());
+        let l = Lexer::new(tt.input);
         let mut p = Parser::new(l);
 
         let program = p.parse_program();
@@ -150,7 +150,7 @@ fn test_string() {
 fn test_identifier_expression() {
     let input = r##"foobar;"##;
 
-    let l = Lexer::new(input.to_string());
+    let l = Lexer::new(input);
     let mut p = Parser::new(l);
 
     let program = p.parse_program();
@@ -175,7 +175,7 @@ fn test_identifier_expression() {
 fn test_integer_literal_expression() {
     let input = r##"5;"##;
 
-    let l = Lexer::new(input.to_string());
+    let l = Lexer::new(input);
     let mut p = Parser::new(l);
 
     let program = p.parse_program();
@@ -196,7 +196,7 @@ fn test_integer_literal_expression() {
 fn test_string_literal_expression() {
     let input = r##""hello world""##;
 
-    let l = Lexer::new(input.to_string());
+    let l = Lexer::new(input);
     let mut p = Parser::new(l);
 
     let program = p.parse_program();
@@ -232,7 +232,7 @@ fn test_boolean_literal_expression() {
     ];
 
     for tt in boolean_test {
-        let l = Lexer::new(tt.input.to_string());
+        let l = Lexer::new(tt.input);
         let mut p = Parser::new(l);
 
         let program = p.parse_program();
@@ -295,7 +295,7 @@ fn test_parsing_prefix_expressions() {
     ];
 
     for tt in prefix_test {
-        let l = Lexer::new(tt.input.to_string());
+        let l = Lexer::new(tt.input);
         let mut p = Parser::new(l);
 
         let program = p.parse_program();
@@ -407,7 +407,7 @@ fn test_parsing_infix_expressions() {
     ];
 
     for tt in infix_test {
-        let l = Lexer::new(tt.input.to_string());
+        let l = Lexer::new(tt.input);
         let mut p = Parser::new(l);
 
         let program = p.parse_program();
@@ -538,7 +538,7 @@ fn test_operator_precedence_parsing() {
     ];
 
     for tt in operator_precedence_test {
-        let l = Lexer::new(tt.input.to_string());
+        let l = Lexer::new(tt.input);
         let mut p = Parser::new(l);
 
         let program = p.parse_program();
@@ -558,7 +558,7 @@ fn test_operator_precedence_parsing() {
 fn test_if_expression() {
     let input = "if (x < y) { x };";
 
-    let l = Lexer::new(input.to_string());
+    let l = Lexer::new(input);
     let mut p = Parser::new(l);
 
     let program = p.parse_program();
@@ -615,7 +615,7 @@ fn test_if_expression() {
 fn test_if_else_expression() {
     let input = "if (x < y) { x; } else { y };";
 
-    let l = Lexer::new(input.to_string());
+    let l = Lexer::new(input);
     let mut p = Parser::new(l);
 
     let program = p.parse_program();
@@ -689,7 +689,7 @@ fn test_if_else_expression() {
 fn test_function_literal_parsing() {
     let input = "fn(x, y) { x + y; }";
 
-    let l = Lexer::new(input.to_string());
+    let l = Lexer::new(input);
     let mut p = Parser::new(l);
 
     let program = p.parse_program();
@@ -768,7 +768,7 @@ fn test_function_parameter_parsing() {
     ];
 
     for tt in func_test {
-        let l = Lexer::new(tt.input.to_string());
+        let l = Lexer::new(tt.input);
         let mut p = Parser::new(l);
 
         let program = p.parse_program();
@@ -810,7 +810,7 @@ fn test_function_parameter_parsing() {
 fn test_call_expression_arsing() {
     let input = "add(1, 2 * 3, 4 + 5);";
 
-    let l = Lexer::new(input.to_string());
+    let l = Lexer::new(input);
     let mut p = Parser::new(l);
 
     let program = p.parse_program();
@@ -859,7 +859,7 @@ fn test_call_expression_arsing() {
 fn test_parsing_array_literal() {
     let input = "[1, 2 * 2, 3 + 3];";
 
-    let l = Lexer::new(input.to_string());
+    let l = Lexer::new(input);
     let mut p = Parser::new(l);
 
     let program = p.parse_program();
@@ -907,7 +907,7 @@ fn test_parsing_array_literal() {
 fn test_parsing_index_expressions() {
     let input = "myArray[1 + 1]";
 
-    let l = Lexer::new(input.to_string());
+    let l = Lexer::new(input);
     let mut p = Parser::new(l);
 
     let program = p.parse_program();

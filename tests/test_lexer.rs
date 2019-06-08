@@ -131,7 +131,7 @@ fn test_next_token() {
         Token::new(TokenType::EoF, "EOF"),
     ];
 
-    let l = Lexer::new(input.to_string());
+    let l = Lexer::new(input);
 
     for tp in tests.iter() {
         let tok = l.next_token();

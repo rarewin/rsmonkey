@@ -26,7 +26,9 @@ fn test_next_token() {
     "foobar"
     "foo bar"
 
-    [1, 2];"##;
+    [1, 2];
+
+    {"foo": "bar"}"##;
 
     let tests = [
         Token::new(TokenType::Assign, "="),
@@ -128,6 +130,13 @@ fn test_next_token() {
         Token::new(TokenType::Int, "2"),
         Token::new(TokenType::RBracket, "]"),
         Token::new(TokenType::Semicolon, ";"),
+        //
+        Token::new(TokenType::LBrace, "{"),
+        Token::new(TokenType::StringToken, "foo"),
+        Token::new(TokenType::Colon, ":"),
+        Token::new(TokenType::StringToken, "bar"),
+        Token::new(TokenType::RBrace, "}"),
+        //
         Token::new(TokenType::EoF, "EOF"),
     ];
 

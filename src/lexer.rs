@@ -60,6 +60,7 @@ impl Lexer {
             ']' => Token::new(TokenType::RBracket, "]"),
             ',' => Token::new(TokenType::Comma, ","),
             ';' => Token::new(TokenType::Semicolon, ";"),
+            ':' => Token::new(TokenType::Colon, ":"),
             '\0' => Token::new(TokenType::EoF, "EOF"),
             '"' => {
                 let p = self.read_position.get();

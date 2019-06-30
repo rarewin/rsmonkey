@@ -65,7 +65,7 @@ impl Lexer {
                 }
                 Token::new(TokenType::StringToken, &self.input[p..self.position.get()])
             }
-            'a'...'z' | 'A'...'Z' | '_' => {
+            'a'..='z' | 'A'..='Z' | '_' => {
                 let p = self.position.get();
                 while self.ch.get().is_ascii_alphabetic() || self.ch.get() == '_' {
                     self.read_char();
@@ -73,7 +73,7 @@ impl Lexer {
                 let v = &self.input[p..self.position.get()];
                 return Token::new(lookup_ident(v), v); // don't need to read char more
             }
-            '0'...'9' => {
+            '0'..='9' => {
                 let p = self.position.get();
                 while self.ch.get().is_ascii_digit() {
                     self.read_char();

@@ -801,6 +801,10 @@ fn test_builtin_functions() {
         },
         Test {
             input: r##"rest(rest(rest(rest([1, 2, 3, 4]))));"##,
+            expected: TestLiteral::ArrayLiteral { array: vec![] },
+        },
+        Test {
+            input: r##"rest(rest(rest(rest(rest([1, 2, 3, 4])))));"##,
             expected: TestLiteral::NullLiteral,
         },
         Test {
@@ -812,6 +816,46 @@ fn test_builtin_functions() {
                     TestLiteral::IntegerLiteral { value: 3 },
                 ],
             },
+        },
+        Test {
+            input: r##"let map = fn(arr, f) {
+                         let iter = fn(arr, accumulated) {
+                           if (len(arr) == 0) {
+                             accumulated
+                          } else {
+                            iter(rest(arr), push(accumulated, f(first(arr))));
+                          }
+                        };
+                        iter(arr, []);
+                      };
+                      let a = [1, 2, 3, 4];
+                      let double = fn(x) { x * 2 };
+                      map(a, double);"##,
+            expected: TestLiteral::ArrayLiteral {
+                array: vec![
+                    TestLiteral::IntegerLiteral { value: 2 },
+                    TestLiteral::IntegerLiteral { value: 4 },
+                    TestLiteral::IntegerLiteral { value: 6 },
+                    TestLiteral::IntegerLiteral { value: 8 },
+                ],
+            },
+        },
+        Test {
+            input: r##"let reduce = fn(arr, initial, f) {
+                         let iter = fn(arr, result) {
+                           if (len(arr) == 0) {
+                             result
+                           } else {
+                             iter(rest(arr), f(result, first(arr)));
+                           }
+                         };
+                         iter(arr, initial);
+                       };
+                       let sum = fn(arr) {
+                         reduce(arr, 0, fn(initial, el) { initial + el });
+                       };
+                       sum([1, 2, 3, 4, 5]);"##,
+            expected: TestLiteral::IntegerLiteral { value: 15 },
         },
     ];
 

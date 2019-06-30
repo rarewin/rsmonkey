@@ -335,12 +335,14 @@ fn builtin_rest(parameters: Vec<Object>) -> Object {
     }
 
     if let Object::ArrayObject(ao) = &parameters[0] {
-        if ao.elements.len() > 1 {
-            return Object::new_array(&ao.elements[1..].to_vec());
+        if ao.elements.len() != 0 {
+            Object::new_array(&ao.elements[1..].to_vec())
+        } else {
+            Object::Null
         }
+    } else {
+        Object::Null
     }
-
-    Object::Null
 }
 
 /// builtin function "push"

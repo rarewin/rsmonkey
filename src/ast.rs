@@ -23,6 +23,7 @@ pub enum ExpressionNode {
     IfExpressionNode(Box<IfExpression>),
     CallExpressionNode(Box<CallExpression>),
     ArrayLiteralNode(Box<ArrayLiteral>),
+    HashLiteralNode(Box<HashLiteral>),
     IndexExpressionNode(Box<IndexExpression>),
 }
 
@@ -143,6 +144,13 @@ pub struct CallExpression {
 pub struct ArrayLiteral {
     pub token: Token,
     pub elements: Vec<ExpressionNode>,
+}
+
+/// struct for hash literal
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct HashLiteral {
+    pub token: Token,
+    pub pairs: Vec<(ExpressionNode, ExpressionNode)>,
 }
 
 /// struct for index expression
@@ -281,6 +289,14 @@ impl ExpressionNode {
             ExpressionNode::IndexExpressionNode(ien) => {
                 format!("({}[{}])", &ien.left.string(), &ien.index.string())
             }
+            ExpressionNode::HashLiteralNode(hln) => format!(
+                "{{{}}}",
+                &((&hln.pairs)
+                    .iter()
+                    .map(|x| format!("{}:{}", x.0.string(), x.1.string()))
+                    .collect::<Vec<String>>()
+                    .join(", "))
+            ),
 
             _ => panic!("not supported string(): {:?}", self),
         }

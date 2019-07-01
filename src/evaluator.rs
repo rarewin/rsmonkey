@@ -170,6 +170,7 @@ fn eval_expression_node(node: &ExpressionNode, env: Rc<Environment>) -> Object {
                 Object::new_array(&elements)
             }
         }
+        ExpressionNode::HashLiteralNode(hl) => unimplemented!("{:?}", hl),
     }
 }
 

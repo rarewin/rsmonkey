@@ -138,3 +138,13 @@ fn test_next_token() {
         assert_eq!(&tok, tp);
     }
 }
+
+#[test]
+fn test_empty_input() {
+    let input = "";
+
+    let l = Lexer::new(input.to_string());
+    let t = l.next_token();
+
+    assert_eq!(t, Token::new(TokenType::EoF, "EOF"));
+}

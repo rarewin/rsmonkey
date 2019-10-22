@@ -13,7 +13,11 @@ pub struct Lexer {
 impl Lexer {
     /// create new lexer
     pub fn new(input: String) -> Lexer {
-        let ch = input.as_bytes()[0] as char;
+        let ch = if input.len() > 0 {
+            input.as_bytes()[0] as char
+        } else {
+            '\0'
+        };
         Lexer {
             input,
             position: Cell::new(0),
@@ -78,7 +82,8 @@ impl Lexer {
                 while self.ch.get().is_ascii_digit() {
                     self.read_char();
                 }
-                return Token::new(TokenType::Int, &self.input[p..self.position.get()]); // don't need to read char more
+                return Token::new(TokenType::Int, &self.input[p..self.position.get()]);
+                // don't need to read char more
             }
             _ => Token::new(TokenType::Illegal, "illegal"),
         };

@@ -25,7 +25,6 @@ pub enum ExpressionNode {
     CallExpressionNode(Box<CallExpression>),
     ArrayLiteralNode(Box<ArrayLiteral>),
     IndexExpressionNode(Box<IndexExpression>),
-    Null,
 }
 
 /// operation precedence

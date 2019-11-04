@@ -149,7 +149,6 @@ fn eval_expression_node(node: &ExpressionNode, env: Rc<Environment>) -> Object {
             }
             return Object::new_array(&elements);
         }
-        _ => panic!("not implemented yet: {:#?}", node),
     }
 }
 

@@ -109,13 +109,15 @@ impl Parser {
 
         self.next_token();
 
-        let value = self.parse_expression(OperationPrecedence::Lowest);
+        if let Some(value) = self.parse_expression(OperationPrecedence::Lowest) {
+            if self.peek_token_is(TokenType::Semicolon) {
+                self.next_token();
+            }
 
-        if self.peek_token_is(TokenType::Semicolon) {
-            self.next_token();
+            StatementNode::LetStatementNode(Box::new(LetStatement { token, name, value }))
+        } else {
+            StatementNode::Null
         }
-
-        return StatementNode::LetStatementNode(Box::new(LetStatement { token, name, value }));
     }
 
     /// parse return statement
@@ -124,64 +126,66 @@ impl Parser {
 
         self.next_token();
 
-        let return_value = self.parse_expression(OperationPrecedence::Lowest);
+        if let Some(return_value) = self.parse_expression(OperationPrecedence::Lowest) {
+            if self.peek_token_is(TokenType::Semicolon) {
+                self.next_token();
+            }
 
-        if self.peek_token_is(TokenType::Semicolon) {
-            self.next_token();
+            StatementNode::ReturnStatementNode(Box::new(ReturnStatement {
+                token,
+                return_value,
+            }))
+        } else {
+            StatementNode::Null
         }
-
-        return StatementNode::ReturnStatementNode(Box::new(ReturnStatement {
-            token,
-            return_value,
-        }));
     }
 
     /// parse expression statement
     pub fn parse_expression_statement(&mut self) -> StatementNode {
-        let stmt = ExpressionStatement {
-            token: self.cur_token.clone(),
-            expression: self.parse_expression(OperationPrecedence::Lowest),
-        };
+        let token = self.cur_token.clone();
 
-        if let ExpressionNode::Null = stmt.expression {
-            return StatementNode::Null;
+        if let Some(expression) = self.parse_expression(OperationPrecedence::Lowest) {
+            if self.peek_token_is(TokenType::Semicolon) {
+                self.next_token();
+            }
+
+            StatementNode::ExpressionStatementNode(Box::new(ExpressionStatement {
+                token,
+                expression,
+            }))
+        } else {
+            StatementNode::Null
         }
-
-        if self.peek_token_is(TokenType::Semicolon) {
-            self.next_token();
-        }
-
-        return StatementNode::ExpressionStatementNode(Box::new(stmt));
     }
 
     /// parse expression
-    pub fn parse_expression(&mut self, precedence: OperationPrecedence) -> ExpressionNode {
-        let mut ex = self.prefix_parse(self.cur_token.get_token_type().clone());
-
-        if let ExpressionNode::Null = ex {
-            return ex;
-        }
+    pub fn parse_expression(&mut self, precedence: OperationPrecedence) -> Option<ExpressionNode> {
+        let mut ex = self.prefix_parse(self.cur_token.get_token_type().clone())?;
 
         while !self.peek_token_is(TokenType::Semicolon) && precedence < self.peek_precedence() {
             self.next_token();
-            ex = self.infix_parse(self.cur_token.get_token_type(), ex);
+
+            ex = match self.infix_parse(self.cur_token.get_token_type(), ex.clone()) {
+                Some(e) => e,
+                None => break,
+            }
         }
 
-        return ex;
+        Some(ex)
     }
 
     /// parse identifier
-    pub fn parse_identifier(&mut self) -> ExpressionNode {
+    pub fn parse_identifier(&mut self) -> Option<ExpressionNode> {
         let ident = Identifier {
             token: self.cur_token.clone(),
             value: self.cur_token.get_literal(),
         };
 
-        return ExpressionNode::IdentifierNode(Box::new(ident));
+        Some(ExpressionNode::IdentifierNode(Box::new(ident)))
     }
 
     /// parse integer literal
-    pub fn parse_integer_literal(&mut self) -> ExpressionNode {
+    pub fn parse_integer_literal(&mut self) -> Option<ExpressionNode> {
         let lit = IntegerLiteral {
             token: self.cur_token.clone(),
             value: self
@@ -191,122 +195,123 @@ impl Parser {
                 .expect("failed to parse as i64"),
         };
 
-        return ExpressionNode::IntegerLiteralNode(Box::new(lit));
+        Some(ExpressionNode::IntegerLiteralNode(Box::new(lit)))
     }
 
     /// parse string literal
-    pub fn parse_string_literal(&mut self) -> ExpressionNode {
+    pub fn parse_string_literal(&mut self) -> Option<ExpressionNode> {
         let sl = StringLiteral {
             token: self.cur_token.clone(),
             value: self.cur_token.get_literal(),
         };
 
-        return ExpressionNode::StringLiteralNode(Box::new(sl));
+        Some(ExpressionNode::StringLiteralNode(Box::new(sl)))
     }
 
     /// parse function literal
-    pub fn parse_function_literal(&mut self) -> ExpressionNode {
+    pub fn parse_function_literal(&mut self) -> Option<ExpressionNode> {
         let token = self.cur_token.clone();
 
         if !self.expect_peek(TokenType::LParen) {
-            return ExpressionNode::Null;
+            return None;
         }
 
-        let parameters = match self.parse_function_parameters() {
-            Some(p) => p,
-            _ => return ExpressionNode::Null,
-        };
+        let parameters = self.parse_function_parameters()?;
 
         if !self.expect_peek(TokenType::LBrace) {
-            return ExpressionNode::Null;
+            return None;
         }
 
         let body = self.parse_block_statement();
 
-        return ExpressionNode::FunctionLiteralNode(Box::new(FunctionLiteral {
-            token,
-            parameters,
-            body,
-        }));
+        Some(ExpressionNode::FunctionLiteralNode(Box::new(
+            FunctionLiteral {
+                token,
+                parameters,
+                body,
+            },
+        )))
     }
 
     /// parse prefix expression
-    pub fn parse_prefix_expression(&mut self) -> ExpressionNode {
-        let mut pe = PrefixExpression {
-            token: self.cur_token.clone(),
-            operator: self.cur_token.get_literal(),
-            right: ExpressionNode::Null,
-        };
+    pub fn parse_prefix_expression(&mut self) -> Option<ExpressionNode> {
+        let token = self.cur_token.clone();
+        let operator = self.cur_token.get_literal();
 
         self.next_token();
 
-        pe.right = self.parse_expression(OperationPrecedence::Prefix);
+        let right = self.parse_expression(OperationPrecedence::Prefix)?;
 
-        return ExpressionNode::PrefixExpressionNode(Box::new(pe));
+        Some(ExpressionNode::PrefixExpressionNode(Box::new(
+            PrefixExpression {
+                token,
+                operator,
+                right,
+            },
+        )))
     }
 
     /// parse boolean expression
-    pub fn parse_boolean_expression(&mut self) -> ExpressionNode {
+    pub fn parse_boolean_expression(&mut self) -> Option<ExpressionNode> {
         let be = Boolean {
             token: self.cur_token.clone(),
             value: self.cur_token_is(TokenType::True),
         };
 
-        return ExpressionNode::BooleanExpressionNode(Box::new(be));
+        Some(ExpressionNode::BooleanExpressionNode(Box::new(be)))
     }
 
     /// parse grouped expression
-    pub fn parse_grouped_expression(&mut self) -> ExpressionNode {
+    pub fn parse_grouped_expression(&mut self) -> Option<ExpressionNode> {
         self.next_token();
 
-        let exp = self.parse_expression(OperationPrecedence::Lowest);
+        let exp = self.parse_expression(OperationPrecedence::Lowest)?;
 
         if !self.expect_peek(TokenType::RParen) {
-            return ExpressionNode::Null;
+            None
+        } else {
+            Some(exp)
         }
-
-        return exp;
     }
 
     /// parse if expression
-    pub fn parse_if_expression(&mut self) -> ExpressionNode {
+    pub fn parse_if_expression(&mut self) -> Option<ExpressionNode> {
         let token = self.cur_token.clone();
 
         if !self.expect_peek(TokenType::LParen) {
-            return ExpressionNode::Null;
+            return None;
         }
 
         self.next_token();
 
-        let condition = self.parse_expression(OperationPrecedence::Lowest);
+        let condition = self.parse_expression(OperationPrecedence::Lowest)?;
 
         if !self.expect_peek(TokenType::RParen) {
-            return ExpressionNode::Null;
+            return None;
         }
 
         if !self.expect_peek(TokenType::LBrace) {
-            return ExpressionNode::Null;
+            return None;
         }
 
         let consequence = self.parse_block_statement();
 
         let alternative = if self.peek_token_is(TokenType::Else) {
             self.next_token();
-
             if !self.expect_peek(TokenType::LBrace) {
-                return ExpressionNode::Null;
+                return None;
             }
             self.parse_block_statement()
         } else {
             StatementNode::Null
         };
 
-        return ExpressionNode::IfExpressionNode(Box::new(IfExpression {
+        Some(ExpressionNode::IfExpressionNode(Box::new(IfExpression {
             token,
             condition,
             consequence,
             alternative,
-        }));
+        })))
     }
 
     /// parse block statement
@@ -329,7 +334,7 @@ impl Parser {
             self.next_token();
         }
 
-        return StatementNode::BlockStatementNode(Box::new(block));
+        StatementNode::BlockStatementNode(Box::new(block))
     }
 
     /// parse function parameters
@@ -362,41 +367,38 @@ impl Parser {
             return None;
         }
 
-        return Some(params);
+        Some(params)
     }
 
     /// parse call expression
-    pub fn parse_call_expression(&mut self, left: ExpressionNode) -> ExpressionNode {
+    pub fn parse_call_expression(&mut self, left: ExpressionNode) -> Option<ExpressionNode> {
         let token = self.cur_token.clone();
         let function = left;
+        let arguments = self.parse_call_arguments()?;
 
-        let arguments = match self.parse_call_arguments() {
-            Some(a) => a,
-            _ => return ExpressionNode::Null,
-        };
-
-        return ExpressionNode::CallExpressionNode(Box::new(CallExpression {
-            token,
-            function,
-            arguments,
-        }));
+        Some(ExpressionNode::CallExpressionNode(Box::new(
+            CallExpression {
+                token,
+                function,
+                arguments,
+            },
+        )))
     }
 
     /// parse index expression
-    pub fn parse_index_expression(&mut self, left: ExpressionNode) -> ExpressionNode {
+    pub fn parse_index_expression(&mut self, left: ExpressionNode) -> Option<ExpressionNode> {
         let token = self.cur_token.clone();
         self.next_token();
-        let index = self.parse_expression(OperationPrecedence::Lowest);
+
+        let index = self.parse_expression(OperationPrecedence::Lowest)?;
 
         if !self.expect_peek(TokenType::RBracket) {
-            return ExpressionNode::Null;
+            None
+        } else {
+            Some(ExpressionNode::IndexExpressionNode(Box::new(
+                IndexExpression { token, left, index },
+            )))
         }
-
-        return ExpressionNode::IndexExpressionNode(Box::new(IndexExpression {
-            token,
-            left,
-            index,
-        }));
     }
 
     /// parse function call arguments
@@ -406,41 +408,46 @@ impl Parser {
         if self.peek_token_is(TokenType::RParen) {
             self.next_token();
             return Some(arguments);
-        };
+        }
 
         self.next_token();
 
-        arguments.push(self.parse_expression(OperationPrecedence::Lowest));
+        let arg = self.parse_expression(OperationPrecedence::Lowest)?;
+        arguments.push(arg);
 
         while self.peek_token_is(TokenType::Comma) {
             self.next_token();
             self.next_token();
-            arguments.push(self.parse_expression(OperationPrecedence::Lowest));
+
+            let arg = self.parse_expression(OperationPrecedence::Lowest)?;
+            arguments.push(arg);
         }
 
         if !self.expect_peek(TokenType::RParen) {
-            return None;
+            None
+        } else {
+            Some(arguments)
         }
-
-        return Some(arguments);
     }
 
     /// parse infix expression
-    pub fn parse_infix_expression(&mut self, left: ExpressionNode) -> ExpressionNode {
+    pub fn parse_infix_expression(&mut self, left: ExpressionNode) -> Option<ExpressionNode> {
         let token = self.cur_token.clone();
         let operator = self.cur_token.get_literal();
         let precedence = self.cur_precedence();
 
         self.next_token();
 
-        let right = self.parse_expression(precedence);
+        let right = self.parse_expression(precedence)?;
 
-        return ExpressionNode::InfixExpressionNode(Box::new(InfixExpression {
-            token,
-            left,
-            operator,
-            right,
-        }));
+        Some(ExpressionNode::InfixExpressionNode(Box::new(
+            InfixExpression {
+                token,
+                left,
+                operator,
+                right,
+            },
+        )))
     }
 
     /// parse expression list
@@ -453,24 +460,32 @@ impl Parser {
         }
 
         self.next_token();
-        list.push(self.parse_expression(OperationPrecedence::Lowest));
 
-        while self.peek_token_is(TokenType::Comma) {
-            self.next_token();
-            self.next_token();
-            list.push(self.parse_expression(OperationPrecedence::Lowest));
+        if let Some(elm) = self.parse_expression(OperationPrecedence::Lowest) {
+            list.push(elm);
+
+            while self.peek_token_is(TokenType::Comma) {
+                self.next_token();
+                self.next_token();
+
+                if let Some(elm) = self.parse_expression(OperationPrecedence::Lowest) {
+                    list.push(elm);
+                } else {
+                    list.clear();
+                    break;
+                }
+            }
+
+            if !self.expect_peek(TokenType::RBracket) {
+                list.clear();
+            }
         }
 
-        if !self.expect_peek(TokenType::RBracket) {
-            list.clear();
-            return list;
-        }
-
-        return list;
+        list
     }
 
     /// parse prefix
-    fn prefix_parse(&mut self, tt: TokenType) -> ExpressionNode {
+    fn prefix_parse(&mut self, tt: TokenType) -> Option<ExpressionNode> {
         match tt {
             TokenType::Ident => self.parse_identifier(),
             TokenType::Int => self.parse_integer_literal(),
@@ -478,22 +493,22 @@ impl Parser {
             TokenType::Bang | TokenType::Minus => self.parse_prefix_expression(),
             TokenType::True | TokenType::False => self.parse_boolean_expression(),
             TokenType::LParen => self.parse_grouped_expression(),
-            TokenType::LBracket => ExpressionNode::ArrayLiteralNode(Box::new(ArrayLiteral {
+            TokenType::LBracket => Some(ExpressionNode::ArrayLiteralNode(Box::new(ArrayLiteral {
                 token: self.cur_token.clone(),
                 elements: self.parse_expression_list(TokenType::RBracket),
-            })),
+            }))),
             TokenType::If => self.parse_if_expression(),
             TokenType::Function => self.parse_function_literal(),
             _ => {
                 self.errors
                     .push(format!("unsupported by prefix_parser: {:?}", tt));
-                ExpressionNode::Null
+                None
             }
         }
     }
 
     /// parse infix
-    fn infix_parse(&mut self, tt: TokenType, left: ExpressionNode) -> ExpressionNode {
+    fn infix_parse(&mut self, tt: TokenType, left: ExpressionNode) -> Option<ExpressionNode> {
         match tt {
             TokenType::Plus
             | TokenType::Minus
@@ -520,12 +535,12 @@ impl Parser {
 
     /// get precedence of the peek token
     pub fn peek_precedence(&self) -> OperationPrecedence {
-        return get_precedence(&self.peek_token.get_token_type());
+        get_precedence(&self.peek_token.get_token_type())
     }
 
     /// get precedence of the current token
     pub fn cur_precedence(&self) -> OperationPrecedence {
-        return get_precedence(&self.cur_token.get_token_type());
+        get_precedence(&self.cur_token.get_token_type())
     }
 }
 

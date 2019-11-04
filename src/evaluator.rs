@@ -28,7 +28,6 @@ fn eval_statement_node(node: &StatementNode, env: Rc<Environment>) -> Object {
         }
         StatementNode::ReturnStatementNode(rs) => eval_return_statement(&rs, env.clone()),
         StatementNode::LetStatementNode(ls) => eval_let_statement(&ls, env.clone()),
-        StatementNode::Null => Object::Null,
     }
 }
 
@@ -105,18 +104,42 @@ fn eval_expression_node(node: &ExpressionNode, env: Rc<Environment>) -> Object {
                 Object::ErrorObject(_) => condition,
                 Object::BooleanObject(b) => {
                     if b.value == true {
-                        eval_statement_node(&ie.consequence, env.clone())
+                        if let Some(consequence) = &ie.consequence {
+                            eval_statement_node(consequence, env.clone())
+                        } else {
+                            Object::Null
+                        }
                     } else {
-                        eval_statement_node(&ie.alternative, env.clone())
+                        if let Some(alternative) = &ie.alternative {
+                            eval_statement_node(alternative, env.clone())
+                        } else {
+                            Object::Null
+                        }
                     }
                 }
-                Object::Null => eval_statement_node(&ie.alternative, env.clone()),
-                _ => eval_statement_node(&ie.consequence, env.clone()),
+                Object::Null => {
+                    if let Some(alternative) = &ie.alternative {
+                        eval_statement_node(alternative, env.clone())
+                    } else {
+                        Object::Null
+                    }
+                }
+                _ => {
+                    if let Some(consequence) = &ie.consequence {
+                        eval_statement_node(consequence, env.clone())
+                    } else {
+                        Object::Null
+                    }
+                }
             }
         }
         ExpressionNode::IdentifierNode(id) => env.get(&id.value),
         ExpressionNode::FunctionLiteralNode(fl) => {
-            Object::new_function(&fl.parameters, &fl.body, env.clone())
+            if let Some(body) = &fl.body {
+                Object::new_function(&fl.parameters, body, env.clone())
+            } else {
+                Object::Null
+            }
         }
         ExpressionNode::CallExpressionNode(ce) => {
             let function = eval_expression_node(&ce.function, env.clone());
@@ -145,9 +168,10 @@ fn eval_expression_node(node: &ExpressionNode, env: Rc<Environment>) -> Object {
         ExpressionNode::ArrayLiteralNode(al) => {
             let elements = eval_expressions(&al.elements, env.clone());
             if elements.len() == 1 && is_error(&elements[0]) {
-                return elements[0].clone();
+                elements[0].clone()
+            } else {
+                Object::new_array(&elements)
             }
-            return Object::new_array(&elements);
         }
     }
 }

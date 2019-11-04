@@ -68,13 +68,9 @@ impl Parser {
         let mut program = Program::new();
 
         while self.cur_token.get_token_type() != TokenType::EoF {
-            let stmt = self.parse_statement();
-
-            if let StatementNode::Null = stmt {
-            } else {
+            if let Some(stmt) = self.parse_statement() {
                 program.statements.push(stmt);
             }
-
             self.next_token();
         }
 
@@ -82,7 +78,7 @@ impl Parser {
     }
 
     /// parse statement
-    pub fn parse_statement(&mut self) -> StatementNode {
+    pub fn parse_statement(&mut self) -> Option<StatementNode> {
         match self.cur_token.get_token_type() {
             TokenType::Let => self.parse_let_statement(),
             TokenType::Return => self.parse_return_statement(),
@@ -91,11 +87,11 @@ impl Parser {
     }
 
     /// parse let statement
-    pub fn parse_let_statement(&mut self) -> StatementNode {
+    pub fn parse_let_statement(&mut self) -> Option<StatementNode> {
         let token = self.cur_token.clone();
 
         if !self.expect_peek(TokenType::Ident) {
-            return StatementNode::Null;
+            return None;
         }
 
         let name = Identifier {
@@ -104,58 +100,57 @@ impl Parser {
         };
 
         if !self.expect_peek(TokenType::Assign) {
-            return StatementNode::Null;
+            return None;
         }
 
         self.next_token();
 
-        if let Some(value) = self.parse_expression(OperationPrecedence::Lowest) {
-            if self.peek_token_is(TokenType::Semicolon) {
-                self.next_token();
-            }
+        let value = self.parse_expression(OperationPrecedence::Lowest)?;
 
-            StatementNode::LetStatementNode(Box::new(LetStatement { token, name, value }))
-        } else {
-            StatementNode::Null
+        if self.peek_token_is(TokenType::Semicolon) {
+            self.next_token();
         }
+
+        Some(StatementNode::LetStatementNode(Box::new(LetStatement {
+            token,
+            name,
+            value,
+        })))
     }
 
     /// parse return statement
-    pub fn parse_return_statement(&mut self) -> StatementNode {
+    pub fn parse_return_statement(&mut self) -> Option<StatementNode> {
         let token = self.cur_token.clone();
 
         self.next_token();
 
-        if let Some(return_value) = self.parse_expression(OperationPrecedence::Lowest) {
-            if self.peek_token_is(TokenType::Semicolon) {
-                self.next_token();
-            }
+        let return_value = self.parse_expression(OperationPrecedence::Lowest)?;
 
-            StatementNode::ReturnStatementNode(Box::new(ReturnStatement {
+        if self.peek_token_is(TokenType::Semicolon) {
+            self.next_token();
+        }
+
+        Some(StatementNode::ReturnStatementNode(Box::new(
+            ReturnStatement {
                 token,
                 return_value,
-            }))
-        } else {
-            StatementNode::Null
-        }
+            },
+        )))
     }
 
     /// parse expression statement
-    pub fn parse_expression_statement(&mut self) -> StatementNode {
+    pub fn parse_expression_statement(&mut self) -> Option<StatementNode> {
         let token = self.cur_token.clone();
 
-        if let Some(expression) = self.parse_expression(OperationPrecedence::Lowest) {
-            if self.peek_token_is(TokenType::Semicolon) {
-                self.next_token();
-            }
+        let expression = self.parse_expression(OperationPrecedence::Lowest)?;
 
-            StatementNode::ExpressionStatementNode(Box::new(ExpressionStatement {
-                token,
-                expression,
-            }))
-        } else {
-            StatementNode::Null
+        if self.peek_token_is(TokenType::Semicolon) {
+            self.next_token();
         }
+
+        Some(StatementNode::ExpressionStatementNode(Box::new(
+            ExpressionStatement { token, expression },
+        )))
     }
 
     /// parse expression
@@ -303,7 +298,7 @@ impl Parser {
             }
             self.parse_block_statement()
         } else {
-            StatementNode::Null
+            None
         };
 
         Some(ExpressionNode::IfExpressionNode(Box::new(IfExpression {
@@ -315,7 +310,7 @@ impl Parser {
     }
 
     /// parse block statement
-    pub fn parse_block_statement(&mut self) -> StatementNode {
+    pub fn parse_block_statement(&mut self) -> Option<StatementNode> {
         let mut block = BlockStatement {
             token: self.cur_token.clone(),
             statements: Vec::<StatementNode>::new(),
@@ -324,17 +319,12 @@ impl Parser {
         self.next_token();
 
         while !self.cur_token_is(TokenType::RBrace) && !self.cur_token_is(TokenType::EoF) {
-            let stmt = self.parse_statement();
-
-            if let StatementNode::Null = stmt {
-                return StatementNode::Null;
-            }
-
+            let stmt = self.parse_statement()?;
             block.statements.push(stmt);
             self.next_token();
         }
 
-        StatementNode::BlockStatementNode(Box::new(block))
+        Some(StatementNode::BlockStatementNode(Box::new(block)))
     }
 
     /// parse function parameters

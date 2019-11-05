@@ -8,7 +8,6 @@ pub enum StatementNode {
     ExpressionStatementNode(Box<ExpressionStatement>),
     BlockStatementNode(Box<BlockStatement>),
     ProgramStatementNode(Box<Program>),
-    Null,
 }
 
 /// expression node
@@ -95,7 +94,7 @@ pub struct StringLiteral {
 pub struct FunctionLiteral {
     pub token: Token,
     pub parameters: Vec<ExpressionNode>,
-    pub body: StatementNode,
+    pub body: Option<StatementNode>,
 }
 
 /// struct for prefix expression
@@ -127,8 +126,8 @@ pub struct Boolean {
 pub struct IfExpression {
     pub token: Token,
     pub condition: ExpressionNode,
-    pub consequence: StatementNode,
-    pub alternative: StatementNode,
+    pub consequence: Option<StatementNode>,
+    pub alternative: Option<StatementNode>,
 }
 
 /// struct for call expression
@@ -182,7 +181,6 @@ impl StatementNode {
                     "(empty program statement)".into()
                 }
             }
-            StatementNode::Null => "(null)".into(),
         }
     }
 
@@ -213,7 +211,6 @@ impl StatementNode {
                 }
                 ret
             }
-            StatementNode::Null => "(null)".into(),
         }
     }
 }
@@ -234,7 +231,11 @@ impl ExpressionNode {
                     .map(|x| x.string())
                     .collect::<Vec<String>>()
                     .join(", ")),
-                &fln.body.string()
+                if let Some(body) = &fln.body {
+                    body.string()
+                } else {
+                    "".into()
+                }
             ),
             ExpressionNode::PrefixExpressionNode(pen) => {
                 format!("({}{})", pen.operator, &pen.right.string())
@@ -249,11 +250,15 @@ impl ExpressionNode {
             ExpressionNode::IfExpressionNode(ien) => format!(
                 "if {} {}{}",
                 ien.condition.string(),
-                ien.consequence.string(),
-                if let StatementNode::BlockStatementNode(_) = ien.alternative {
-                    format!(" else {}", ien.alternative.string())
+                if let Some(consequence) = &ien.consequence {
+                    consequence.string()
                 } else {
-                    "".to_string()
+                    "".into()
+                },
+                if let Some(alternative) = &ien.alternative {
+                    format!(" else {}", alternative.string())
+                } else {
+                    "".into()
                 }
             ),
             ExpressionNode::CallExpressionNode(cen) => format!(

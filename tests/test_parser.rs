@@ -588,7 +588,7 @@ fn test_if_expression() {
     );
 
     let cs = match &exp.consequence {
-        StatementNode::BlockStatementNode(bs) => bs,
+        Some(StatementNode::BlockStatementNode(bs)) => bs,
         _ => panic!("consequence does not have block statement"),
     };
 
@@ -606,7 +606,7 @@ fn test_if_expression() {
     test_literal_expression(&conex.expression, &TestLiteral::StringLiteral("x"));
 
     match &exp.alternative {
-        StatementNode::Null => {}
+        None => {}
         _ => panic!("alternative has unexpected statement node"),
     };
 }
@@ -647,7 +647,7 @@ fn test_if_else_expression() {
     );
 
     let cs = match &exp.consequence {
-        StatementNode::BlockStatementNode(bs) => bs,
+        Some(StatementNode::BlockStatementNode(bs)) => bs,
         _ => panic!("consequence does not have block statement"),
     };
 
@@ -665,7 +665,7 @@ fn test_if_else_expression() {
     test_literal_expression(&conex.expression, &TestLiteral::StringLiteral("x"));
 
     let als = match &exp.alternative {
-        StatementNode::BlockStatementNode(bs) => bs,
+        Some(StatementNode::BlockStatementNode(bs)) => bs,
         _ => panic!("alternative does not have block statement"),
     };
 
@@ -722,7 +722,7 @@ fn test_function_literal_parsing() {
     test_literal_expression(&fl.parameters[1], &TestLiteral::StringLiteral("y"));
 
     let body = match &fl.body {
-        StatementNode::BlockStatementNode(b) => b,
+        Some(StatementNode::BlockStatementNode(b)) => b,
         _ => panic!("block statement is expected here"),
     };
 

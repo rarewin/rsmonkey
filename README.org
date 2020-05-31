@@ -1,6 +1,6 @@
 #+TITLE: RSMonkey
 
 #+CAPTION: Build Status
-[[https://travis-ci.org/rarewin/rsmonkey.svg?branch=master]]
+[[https://github.com/rarewin/rsmonkey/workflows/Test/badge.svg]]
 
 Rust porting of [[https://interpreterbook.com/#the-monkey-programming-language][The Monkey Programming language]].

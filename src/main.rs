@@ -46,7 +46,7 @@ fn read_input() {
     let mut stdout = stdout.lock();
 
     loop {
-        stdout.write(PROMPT.as_bytes()).unwrap();
+        stdout.write_all(PROMPT.as_bytes()).unwrap();
         stdout.flush().unwrap();
 
         if let Some(Ok(input)) = lines.next() {
@@ -55,7 +55,7 @@ fn read_input() {
 
             let program = p.parse_program();
 
-            if p.errors().len() > 0 {
+            if !p.errors().is_empty() {
                 for e in p.errors() {
                     println!(
                         r##"{}

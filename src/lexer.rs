@@ -13,7 +13,7 @@ pub struct Lexer {
 impl Lexer {
     /// create new lexer
     pub fn new(input: String) -> Lexer {
-        let ch = if input.len() > 0 {
+        let ch = if !input.is_empty() {
             input.as_bytes()[0] as char
         } else {
             '\0'

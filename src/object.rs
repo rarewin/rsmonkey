@@ -25,13 +25,13 @@ impl Object {
             Object::IntegerObject(io) => io.value.to_string(),
             Object::BooleanObject(bo) => bo.value.to_string(),
             Object::StringObject(so) => so.value.to_string(),
-            Object::ReturnValueObject(rvo) => rvo.value.inspect().into(),
+            Object::ReturnValueObject(rvo) => rvo.value.inspect(),
             Object::FunctionObject(fo) => {
                 let mut ret = String::new();
                 ret.push_str("fn(");
                 ret.push_str(
                     &((&fo.parameters)
-                        .into_iter()
+                        .iter()
                         .map(|x| x.get_literal())
                         .collect::<Vec<String>>()
                         .join(", ")),
@@ -46,7 +46,7 @@ impl Object {
                 ret.push_str("[");
                 ret.push_str(
                     &((&ao.elements)
-                        .into_iter()
+                        .iter()
                         .map(|x| x.inspect())
                         .collect::<Vec<String>>()
                         .join(", ")),
@@ -81,7 +81,7 @@ impl Object {
     }
 
     /// create a new string object
-    pub fn new_string(value: &String) -> Object {
+    pub fn new_string(value: &str) -> Object {
         Object::StringObject(Box::new(StringObj {
             value: value.to_string(),
         }))
@@ -108,19 +108,19 @@ impl Object {
 
     /// create a new function object
     pub fn new_function(
-        parameters: &Vec<ExpressionNode>,
+        parameters: &[ExpressionNode],
         body: &StatementNode,
         env: Rc<Environment>,
     ) -> Object {
         Object::FunctionObject(Box::new(Function {
             parameters: parameters.to_vec(),
             body: body.clone(),
-            env: env.clone(),
+            env,
         }))
     }
 
     /// create a new array object
-    pub fn new_array(elements: &Vec<Object>) -> Object {
+    pub fn new_array(elements: &[Object]) -> Object {
         Object::ArrayObject(Box::new(Array {
             elements: elements.to_vec(),
         }))
@@ -128,14 +128,14 @@ impl Object {
 }
 
 /// object type strings
-pub const INTEGER_OBJ: &'static str = "INTEGER";
-pub const BOOLEAN_OBJ: &'static str = "BOOLEAN";
-pub const STRING_OBJ: &'static str = "STRING";
-pub const RETURN_VALUE_OBJ: &'static str = "RETURN_VALUE";
-pub const ERROR_OBJ: &'static str = "ERROR";
-pub const FUNCTION_OBJ: &'static str = "FUNCTION";
-pub const ARRAY_OBJ: &'static str = "ARRAY";
-pub const BUILTIN_OBJ: &'static str = "BUILTIN";
+pub const INTEGER_OBJ: &str = "INTEGER";
+pub const BOOLEAN_OBJ: &str = "BOOLEAN";
+pub const STRING_OBJ: &str = "STRING";
+pub const RETURN_VALUE_OBJ: &str = "RETURN_VALUE";
+pub const ERROR_OBJ: &str = "ERROR";
+pub const FUNCTION_OBJ: &str = "FUNCTION";
+pub const ARRAY_OBJ: &str = "ARRAY";
+pub const BUILTIN_OBJ: &str = "BUILTIN";
 
 /// const boolan object
 pub const TRUE: Boolean = Boolean { value: true };
@@ -212,7 +212,7 @@ impl Environment {
     }
 
     /// set an element to hash map
-    pub fn set(&self, key: &String, value: &Object) {
+    pub fn set(&self, key: &str, value: &Object) {
         match self {
             Environment::Env { store, outer: _ } => {
                 store.borrow_mut().insert(key.to_string(), value.clone())
@@ -252,11 +252,17 @@ impl Environment {
     }
 }
 
+impl Default for Environment {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// extend an Environment
 pub fn extend_environment(inner: Rc<Environment>) -> Rc<Environment> {
     Rc::new(Environment::Env {
         store: Rc::new(RefCell::new(HashMap::<String, Object>::new())),
-        outer: inner.clone(),
+        outer: inner,
     })
 }
 
@@ -289,7 +295,7 @@ fn builtin_first(parameters: Vec<Object>) -> Object {
     }
 
     if let Object::ArrayObject(ao) = &parameters[0] {
-        if ao.elements.len() > 0 {
+        if !ao.elements.is_empty() {
             ao.elements[0].clone()
         } else {
             Object::Null
@@ -312,7 +318,7 @@ fn builtin_last(parameters: Vec<Object>) -> Object {
     }
 
     if let Object::ArrayObject(ao) = &parameters[0] {
-        if ao.elements.len() > 0 {
+        if !ao.elements.is_empty() {
             ao.elements[ao.elements.len() - 1].clone()
         } else {
             Object::Null
@@ -335,7 +341,7 @@ fn builtin_rest(parameters: Vec<Object>) -> Object {
     }
 
     if let Object::ArrayObject(ao) = &parameters[0] {
-        if ao.elements.len() != 0 {
+        if !ao.elements.is_empty() {
             Object::new_array(&ao.elements[1..].to_vec())
         } else {
             Object::Null

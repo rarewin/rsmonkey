@@ -98,7 +98,7 @@ impl Object {
 
     /// create a new error object
     pub fn new_error(message: String) -> Object {
-        Object::ErrorObject(Box::new({ Error { message } }))
+        Object::ErrorObject(Box::new(Error { message }))
     }
 
     /// create a new return value object

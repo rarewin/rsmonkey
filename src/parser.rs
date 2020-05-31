@@ -33,7 +33,7 @@ impl Parser {
 
     /// error string
     pub fn errors(&self) -> &Vec<String> {
-        return &self.errors;
+        &self.errors
     }
 
     /// update current position
@@ -155,7 +155,7 @@ impl Parser {
 
     /// parse expression
     pub fn parse_expression(&mut self, precedence: OperationPrecedence) -> Option<ExpressionNode> {
-        let mut ex = self.prefix_parse(self.cur_token.get_token_type().clone())?;
+        let mut ex = self.prefix_parse(self.cur_token.get_token_type())?;
 
         while !self.peek_token_is(TokenType::Semicolon) && precedence < self.peek_precedence() {
             self.next_token();
@@ -525,17 +525,17 @@ impl Parser {
 
     /// get precedence of the peek token
     pub fn peek_precedence(&self) -> OperationPrecedence {
-        get_precedence(&self.peek_token.get_token_type())
+        get_precedence(self.peek_token.get_token_type())
     }
 
     /// get precedence of the current token
     pub fn cur_precedence(&self) -> OperationPrecedence {
-        get_precedence(&self.cur_token.get_token_type())
+        get_precedence(self.cur_token.get_token_type())
     }
 }
 
 /// get precedence of the operation `tt`
-fn get_precedence(tt: &TokenType) -> OperationPrecedence {
+fn get_precedence(tt: TokenType) -> OperationPrecedence {
     match tt {
         TokenType::LParen => OperationPrecedence::Call,
         TokenType::Eq | TokenType::NotEq => OperationPrecedence::Equals,

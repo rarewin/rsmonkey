@@ -36,25 +36,6 @@ impl Token {
         }
     }
 
-    /// clone token
-    ///
-    /// # Return value
-    ///
-    /// retuen a cloned Token
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// extern crate rsmonkey;
-    /// use rsmonkey::token::{TokenType, Token};
-    ///
-    /// let token = Token::new(TokenType::Int, "4");
-    /// let token2 = token.clone();
-    /// ```
-    pub fn clone(&self) -> Token {
-        Token::new(self.token_type, &self.literal)
-    }
-
     /// check if EoF or not
     ///
     /// # Return value

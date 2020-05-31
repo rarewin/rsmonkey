@@ -13,21 +13,19 @@ pub enum EvalNode {
 /// evaluator function
 pub fn eval(node: &EvalNode, env: Rc<Environment>) -> Object {
     match node {
-        EvalNode::EvalStatementNode(sn) => eval_statement_node(sn, env.clone()),
-        EvalNode::EvalExpressionNode(en) => eval_expression_node(en, env.clone()),
+        EvalNode::EvalStatementNode(sn) => eval_statement_node(sn, env),
+        EvalNode::EvalExpressionNode(en) => eval_expression_node(en, env),
     }
 }
 
 /// evaluator function for statement node
 fn eval_statement_node(node: &StatementNode, env: Rc<Environment>) -> Object {
     match node {
-        StatementNode::ProgramStatementNode(ps) => eval_program(&ps, env.clone()),
-        StatementNode::BlockStatementNode(bs) => eval_block_statement(&bs, env.clone()),
-        StatementNode::ExpressionStatementNode(es) => {
-            eval_expression_node(&es.expression, env.clone())
-        }
-        StatementNode::ReturnStatementNode(rs) => eval_return_statement(&rs, env.clone()),
-        StatementNode::LetStatementNode(ls) => eval_let_statement(&ls, env.clone()),
+        StatementNode::ProgramStatementNode(ps) => eval_program(&ps, env),
+        StatementNode::BlockStatementNode(bs) => eval_block_statement(&bs, env),
+        StatementNode::ExpressionStatementNode(es) => eval_expression_node(&es.expression, env),
+        StatementNode::ReturnStatementNode(rs) => eval_return_statement(&rs, env),
+        StatementNode::LetStatementNode(ls) => eval_let_statement(&ls, env),
     }
 }
 
@@ -61,7 +59,7 @@ fn eval_block_statement(bl: &BlockStatement, env: Rc<Environment>) -> Object {
 
 /// evaluator function for return statement
 fn eval_return_statement(rs: &ReturnStatement, env: Rc<Environment>) -> Object {
-    Object::new_return_value(eval_expression_node(&rs.return_value, env.clone()))
+    Object::new_return_value(eval_expression_node(&rs.return_value, env))
 }
 
 /// evaluator function for let statement
@@ -71,7 +69,8 @@ fn eval_let_statement(ls: &LetStatement, env: Rc<Environment>) -> Object {
         return val;
     }
     env.set(&ls.name.value, &val);
-    return val;
+
+    val
 }
 
 /// evaluator function for expression node
@@ -81,7 +80,7 @@ fn eval_expression_node(node: &ExpressionNode, env: Rc<Environment>) -> Object {
         ExpressionNode::StringLiteralNode(sl) => Object::new_string(&sl.value),
         ExpressionNode::BooleanExpressionNode(be) => Object::new_boolean(be.value),
         ExpressionNode::PrefixExpressionNode(pe) => {
-            let right = eval_expression_node(&pe.right, env.clone());
+            let right = eval_expression_node(&pe.right, env);
             if is_error(&right) {
                 return right;
             }
@@ -92,7 +91,7 @@ fn eval_expression_node(node: &ExpressionNode, env: Rc<Environment>) -> Object {
             if is_error(&left) {
                 return left;
             }
-            let right = eval_expression_node(&ie.right, env.clone());
+            let right = eval_expression_node(&ie.right, env);
             if is_error(&right) {
                 return right;
             }
@@ -103,30 +102,28 @@ fn eval_expression_node(node: &ExpressionNode, env: Rc<Environment>) -> Object {
             match condition {
                 Object::ErrorObject(_) => condition,
                 Object::BooleanObject(b) => {
-                    if b.value == true {
+                    if b.value {
                         if let Some(consequence) = &ie.consequence {
-                            eval_statement_node(consequence, env.clone())
+                            eval_statement_node(consequence, env)
                         } else {
                             Object::Null
                         }
+                    } else if let Some(alternative) = &ie.alternative {
+                        eval_statement_node(alternative, env)
                     } else {
-                        if let Some(alternative) = &ie.alternative {
-                            eval_statement_node(alternative, env.clone())
-                        } else {
-                            Object::Null
-                        }
+                        Object::Null
                     }
                 }
                 Object::Null => {
                     if let Some(alternative) = &ie.alternative {
-                        eval_statement_node(alternative, env.clone())
+                        eval_statement_node(alternative, env)
                     } else {
                         Object::Null
                     }
                 }
                 _ => {
                     if let Some(consequence) = &ie.consequence {
-                        eval_statement_node(consequence, env.clone())
+                        eval_statement_node(consequence, env)
                     } else {
                         Object::Null
                     }
@@ -136,7 +133,7 @@ fn eval_expression_node(node: &ExpressionNode, env: Rc<Environment>) -> Object {
         ExpressionNode::IdentifierNode(id) => env.get(&id.value),
         ExpressionNode::FunctionLiteralNode(fl) => {
             if let Some(body) = &fl.body {
-                Object::new_function(&fl.parameters, body, env.clone())
+                Object::new_function(&fl.parameters, body, env)
             } else {
                 Object::Null
             }
@@ -146,7 +143,7 @@ fn eval_expression_node(node: &ExpressionNode, env: Rc<Environment>) -> Object {
             if is_error(&function) {
                 return function;
             }
-            let args = eval_expressions(&ce.arguments, env.clone());
+            let args = eval_expressions(&ce.arguments, env);
             if args.len() == 1 && is_error(&args[0]) {
                 return args[0].clone();
             }
@@ -158,7 +155,7 @@ fn eval_expression_node(node: &ExpressionNode, env: Rc<Environment>) -> Object {
                 return left;
             }
 
-            let index = eval_expression_node(&ie.index, env.clone());
+            let index = eval_expression_node(&ie.index, env);
             if is_error(&index) {
                 return index;
             }
@@ -166,7 +163,7 @@ fn eval_expression_node(node: &ExpressionNode, env: Rc<Environment>) -> Object {
             eval_index_expression(&left, &index)
         }
         ExpressionNode::ArrayLiteralNode(al) => {
-            let elements = eval_expressions(&al.elements, env.clone());
+            let elements = eval_expressions(&al.elements, env);
             if elements.len() == 1 && is_error(&elements[0]) {
                 elements[0].clone()
             } else {
@@ -265,7 +262,7 @@ fn eval_integer_infix_expression(operator: &str, left: &Integer, right: &Integer
 }
 
 /// evaluator function for expressions
-fn eval_expressions(exps: &Vec<ExpressionNode>, env: Rc<Environment>) -> Vec<Object> {
+fn eval_expressions(exps: &[ExpressionNode], env: Rc<Environment>) -> Vec<Object> {
     let mut result = Vec::<Object>::new();
 
     for e in exps {
@@ -312,7 +309,7 @@ fn eval_array_index_expression(array: &Array, index: &Integer) -> Object {
         return Object::Null;
     }
 
-    return array.elements[idx as usize].clone();
+    array.elements[idx as usize].clone()
 }
 
 /// check if error or not
@@ -325,7 +322,7 @@ fn is_error(obj: &Object) -> bool {
 }
 
 /// apply function
-fn apply_function(function: &Object, args: &Vec<Object>) -> Object {
+fn apply_function(function: &Object, args: &[Object]) -> Object {
     match function {
         Object::FunctionObject(fnc) => {
             if fnc.parameters.len() != args.len() {
@@ -339,7 +336,7 @@ fn apply_function(function: &Object, args: &Vec<Object>) -> Object {
             for (idx, p) in fnc.parameters.iter().enumerate() {
                 extended_env.set(&p.string(), &args[idx]);
             }
-            let evaluated = eval_statement_node(&fnc.body, extended_env.clone());
+            let evaluated = eval_statement_node(&fnc.body, extended_env);
             if let Object::ReturnValueObject(ro) = evaluated {
                 ro.value
             } else {

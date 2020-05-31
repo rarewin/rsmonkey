@@ -168,14 +168,14 @@ impl StatementNode {
             StatementNode::ReturnStatementNode(rs) => rs.token.get_literal(),
             StatementNode::ExpressionStatementNode(es) => es.token.get_literal(),
             StatementNode::BlockStatementNode(bs) => {
-                if bs.statements.len() > 0 {
+                if !bs.statements.is_empty() {
                     bs.statements[0].get_literal()
                 } else {
                     "(empty block statement)".into()
                 }
             }
             StatementNode::ProgramStatementNode(ps) => {
-                if ps.statements.len() > 0 {
+                if !ps.statements.is_empty() {
                     ps.statements[0].get_literal()
                 } else {
                     "(empty program statement)".into()
@@ -227,7 +227,7 @@ impl ExpressionNode {
                 "{}({}){}",
                 &self.get_literal(),
                 &((&fln.parameters)
-                    .into_iter()
+                    .iter()
                     .map(|x| x.string())
                     .collect::<Vec<String>>()
                     .join(", ")),
@@ -265,7 +265,7 @@ impl ExpressionNode {
                 "{}({})",
                 &cen.function.string(),
                 &((&cen.arguments)
-                    .into_iter()
+                    .iter()
                     .map(|x| x.string())
                     .collect::<Vec<String>>()
                     .join(", "))
@@ -273,7 +273,7 @@ impl ExpressionNode {
             ExpressionNode::ArrayLiteralNode(al) => format!(
                 "[{}]",
                 &((&al.elements)
-                    .into_iter()
+                    .iter()
                     .map(|x| x.string())
                     .collect::<Vec<String>>()
                     .join(", "))
@@ -316,15 +316,21 @@ impl Program {
         for stmt in &self.statements {
             ret.push_str(&stmt.string());
         }
-        return ret;
+        ret
     }
 
     /// get the first token's literal
     pub fn get_literal(&self) -> String {
-        if self.statements.len() > 0 {
+        if !self.statements.is_empty() {
             self.statements[0].get_literal()
         } else {
             "".to_string()
         }
+    }
+}
+
+impl Default for Program {
+    fn default() -> Self {
+        Self::new()
     }
 }

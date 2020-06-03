@@ -170,7 +170,26 @@ fn eval_expression_node(node: &ExpressionNode, env: Rc<Environment>) -> Object {
                 Object::new_array(&elements)
             }
         }
-        ExpressionNode::HashLiteralNode(hl) => unimplemented!("{:?}", hl),
+        ExpressionNode::HashLiteralNode(hl) => {
+            let mut result = Vec::<(Object, Object)>::new();
+
+            for pair in &hl.pairs {
+                let key = eval_expression_node(&pair.0, env.clone());
+
+                if is_error(&key) {
+                    return key;
+                }
+
+                let value = eval_expression_node(&pair.1, env.clone());
+
+                if is_error(&value) {
+                    return value;
+                }
+
+                result.push((key, value));
+            }
+            Object::new_hash(&result)
+        }
     }
 }
 

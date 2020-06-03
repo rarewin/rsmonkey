@@ -590,6 +590,47 @@ fn test_closures() {
     expected.test_literal(&evaluated);
 }
 
+/// test hash
+#[test]
+fn test_hash() {
+    let input = r##"let two = "two";
+{
+  "one": 10 - 9,
+  two: 1 + 1,
+  "thr" + "ee": 6 / 2,
+  4: 4,
+  true: 5,
+  false: 6
+}"##;
+
+    let evaluated = test_eval(input);
+
+    let ho = match &evaluated {
+        Object::HashObject(h) => h,
+        _ => panic!("hash object is expected, got {:?}", evaluated),
+    };
+
+    assert_eq!(
+        ho.pairs.len(),
+        6,
+        "the number of elements is expected 6, got {}",
+        ho.pairs.len(),
+    );
+
+    (TestLiteral::StringLiteral { value: "one" }).test_literal(&ho.pairs[0].0);
+    (TestLiteral::IntegerLiteral { value: 1 }).test_literal(&ho.pairs[0].1);
+    (TestLiteral::StringLiteral { value: "two" }).test_literal(&ho.pairs[1].0);
+    (TestLiteral::IntegerLiteral { value: 2 }).test_literal(&ho.pairs[1].1);
+    (TestLiteral::StringLiteral { value: "three" }).test_literal(&ho.pairs[2].0);
+    (TestLiteral::IntegerLiteral { value: 3 }).test_literal(&ho.pairs[2].1);
+    (TestLiteral::IntegerLiteral { value: 4 }).test_literal(&ho.pairs[3].0);
+    (TestLiteral::IntegerLiteral { value: 4 }).test_literal(&ho.pairs[3].1);
+    (TestLiteral::BooleanLiteral { value: true }).test_literal(&ho.pairs[4].0);
+    (TestLiteral::IntegerLiteral { value: 5 }).test_literal(&ho.pairs[4].1);
+    (TestLiteral::BooleanLiteral { value: false }).test_literal(&ho.pairs[5].0);
+    (TestLiteral::IntegerLiteral { value: 6 }).test_literal(&ho.pairs[5].1);
+}
+
 /// test arrays
 #[test]
 fn test_array_literals() {

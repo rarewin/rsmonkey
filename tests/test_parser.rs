@@ -5,6 +5,7 @@ use rsmonkey::token::{Token, TokenType};
 
 enum TestLiteral {
     IntegerLiteral(i64),
+    IdentifierLiteral(&'static str),
     StringLiteral(&'static str),
     BooleanLiteral(bool),
 }
@@ -30,7 +31,7 @@ fn test_let_statements() {
         Test {
             input: "let foobar = y;",
             expected_identifier: "foobar",
-            expected_value: TestLiteral::StringLiteral("y"),
+            expected_value: TestLiteral::IdentifierLiteral("y"),
         },
     ];
 
@@ -582,9 +583,9 @@ fn test_if_expression() {
 
     test_infix_expression(
         &exp.condition,
-        &TestLiteral::StringLiteral("x"),
+        &TestLiteral::IdentifierLiteral("x"),
         "<",
-        &TestLiteral::StringLiteral("y"),
+        &TestLiteral::IdentifierLiteral("y"),
     );
 
     let cs = match &exp.consequence {
@@ -603,7 +604,7 @@ fn test_if_expression() {
         _ => panic!("expression statement is expected"),
     };
 
-    test_literal_expression(&conex.expression, &TestLiteral::StringLiteral("x"));
+    test_literal_expression(&conex.expression, &TestLiteral::IdentifierLiteral("x"));
 
     match &exp.alternative {
         None => {}
@@ -641,9 +642,9 @@ fn test_if_else_expression() {
 
     test_infix_expression(
         &exp.condition,
-        &TestLiteral::StringLiteral("x"),
+        &TestLiteral::IdentifierLiteral("x"),
         "<",
-        &TestLiteral::StringLiteral("y"),
+        &TestLiteral::IdentifierLiteral("y"),
     );
 
     let cs = match &exp.consequence {
@@ -662,7 +663,7 @@ fn test_if_else_expression() {
         _ => panic!("expression statement is expected"),
     };
 
-    test_literal_expression(&conex.expression, &TestLiteral::StringLiteral("x"));
+    test_literal_expression(&conex.expression, &TestLiteral::IdentifierLiteral("x"));
 
     let als = match &exp.alternative {
         Some(StatementNode::BlockStatementNode(bs)) => bs,
@@ -680,7 +681,7 @@ fn test_if_else_expression() {
         _ => panic!("expression statement is expected"),
     };
 
-    test_literal_expression(&alsex.expression, &TestLiteral::StringLiteral("y"));
+    test_literal_expression(&alsex.expression, &TestLiteral::IdentifierLiteral("y"));
 
     assert_eq!(stmt.string(), "if (x < y) x else y");
 }
@@ -718,8 +719,8 @@ fn test_function_literal_parsing() {
         fl.parameters.len(),
     );
 
-    test_literal_expression(&fl.parameters[0], &TestLiteral::StringLiteral("x"));
-    test_literal_expression(&fl.parameters[1], &TestLiteral::StringLiteral("y"));
+    test_literal_expression(&fl.parameters[0], &TestLiteral::IdentifierLiteral("x"));
+    test_literal_expression(&fl.parameters[1], &TestLiteral::IdentifierLiteral("y"));
 
     let body = match &fl.body {
         Some(StatementNode::BlockStatementNode(b)) => b,
@@ -739,9 +740,9 @@ fn test_function_literal_parsing() {
 
     test_infix_expression(
         &body_stmt.expression,
-        &TestLiteral::StringLiteral("x"),
+        &TestLiteral::IdentifierLiteral("x"),
         "+",
-        &TestLiteral::StringLiteral("y"),
+        &TestLiteral::IdentifierLiteral("y"),
     );
 }
 
@@ -800,7 +801,7 @@ fn test_function_parameter_parsing() {
         for i in 0..(tt.expected.len()) {
             test_literal_expression(
                 &fl.parameters[i],
-                &TestLiteral::StringLiteral(tt.expected[i]),
+                &TestLiteral::IdentifierLiteral(tt.expected[i]),
             );
         }
     }
@@ -929,7 +930,7 @@ fn test_parsing_index_expressions() {
         _ => panic!("index expression node is expectd"),
     };
 
-    test_literal_expression(&il.left, &TestLiteral::StringLiteral("myArray"));
+    test_literal_expression(&il.left, &TestLiteral::IdentifierLiteral("myArray"));
     test_infix_expression(
         &il.index,
         &TestLiteral::IntegerLiteral(1),
@@ -938,18 +939,149 @@ fn test_parsing_index_expressions() {
     );
 }
 
+/// test hash
+#[test]
+fn test_parsing_hash_literals_string_keys() {
+    let input = r##"{"one": 1, "two": 2, "three": 3}"##;
+
+    let l = Lexer::new(input.to_string());
+    let mut p = Parser::new(l);
+
+    let program = p.parse_program();
+    check_parser_errors(p);
+
+    assert!(
+        program.statements.len() == 1,
+        "program does not have the expected number of statements. {}",
+        program.statements.len()
+    );
+
+    let exps = match &program.statements[0] {
+        StatementNode::ExpressionStatementNode(e) => e,
+        _ => panic!("expression stateme is expected"),
+    };
+
+    let hl = match &exps.expression {
+        ExpressionNode::HashLiteralNode(h) => h,
+        _ => panic!("hash literal is expected"),
+    };
+
+    assert!(
+        hl.pairs.len() == 3,
+        "the # of pairs of the hash literal should be 3, but {}",
+        hl.pairs.len()
+    );
+
+    test_literal_expression(&hl.pairs[0].0, &TestLiteral::StringLiteral("one"));
+    test_literal_expression(&hl.pairs[1].0, &TestLiteral::StringLiteral("two"));
+    test_literal_expression(&hl.pairs[2].0, &TestLiteral::StringLiteral("three"));
+    test_literal_expression(&hl.pairs[0].1, &TestLiteral::IntegerLiteral(1));
+    test_literal_expression(&hl.pairs[1].1, &TestLiteral::IntegerLiteral(2));
+    test_literal_expression(&hl.pairs[2].1, &TestLiteral::IntegerLiteral(3));
+}
+
+#[test]
+fn test_parsing_empty_hash_literal() {
+    let input = "{}";
+
+    let l = Lexer::new(input.to_string());
+    let mut p = Parser::new(l);
+
+    let program = p.parse_program();
+    check_parser_errors(p);
+
+    assert!(
+        program.statements.len() == 1,
+        "program does not have the expected number of statements. {}",
+        program.statements.len()
+    );
+
+    let exps = match &program.statements[0] {
+        StatementNode::ExpressionStatementNode(e) => e,
+        _ => panic!("hash literal stateme is expected"),
+    };
+
+    let hl = match &exps.expression {
+        ExpressionNode::HashLiteralNode(h) => h,
+        _ => panic!("hash literal is expected"),
+    };
+
+    assert!(
+        hl.pairs.len() == 0,
+        "the # of elements of {{}} should be 0, got {}",
+        hl.pairs.len()
+    );
+}
+
+#[test]
+fn test_parsing_hash_literals_with_expressions() {
+    let input = r##"{"one": 0 + 1, "two": 10 - 8, "three": 15 / 5}"##;
+
+    let l = Lexer::new(input.to_string());
+    let mut p = Parser::new(l);
+
+    let program = p.parse_program();
+    check_parser_errors(p);
+
+    assert!(
+        program.statements.len() == 1,
+        "program does not have the expected number of statements. {}",
+        program.statements.len()
+    );
+
+    let exps = match &program.statements[0] {
+        StatementNode::ExpressionStatementNode(e) => e,
+        _ => panic!("hash literal stateme is expected"),
+    };
+
+    let hl = match &exps.expression {
+        ExpressionNode::HashLiteralNode(h) => h,
+        _ => panic!("hash literal is expected"),
+    };
+
+    assert!(
+        hl.pairs.len() == 3,
+        "the # of elements of {{}} should be 3, got {}",
+        hl.pairs.len()
+    );
+
+    test_literal_expression(&hl.pairs[0].0, &TestLiteral::StringLiteral("one"));
+    test_infix_expression(
+        &hl.pairs[0].1,
+        &TestLiteral::IntegerLiteral(0),
+        "+",
+        &TestLiteral::IntegerLiteral(1),
+    );
+
+    test_literal_expression(&hl.pairs[1].0, &TestLiteral::StringLiteral("two"));
+    test_infix_expression(
+        &hl.pairs[1].1,
+        &TestLiteral::IntegerLiteral(10),
+        "-",
+        &TestLiteral::IntegerLiteral(8),
+    );
+
+    test_literal_expression(&hl.pairs[2].0, &TestLiteral::StringLiteral("three"));
+    test_infix_expression(
+        &hl.pairs[2].1,
+        &TestLiteral::IntegerLiteral(15),
+        "/",
+        &TestLiteral::IntegerLiteral(5),
+    );
+}
+
 fn check_parser_errors(p: Parser) {
     let errors = p.errors();
 
-    if errors.len() == 0 {
+    if errors.is_empty() {
         return;
     }
-
-    println!("parser has {} errors", errors.len());
 
     for e in errors {
         println!("parser error: {}", e);
     }
+
+    panic!("parser has {} errors", errors.len());
 }
 
 /// test integer literal
@@ -979,16 +1111,43 @@ fn test_integer_literal(en: &ExpressionNode, value: i64) {
     );
 }
 
-/// test string literal
+/// test identifier literal
 ///
 /// # Arguments
 ///
 /// * `en` - `ExpressionNode::IdentifierNode` to be tested
 /// * `value` - the value that `en` should have
-fn test_string_literal(en: &ExpressionNode, value: &'static str) {
+fn test_identifier_literal(en: &ExpressionNode, value: &'static str) {
     let id = match &en {
         ExpressionNode::IdentifierNode(idn) => idn,
         _ => panic!("unexpected node"),
+    };
+
+    assert_eq!(
+        id.value, value,
+        r##"value is expected as "{}" but got "{}""##,
+        value, id.value,
+    );
+
+    assert_eq!(
+        id.token.get_literal(),
+        value,
+        r##"get_literal() is expected as "{}" but got "{}""##,
+        id.token.get_literal(),
+        id.value,
+    );
+}
+
+/// test string literal
+///
+/// # Arguments
+///
+/// * `en` - `ExpressionNode::StringNode` to be tested
+/// * `value` - the value that `en` should have
+fn test_string_literal(en: &ExpressionNode, value: &'static str) {
+    let id = match &en {
+        ExpressionNode::StringLiteralNode(idn) => idn,
+        _ => panic!("unexpected node, {:?}", en),
     };
 
     assert_eq!(
@@ -1032,6 +1191,7 @@ fn test_boolean_literal(en: &ExpressionNode, value: bool) {
 fn test_literal_expression(en: &ExpressionNode, literal: &TestLiteral) {
     match literal {
         TestLiteral::IntegerLiteral(i) => test_integer_literal(&en, *i),
+        TestLiteral::IdentifierLiteral(id) => test_identifier_literal(&en, id),
         TestLiteral::StringLiteral(s) => test_string_literal(&en, s),
         TestLiteral::BooleanLiteral(b) => test_boolean_literal(&en, *b),
     }

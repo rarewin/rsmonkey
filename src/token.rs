@@ -136,6 +136,8 @@ pub enum TokenType {
     Comma,
     /// semicolon `;`
     Semicolon,
+    /// colon ':'
+    Colon,
 
     /// left parenthesis `(`
     LParen,

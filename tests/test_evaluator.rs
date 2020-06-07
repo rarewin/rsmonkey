@@ -590,6 +590,100 @@ fn test_closures() {
     expected.test_literal(&evaluated);
 }
 
+/// test hash
+#[test]
+fn test_hash() {
+    let input = r##"let two = "two";
+{
+  "one": 10 - 9,
+  two: 1 + 1,
+  "thr" + "ee": 6 / 2,
+  4: 4,
+  true: 5,
+  false: 6
+}"##;
+
+    let evaluated = test_eval(input);
+
+    let ho = match &evaluated {
+        Object::HashObject(h) => h,
+        _ => panic!("hash object is expected, got {:?}", evaluated),
+    };
+
+    assert_eq!(
+        ho.pairs.len(),
+        6,
+        "the number of elements is expected 6, got {}",
+        ho.pairs.len(),
+    );
+
+    (TestLiteral::StringLiteral { value: "one" }).test_literal(&ho.pairs[0].0);
+    (TestLiteral::IntegerLiteral { value: 1 }).test_literal(&ho.pairs[0].1);
+    (TestLiteral::StringLiteral { value: "two" }).test_literal(&ho.pairs[1].0);
+    (TestLiteral::IntegerLiteral { value: 2 }).test_literal(&ho.pairs[1].1);
+    (TestLiteral::StringLiteral { value: "three" }).test_literal(&ho.pairs[2].0);
+    (TestLiteral::IntegerLiteral { value: 3 }).test_literal(&ho.pairs[2].1);
+    (TestLiteral::IntegerLiteral { value: 4 }).test_literal(&ho.pairs[3].0);
+    (TestLiteral::IntegerLiteral { value: 4 }).test_literal(&ho.pairs[3].1);
+    (TestLiteral::BooleanLiteral { value: true }).test_literal(&ho.pairs[4].0);
+    (TestLiteral::IntegerLiteral { value: 5 }).test_literal(&ho.pairs[4].1);
+    (TestLiteral::BooleanLiteral { value: false }).test_literal(&ho.pairs[5].0);
+    (TestLiteral::IntegerLiteral { value: 6 }).test_literal(&ho.pairs[5].1);
+}
+
+/// test hash index expression
+#[test]
+fn test_hash_index_expression() {
+    struct Test {
+        input: &'static str,
+        expected: TestLiteral,
+    }
+
+    let hash_index_tests = vec![
+        Test {
+            input: r##"{"foo": 5}["foo"]"##,
+            expected: TestLiteral::IntegerLiteral { value: 5 },
+        },
+        Test {
+            input: r##"{"foo": 5}["bar"]"##,
+            expected: TestLiteral::NullLiteral,
+        },
+        Test {
+            input: r##"let key = "foo"; {"foo": 5}[key]"##,
+            expected: TestLiteral::IntegerLiteral { value: 5 },
+        },
+        Test {
+            input: r##"{}["foo"]"##,
+            expected: TestLiteral::NullLiteral,
+        },
+        Test {
+            input: "{5: 5}[5]",
+            expected: TestLiteral::IntegerLiteral { value: 5 },
+        },
+        Test {
+            input: "{true: 5}[true]",
+            expected: TestLiteral::IntegerLiteral { value: 5 },
+        },
+        Test {
+            input: "{false: 5}[false]",
+            expected: TestLiteral::IntegerLiteral { value: 5 },
+        },
+        Test {
+            input: r##"{false: 5, 1: 3, "false": 2}[false]"##,
+            expected: TestLiteral::IntegerLiteral { value: 5 },
+        },
+        Test {
+            input: r##"{false: 5, 1: 3, "false": 2}["false"]"##,
+            expected: TestLiteral::IntegerLiteral { value: 2 },
+        },
+    ];
+
+    for tt in hash_index_tests {
+        let evaluated = test_eval(tt.input);
+        tt.expected.test_literal(&evaluated);
+    }
+}
+
 /// test arrays
 #[test]
 fn test_array_literals() {

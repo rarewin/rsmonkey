@@ -12,6 +12,7 @@ pub enum Object {
     ReturnValueObject(Box<ReturnValue>),
     FunctionObject(Box<Function>),
     ArrayObject(Box<Array>),
+    HashObject(Box<Hash>),
     BuiltinObject(Box<Builtin>),
     ErrorObject(Box<Error>),
     Null,
@@ -54,6 +55,19 @@ impl Object {
                 ret.push_str("]");
                 ret
             }
+            Object::HashObject(ho) => {
+                let mut ret = String::new();
+                ret.push_str("{");
+                ret.push_str(
+                    &((&ho.pairs)
+                        .iter()
+                        .map(|x| format!("{}: {}", x.0.inspect(), x.1.inspect()))
+                        .collect::<Vec<String>>()
+                        .join(", ")),
+                );
+                ret.push_str("}");
+                ret
+            }
             Object::BuiltinObject(_) => "builtin function".into(),
             Object::ErrorObject(eo) => format!("ERROR: {}", eo.message),
             Object::Null => "(null)".into(),
@@ -70,6 +84,7 @@ impl Object {
             Object::ErrorObject(_) => ERROR_OBJ,
             Object::FunctionObject(_) => FUNCTION_OBJ,
             Object::ArrayObject(_) => ARRAY_OBJ,
+            Object::HashObject(_) => HASH_OBJ,
             Object::BuiltinObject(_) => BUILTIN_OBJ,
             Object::Null => "(null)",
         }
@@ -125,6 +140,13 @@ impl Object {
             elements: elements.to_vec(),
         }))
     }
+
+    /// create a new hash object
+    pub fn new_hash(pairs: &[(Object, Object)]) -> Object {
+        Object::HashObject(Box::new(Hash {
+            pairs: pairs.to_vec(),
+        }))
+    }
 }
 
 /// object type strings
@@ -135,6 +157,7 @@ pub const RETURN_VALUE_OBJ: &str = "RETURN_VALUE";
 pub const ERROR_OBJ: &str = "ERROR";
 pub const FUNCTION_OBJ: &str = "FUNCTION";
 pub const ARRAY_OBJ: &str = "ARRAY";
+pub const HASH_OBJ: &str = "HASH";
 pub const BUILTIN_OBJ: &str = "BUILTIN";
 
 /// const boolan object
@@ -169,6 +192,12 @@ pub struct ReturnValue {
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Array {
     pub elements: Vec<Object>,
+}
+
+// struct for Hash object
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct Hash {
+    pub pairs: Vec<(Object, Object)>,
 }
 
 /// struct for Error object

@@ -474,6 +474,50 @@ impl Parser {
         list
     }
 
+    /// parse hash literal
+    fn parse_hash_literal(&mut self) -> Vec<(ExpressionNode, ExpressionNode)> {
+        let mut hash = Vec::<(ExpressionNode, ExpressionNode)>::new();
+
+        while !self.peek_token_is(TokenType::RBrace) {
+            self.next_token();
+
+            let key = match self.parse_expression(OperationPrecedence::Lowest) {
+                Some(k) => k,
+                None => {
+                    hash.clear();
+                    break;
+                }
+            };
+
+            if !self.expect_peek(TokenType::Colon) {
+                hash.clear();
+                break;
+            }
+            self.next_token();
+
+            let value = match self.parse_expression(OperationPrecedence::Lowest) {
+                Some(v) => v,
+                None => {
+                    hash.clear();
+                    break;
+                }
+            };
+
+            let p = (key, value);
+            hash.push(p);
+
+            if self.peek_token_is(TokenType::Comma) {
+                self.next_token();
+            }
+        }
+
+        if !self.expect_peek(TokenType::RBrace) {
+            hash.clear();
+        }
+
+        hash
+    }
+
     /// parse prefix
     fn prefix_parse(&mut self, tt: TokenType) -> Option<ExpressionNode> {
         match tt {
@@ -486,6 +530,10 @@ impl Parser {
             TokenType::LBracket => Some(ExpressionNode::ArrayLiteralNode(Box::new(ArrayLiteral {
                 token: self.cur_token.clone(),
                 elements: self.parse_expression_list(TokenType::RBracket),
+            }))),
+            TokenType::LBrace => Some(ExpressionNode::HashLiteralNode(Box::new(HashLiteral {
+                token: self.cur_token.clone(),
+                pairs: self.parse_hash_literal(),
             }))),
             TokenType::If => self.parse_if_expression(),
             TokenType::Function => self.parse_function_literal(),

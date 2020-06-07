@@ -1,7 +1,7 @@
 use crate::ast::{
     BlockStatement, ExpressionNode, LetStatement, Program, ReturnStatement, StatementNode,
 };
-use crate::object::{extend_environment, Array, Environment, Integer, Object};
+use crate::object::{extend_environment, Array, Environment, Hash, Integer, Object};
 use std::rc::Rc;
 
 #[derive(Debug)]
@@ -159,7 +159,6 @@ fn eval_expression_node(node: &ExpressionNode, env: Rc<Environment>) -> Object {
             if is_error(&index) {
                 return index;
             }
-
             eval_index_expression(&left, &index)
         }
         ExpressionNode::ArrayLiteralNode(al) => {
@@ -169,6 +168,26 @@ fn eval_expression_node(node: &ExpressionNode, env: Rc<Environment>) -> Object {
             } else {
                 Object::new_array(&elements)
             }
+        }
+        ExpressionNode::HashLiteralNode(hl) => {
+            let mut result = Vec::<(Object, Object)>::new();
+
+            for pair in &hl.pairs {
+                let key = eval_expression_node(&pair.0, env.clone());
+
+                if is_error(&key) {
+                    return key;
+                }
+
+                let value = eval_expression_node(&pair.1, env.clone());
+
+                if is_error(&value) {
+                    return value;
+                }
+
+                result.push((key, value));
+            }
+            Object::new_hash(&result)
         }
     }
 }
@@ -278,26 +297,23 @@ fn eval_expressions(exps: &[ExpressionNode], env: Rc<Environment>) -> Vec<Object
 
 /// evaluator function for index expression
 fn eval_index_expression(left: &Object, index: &Object) -> Object {
-    let l = match left {
-        Object::ArrayObject(ao) => ao,
-        _ => {
-            return Object::new_error(format!(
+    if let Object::ArrayObject(ao) = left {
+        if let Object::IntegerObject(io) = index {
+            eval_array_index_expression(&ao, &io)
+        } else {
+            Object::new_error(format!(
                 "index operator not supported: {}",
                 left.object_type()
             ))
         }
-    };
-
-    let i = match index {
-        Object::IntegerObject(io) => io,
-        _ => {
-            return Object::new_error(format!(
-                "index operator not supported: {}",
-                left.object_type()
-            ))
-        }
-    };
-    eval_array_index_expression(&l, &i)
+    } else if let Object::HashObject(ho) = left {
+        eval_hash_index_expression(&ho, &index)
+    } else {
+        Object::new_error(format!(
+            "index operator not supported: {}",
+            left.object_type()
+        ))
+    }
 }
 
 /// evaluator function for array index expression
@@ -306,10 +322,18 @@ fn eval_array_index_expression(array: &Array, index: &Integer) -> Object {
     let max = array.elements.len();
 
     if idx < 0 || idx >= (max as i64) {
-        return Object::Null;
+        Object::Null
+    } else {
+        array.elements[idx as usize].clone()
     }
+}
 
-    array.elements[idx as usize].clone()
+/// evaluator function for hash
+fn eval_hash_index_expression(hash: &Hash, key: &Object) -> Object {
+    match hash.pairs.iter().find(|&k| k.0 == *key) {
+        Some(o) => o.1.clone(),
+        None => Object::Null,
+    }
 }
 
 /// check if error or not

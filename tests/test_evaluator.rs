@@ -631,6 +631,59 @@ fn test_hash() {
     (TestLiteral::IntegerLiteral { value: 6 }).test_literal(&ho.pairs[5].1);
 }
 
+/// test hash index expression
+#[test]
+fn test_hash_index_expression() {
+    struct Test {
+        input: &'static str,
+        expected: TestLiteral,
+    }
+
+    let hash_index_tests = vec![
+        Test {
+            input: r##"{"foo": 5}["foo"]"##,
+            expected: TestLiteral::IntegerLiteral { value: 5 },
+        },
+        Test {
+            input: r##"{"foo": 5}["bar"]"##,
+            expected: TestLiteral::NullLiteral,
+        },
+        Test {
+            input: r##"let key = "foo"; {"foo": 5}[key]"##,
+            expected: TestLiteral::IntegerLiteral { value: 5 },
+        },
+        Test {
+            input: r##"{}["foo"]"##,
+            expected: TestLiteral::NullLiteral,
+        },
+        Test {
+            input: "{5: 5}[5]",
+            expected: TestLiteral::IntegerLiteral { value: 5 },
+        },
+        Test {
+            input: "{true: 5}[true]",
+            expected: TestLiteral::IntegerLiteral { value: 5 },
+        },
+        Test {
+            input: "{false: 5}[false]",
+            expected: TestLiteral::IntegerLiteral { value: 5 },
+        },
+        Test {
+            input: r##"{false: 5, 1: 3, "false": 2}[false]"##,
+            expected: TestLiteral::IntegerLiteral { value: 5 },
+        },
+        Test {
+            input: r##"{false: 5, 1: 3, "false": 2}["false"]"##,
+            expected: TestLiteral::IntegerLiteral { value: 2 },
+        },
+    ];
+
+    for tt in hash_index_tests {
+        let evaluated = test_eval(tt.input);
+        tt.expected.test_literal(&evaluated);
+    }
+}
+
 /// test arrays
 #[test]
 fn test_array_literals() {

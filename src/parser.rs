@@ -39,7 +39,7 @@ impl Parser {
     /// update current position
     pub fn next_token(&mut self) {
         self.cur_token = self.peek_token.clone();
-        self.peek_token = self.lexer.next_token();
+        self.peek_token = self.lexer.next().unwrap();
     }
 
     /// check if a current token is `tt` or not

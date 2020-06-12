@@ -1,118 +1,104 @@
-use std::cell::Cell;
-
 use crate::token::{Token, TokenType};
 
 #[derive(Debug)]
 pub struct Lexer {
-    input: String,
-    position: Cell<usize>,
-    read_position: Cell<usize>,
-    ch: Cell<char>,
+    input: Vec<char>,
 }
 
 impl Lexer {
     /// create new lexer
     pub fn new(input: String) -> Lexer {
-        let ch = if !input.is_empty() {
-            input.as_bytes()[0] as char
-        } else {
-            '\0'
-        };
-        Lexer {
-            input,
-            position: Cell::new(0),
-            read_position: Cell::new(1),
-            ch: Cell::new(ch),
-        }
+        let mut input = input.chars().collect::<Vec<char>>();
+        input.reverse();
+        Lexer { input }
     }
+}
+
+impl Iterator for Lexer {
+    type Item = Token;
 
     /// get next token
-    pub fn next_token(&self) -> Token {
-        self.skip_whitespace();
-        let token = match self.ch.get() {
+    fn next(&mut self) -> Option<Self::Item> {
+        let mut ch = self.input.pop()?;
+
+        while ch.is_ascii_whitespace() {
+            ch = self.input.pop()?;
+        }
+
+        match ch {
             '=' => {
-                if self.peek_char() == '=' {
-                    self.read_char();
-                    Token::new(TokenType::Eq, "==")
+                let ch = self.input.pop()?;
+                if ch == '=' {
+                    Some(Token::new(TokenType::Eq, "=="))
                 } else {
-                    Token::new(TokenType::Assign, "=")
+                    self.input.push(ch);
+                    Some(Token::new(TokenType::Assign, "="))
                 }
             }
-            '+' => Token::new(TokenType::Plus, "+"),
-            '-' => Token::new(TokenType::Minus, "-"),
+            '+' => Some(Token::new(TokenType::Plus, "+")),
+            '-' => Some(Token::new(TokenType::Minus, "-")),
             '!' => {
-                if self.peek_char() == '=' {
-                    self.read_char();
-                    Token::new(TokenType::NotEq, "!=")
+                let ch = self.input.pop()?;
+                if ch == '=' {
+                    Some(Token::new(TokenType::NotEq, "!="))
                 } else {
-                    Token::new(TokenType::Bang, "!")
+                    self.input.push(ch);
+                    Some(Token::new(TokenType::Bang, "!"))
                 }
             }
-            '/' => Token::new(TokenType::Slash, "/"),
-            '*' => Token::new(TokenType::Asterisk, "*"),
-            '<' => Token::new(TokenType::LT, "<"),
-            '>' => Token::new(TokenType::GT, ">"),
-            '(' => Token::new(TokenType::LParen, "("),
-            ')' => Token::new(TokenType::RParen, ")"),
-            '{' => Token::new(TokenType::LBrace, "{"),
-            '}' => Token::new(TokenType::RBrace, "}"),
-            '[' => Token::new(TokenType::LBracket, "["),
-            ']' => Token::new(TokenType::RBracket, "]"),
-            ',' => Token::new(TokenType::Comma, ","),
-            ';' => Token::new(TokenType::Semicolon, ";"),
-            ':' => Token::new(TokenType::Colon, ":"),
-            '\0' => Token::new(TokenType::EoF, "EOF"),
+            '/' => Some(Token::new(TokenType::Slash, "/")),
+            '*' => Some(Token::new(TokenType::Asterisk, "*")),
+            '<' => Some(Token::new(TokenType::LT, "<")),
+            '>' => Some(Token::new(TokenType::GT, ">")),
+            '(' => Some(Token::new(TokenType::LParen, "(")),
+            ')' => Some(Token::new(TokenType::RParen, ")")),
+            '{' => Some(Token::new(TokenType::LBrace, "{")),
+            '}' => Some(Token::new(TokenType::RBrace, "}")),
+            '[' => Some(Token::new(TokenType::LBracket, "[")),
+            ']' => Some(Token::new(TokenType::RBracket, "]")),
+            ',' => Some(Token::new(TokenType::Comma, ",")),
+            ';' => Some(Token::new(TokenType::Semicolon, ";")),
+            ':' => Some(Token::new(TokenType::Colon, ":")),
+            '\0' => Some(Token::new(TokenType::EoF, "EOF")),
             '"' => {
-                let p = self.read_position.get();
-                self.read_char();
-                while self.ch.get() != '"' && self.read_position.get() < self.input.len() {
-                    self.read_char();
+                let string = self
+                    .input
+                    .iter()
+                    .rev()
+                    .take_while(|c| **c != '"')
+                    .collect::<String>();
+                for _ in 0..(string.len() + 1) {
+                    self.input.pop();
                 }
-                Token::new(TokenType::StringToken, &self.input[p..self.position.get()])
+                Some(Token::new(TokenType::StringToken, &string))
             }
             'a'..='z' | 'A'..='Z' | '_' => {
-                let p = self.position.get();
-                while self.ch.get().is_ascii_alphabetic() || self.ch.get() == '_' {
-                    self.read_char();
+                self.input.push(ch);
+                let v = self
+                    .input
+                    .iter()
+                    .rev()
+                    .take_while(|c| c.is_ascii_alphabetic() || **c == '_')
+                    .collect::<String>();
+                for _ in 0..v.len() {
+                    self.input.pop();
                 }
-                let v = &self.input[p..self.position.get()];
-                return Token::new(lookup_ident(v), v); // don't need to read char more
+                Some(Token::new(lookup_ident(&v), &v))
             }
             '0'..='9' => {
-                let p = self.position.get();
-                while self.ch.get().is_ascii_digit() {
-                    self.read_char();
+                self.input.push(ch);
+                let fig = self
+                    .input
+                    .iter()
+                    .rev()
+                    .take_while(|c| c.is_ascii_digit())
+                    .collect::<String>();
+                for _ in 0..fig.len() {
+                    self.input.pop();
                 }
-                return Token::new(TokenType::Int, &self.input[p..self.position.get()]);
-                // don't need to read char more
+                Some(Token::new(TokenType::Int, &fig))
             }
-            _ => Token::new(TokenType::Illegal, "illegal"),
-        };
-        self.read_char();
-
-        token
-    }
-
-    /// read one character
-    fn read_char(&self) {
-        self.ch.set(self.peek_char());
-        self.position.set(self.read_position.get());
-        self.read_position.set(self.read_position.get() + 1);
-    }
-
-    /// peek the next character
-    fn peek_char(&self) -> char {
-        if self.read_position.get() >= self.input.len() {
-            '\0'
-        } else {
-            self.input.as_bytes()[self.read_position.get()] as char
-        }
-    }
-
-    /// skip white spaces
-    fn skip_whitespace(&self) {
-        while self.ch.get().is_ascii_whitespace() {
-            self.read_char();
+            _ => None,
         }
     }
 }

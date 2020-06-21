@@ -765,7 +765,7 @@ fn test_eval(input: &'static str) -> Object {
     let l = Lexer::new(input.to_string());
     let mut p = Parser::new(l);
 
-    let program = p.parse_program();
+    let program = p.parse_program().unwrap();
     let env = Rc::new(Environment::new());
 
     eval(

@@ -53,19 +53,19 @@ fn read_input() {
             let l = Lexer::new(input.to_string());
             let mut p = Parser::new(l);
 
-            let program = p.parse_program();
+            let program = p.parse_program().unwrap(); // @todo
 
-            if !p.errors().is_empty() {
-                for e in p.errors() {
-                    println!(
-                        r##"{}
-Woops! We ran into some monkey business here!
-	parser error: {}"##,
-                        MONKEY_FACE, e
-                    );
-                    continue;
-                }
-            }
+            //            if !p.errors().is_empty() {
+            //                for e in p.errors() {
+            //                    println!(
+            //                        r##"{}
+            //Woops! We ran into some monkey business here!
+            //	parser error: {}"##,
+            //                        MONKEY_FACE, e
+            //                    );
+            //                    continue;
+            //                }
+            //            }
 
             let evaluated = eval(
                 &EvalNode::EvalStatementNode(Box::new(StatementNode::ProgramStatementNode(

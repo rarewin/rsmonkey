@@ -39,8 +39,9 @@ fn test_let_statements() {
         let l = Lexer::new(tt.input.to_string());
         let mut p = Parser::new(l);
 
-        let program = p.parse_program();
-        check_parser_errors(p);
+        let program = p.parse_program().unwrap(); // @todo
+
+        // check_parser_errors(p);
 
         assert!(
             program.statements.len() == 1,
@@ -109,8 +110,8 @@ fn test_return_statements() {
         let l = Lexer::new(tt.input.to_string());
         let mut p = Parser::new(l);
 
-        let program = p.parse_program();
-        check_parser_errors(p);
+        let program = p.parse_program().unwrap();
+        // check_parser_errors(p);
 
         assert!(
             program.statements.len() == 1,
@@ -154,8 +155,8 @@ fn test_identifier_expression() {
     let l = Lexer::new(input.to_string());
     let mut p = Parser::new(l);
 
-    let program = p.parse_program();
-    check_parser_errors(p);
+    let program = p.parse_program().unwrap();
+    // check_parser_errors(p);
 
     assert_eq!(
         program.statements.len(),
@@ -179,8 +180,8 @@ fn test_integer_literal_expression() {
     let l = Lexer::new(input.to_string());
     let mut p = Parser::new(l);
 
-    let program = p.parse_program();
-    check_parser_errors(p);
+    let program = p.parse_program().unwrap();
+    // check_parser_errors(p);
 
     assert_eq!(
         program.statements.len(),
@@ -200,8 +201,8 @@ fn test_string_literal_expression() {
     let l = Lexer::new(input.to_string());
     let mut p = Parser::new(l);
 
-    let program = p.parse_program();
-    check_parser_errors(p);
+    let program = p.parse_program().unwrap();
+    // check_parser_errors(p);
 
     assert_eq!(
         program.statements.len(),
@@ -236,8 +237,8 @@ fn test_boolean_literal_expression() {
         let l = Lexer::new(tt.input.to_string());
         let mut p = Parser::new(l);
 
-        let program = p.parse_program();
-        check_parser_errors(p);
+        let program = p.parse_program().unwrap();
+        // check_parser_errors(p);
 
         assert_eq!(
             program.statements.len(),
@@ -299,8 +300,8 @@ fn test_parsing_prefix_expressions() {
         let l = Lexer::new(tt.input.to_string());
         let mut p = Parser::new(l);
 
-        let program = p.parse_program();
-        check_parser_errors(p);
+        let program = p.parse_program().unwrap();
+        // check_parser_errors(p);
 
         assert_eq!(
             program.statements.len(),
@@ -411,8 +412,8 @@ fn test_parsing_infix_expressions() {
         let l = Lexer::new(tt.input.to_string());
         let mut p = Parser::new(l);
 
-        let program = p.parse_program();
-        check_parser_errors(p);
+        let program = p.parse_program().unwrap();
+        // check_parser_errors(p);
 
         let stmt = match &program.statements[0] {
             StatementNode::ExpressionStatementNode(es) => es,
@@ -542,8 +543,8 @@ fn test_operator_precedence_parsing() {
         let l = Lexer::new(tt.input.to_string());
         let mut p = Parser::new(l);
 
-        let program = p.parse_program();
-        check_parser_errors(p);
+        let program = p.parse_program().unwrap();
+        // check_parser_errors(p);
 
         assert_eq!(
             program.string(),
@@ -562,8 +563,8 @@ fn test_if_expression() {
     let l = Lexer::new(input.to_string());
     let mut p = Parser::new(l);
 
-    let program = p.parse_program();
-    check_parser_errors(p);
+    let program = p.parse_program().unwrap();
+    // check_parser_errors(p);
 
     assert!(
         program.statements.len() == 1,
@@ -593,10 +594,10 @@ fn test_if_expression() {
         _ => panic!("consequence does not have block statement"),
     };
 
-    assert!(
-        cs.statements.len() == 1,
-        "consequence does not have the expected number of statements. {}",
-        cs.statements.len()
+    assert_eq!(
+        cs.statements.len(),
+        1,
+        "consequence does not have the expected number of statements.",
     );
 
     let conex = match &cs.statements[0] {
@@ -619,8 +620,8 @@ fn test_if_else_expression() {
     let l = Lexer::new(input.to_string());
     let mut p = Parser::new(l);
 
-    let program = p.parse_program();
-    check_parser_errors(p);
+    let program = p.parse_program().unwrap();
+    // check_parser_errors(p);
 
     assert!(
         program.statements.len() == 1,
@@ -693,8 +694,8 @@ fn test_function_literal_parsing() {
     let l = Lexer::new(input.to_string());
     let mut p = Parser::new(l);
 
-    let program = p.parse_program();
-    check_parser_errors(p);
+    let program = p.parse_program().unwrap();
+    // check_parser_errors(p);
 
     assert!(
         program.statements.len() == 1,
@@ -772,8 +773,8 @@ fn test_function_parameter_parsing() {
         let l = Lexer::new(tt.input.to_string());
         let mut p = Parser::new(l);
 
-        let program = p.parse_program();
-        check_parser_errors(p);
+        let program = p.parse_program().unwrap();
+        // check_parser_errors(p);
 
         assert!(
             program.statements.len() == 1,
@@ -814,8 +815,8 @@ fn test_call_expression_arsing() {
     let l = Lexer::new(input.to_string());
     let mut p = Parser::new(l);
 
-    let program = p.parse_program();
-    check_parser_errors(p);
+    let program = p.parse_program().unwrap();
+    // check_parser_errors(p);
 
     assert!(
         program.statements.len() == 1,
@@ -863,8 +864,8 @@ fn test_parsing_array_literal() {
     let l = Lexer::new(input.to_string());
     let mut p = Parser::new(l);
 
-    let program = p.parse_program();
-    check_parser_errors(p);
+    let program = p.parse_program().unwrap();
+    // check_parser_errors(p);
 
     assert!(
         program.statements.len() == 1,
@@ -911,8 +912,8 @@ fn test_parsing_index_expressions() {
     let l = Lexer::new(input.to_string());
     let mut p = Parser::new(l);
 
-    let program = p.parse_program();
-    check_parser_errors(p);
+    let program = p.parse_program().unwrap();
+    // check_parser_errors(p);
 
     assert!(
         program.statements.len() == 1,
@@ -947,8 +948,8 @@ fn test_parsing_hash_literals_string_keys() {
     let l = Lexer::new(input.to_string());
     let mut p = Parser::new(l);
 
-    let program = p.parse_program();
-    check_parser_errors(p);
+    let program = p.parse_program().unwrap();
+    // check_parser_errors(p);
 
     assert!(
         program.statements.len() == 1,
@@ -987,8 +988,8 @@ fn test_parsing_empty_hash_literal() {
     let l = Lexer::new(input.to_string());
     let mut p = Parser::new(l);
 
-    let program = p.parse_program();
-    check_parser_errors(p);
+    let program = p.parse_program().unwrap();
+    // check_parser_errors(p);
 
     assert!(
         program.statements.len() == 1,
@@ -1020,8 +1021,8 @@ fn test_parsing_hash_literals_with_expressions() {
     let l = Lexer::new(input.to_string());
     let mut p = Parser::new(l);
 
-    let program = p.parse_program();
-    check_parser_errors(p);
+    let program = p.parse_program().unwrap();
+    // check_parser_errors(p);
 
     assert!(
         program.statements.len() == 1,
@@ -1070,19 +1071,19 @@ fn test_parsing_hash_literals_with_expressions() {
     );
 }
 
-fn check_parser_errors(p: Parser) {
-    let errors = p.errors();
-
-    if errors.is_empty() {
-        return;
-    }
-
-    for e in errors {
-        println!("parser error: {}", e);
-    }
-
-    panic!("parser has {} errors", errors.len());
-}
+//fn check_parser_errors(p: Parser) {
+//    //let errors = p.errors();
+//    //
+//    //if errors.is_empty() {
+//    //    return;
+//    //}
+//    //
+//    //for e in errors {
+//    //    println!("parser error: {}", e);
+//    //}
+//    //
+//    //panic!("parser has {} errors", errors.len());
+//}
 
 /// test integer literal
 ///

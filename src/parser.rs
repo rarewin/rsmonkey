@@ -13,6 +13,13 @@ pub struct Parser {
     errors: Vec<String>,
 }
 
+lazy_static! {
+    static ref DUMMY_TOKEN: Token = Token {
+        token_type: TokenType::EoF,
+        literal: "".to_string(),
+    };
+}
+
 impl Parser {
     /// constructor
     pub fn new(l: Lexer) -> Parser {
@@ -31,8 +38,6 @@ impl Parser {
         while self.tokens.last() != None {
             if let Some(stmt) = self.parse_statement() {
                 program.statements.push(stmt);
-            } else {
-                panic!("{:#?}", self.tokens.pop());
             }
         }
 
@@ -239,23 +244,24 @@ impl Parser {
 
         let condition = self.parse_expression(OperationPrecedence::Lowest)?;
 
-        // RParen has been dropped at grouped_expression
-
         if self.tokens.last()?.token_type != TokenType::LBrace {
             return None;
         }
 
         let consequence = self.parse_block_statement();
 
-        let alternative = if self.tokens.last()?.token_type == TokenType::Else {
-            self.tokens.pop();
-            if self.tokens.last()?.token_type != TokenType::LBrace {
-                return None;
-            }
-            self.parse_block_statement()
-        } else {
-            None
-        };
+        // RParen has been dropped at grouped_expression
+
+        let alternative =
+            if self.tokens.last().unwrap_or(&DUMMY_TOKEN).token_type == TokenType::Else {
+                self.tokens.pop();
+                if self.tokens.last()?.token_type != TokenType::LBrace {
+                    return None;
+                }
+                self.parse_block_statement()
+            } else {
+                None
+            };
 
         Some(ExpressionNode::IfExpressionNode(Box::new(IfExpression {
             token,

@@ -384,70 +384,70 @@ fn test_eval_return_statement() {
     }
 }
 
-/// test error handling
-#[test]
-fn test_error_handling() {
-    struct Test {
-        input: &'static str,
-        expected: TestLiteral,
-    }
-
-    let error_tests = vec![
-        Test {
-            input: "5 + true;",
-            expected: TestLiteral::ErrorLiteral {
-                message: "type mismatch: INTEGER + BOOLEAN",
-            },
-        },
-        Test {
-            input: "5 + true; 5;",
-            expected: TestLiteral::ErrorLiteral {
-                message: "type mismatch: INTEGER + BOOLEAN",
-            },
-        },
-        Test {
-            input: "-true",
-            expected: TestLiteral::ErrorLiteral {
-                message: "unknown operator: -BOOLEAN",
-            },
-        },
-        Test {
-            input: "true + false;",
-            expected: TestLiteral::ErrorLiteral {
-                message: "unkown operator: BOOLEAN + BOOLEAN",
-            },
-        },
-        Test {
-            input: "5; true + false; 5",
-            expected: TestLiteral::ErrorLiteral {
-                message: "unkown operator: BOOLEAN + BOOLEAN",
-            },
-        },
-        Test {
-            input: "if (10 > 1) { true + false; }",
-            expected: TestLiteral::ErrorLiteral {
-                message: "unkown operator: BOOLEAN + BOOLEAN",
-            },
-        },
-        Test {
-            input: "foobar",
-            expected: TestLiteral::ErrorLiteral {
-                message: "identifier not found: foobar",
-            },
-        },
-        Test {
-            input: r##""Hello" - "World""##,
-            expected: TestLiteral::ErrorLiteral {
-                message: "unkown operator: STRING - STRING",
-            },
-        },
-    ];
-
-    for tt in error_tests {
-        let evaluated = test_eval(tt.input);
-        tt.expected.test_literal(&evaluated);
-    }
-}
+///// test error handling
+//#[test]
+//fn test_error_handling() {
+//    struct Test {
+//        input: &'static str,
+//        expected: TestLiteral,
+//    }
+//
+//    let error_tests = vec![
+//        Test {
+//            input: "5 + true;",
+//            expected: TestLiteral::ErrorLiteral {
+//                message: "type mismatch: INTEGER + BOOLEAN",
+//            },
+//        },
+//        Test {
+//            input: "5 + true; 5;",
+//            expected: TestLiteral::ErrorLiteral {
+//                message: "type mismatch: INTEGER + BOOLEAN",
+//            },
+//        },
+//        Test {
+//            input: "-true",
+//            expected: TestLiteral::ErrorLiteral {
+//                message: "unknown operator: -BOOLEAN",
+//            },
+//        },
+//        Test {
+//            input: "true + false;",
+//            expected: TestLiteral::ErrorLiteral {
+//                message: "unkown operator: BOOLEAN + BOOLEAN",
+//            },
+//        },
+//        Test {
+//            input: "5; true + false; 5",
+//            expected: TestLiteral::ErrorLiteral {
+//                message: "unkown operator: BOOLEAN + BOOLEAN",
+//            },
+//        },
+//        Test {
+//            input: "if (10 > 1) { true + false; }",
+//            expected: TestLiteral::ErrorLiteral {
+//                message: "unkown operator: BOOLEAN + BOOLEAN",
+//            },
+//        },
+//        Test {
+//            input: "foobar",
+//            expected: TestLiteral::ErrorLiteral {
+//                message: "identifier not found: foobar",
+//            },
+//        },
+//        Test {
+//            input: r##""Hello" - "World""##,
+//            expected: TestLiteral::ErrorLiteral {
+//                message: "unkown operator: STRING - STRING",
+//            },
+//        },
+//    ];
+//
+//    for tt in error_tests {
+//        let evaluated = test_eval(tt.input);
+//        tt.expected.test_literal(&evaluated);
+//    }
+//}
 
 /// test let statement
 #[test]

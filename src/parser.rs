@@ -2,7 +2,26 @@ use crate::ast::*;
 use crate::lexer::Lexer;
 use crate::token::{Token, TokenType};
 
-use anyhow::Result;
+use anyhow::{Error, Result};
+use thiserror::Error;
+
+/// error types
+#[derive(Debug, Error)]
+pub enum ParseError {
+    #[error(r##"unexpected token "{found:?}", "{expected:?}" was expected"##)]
+    UnexpectedToken {
+        found: TokenType,
+        expected: TokenType,
+    },
+    #[error("unexpected EOF")]
+    UnexpectedEof,
+    #[error(r#""unexpected token "{0:?}" for infix_parse""#)]
+    UnexpectedTokenForInfixParser(TokenType),
+    #[error(r#""unexpected token "{0:?}" for prefix_parse""#)]
+    UnexpectedTokenForPrefixParser(TokenType),
+    #[error("unknown error")]
+    Unknown,
+}
 
 /// struct for parser
 #[derive(Debug)]
@@ -11,13 +30,6 @@ pub struct Parser {
     tokens: Vec<Token>,
     /// error string
     errors: Vec<String>,
-}
-
-lazy_static! {
-    static ref DUMMY_TOKEN: Token = Token {
-        token_type: TokenType::EoF,
-        literal: "".to_string(),
-    };
 }
 
 impl Parser {
@@ -35,54 +47,43 @@ impl Parser {
     pub fn parse_program(&mut self) -> Result<Program> {
         let mut program = Program::new();
 
-        while self.tokens.last() != None {
-            if let Some(stmt) = self.parse_statement() {
-                program.statements.push(stmt);
-            }
+        while self.peek_token().is_ok() {
+            program.statements.push(self.parse_statement()?);
         }
 
         Ok(program)
     }
 
     /// parse statement
-    pub fn parse_statement(&mut self) -> Option<StatementNode> {
-        let token = self.tokens.pop()?;
+    fn parse_statement(&mut self) -> Result<StatementNode> {
+        let token = self.peek_token()?;
 
-        match &token.token_type {
+        match token.token_type {
             TokenType::Let => self.parse_let_statement(),
             TokenType::Return => self.parse_return_statement(),
-            _ => {
-                self.tokens.push(token);
-                self.parse_expression_statement()
-            }
+            _ => self.parse_expression_statement(),
         }
     }
 
     /// parse let statement
-    pub fn parse_let_statement(&mut self) -> Option<StatementNode> {
-        if self.tokens.last()?.token_type != TokenType::Ident {
-            return None;
-        }
-
-        let token = self.tokens.pop()?;
+    fn parse_let_statement(&mut self) -> Result<StatementNode> {
+        self.consume_expect_token(TokenType::Let)?;
+        let token = self.consume_expect_token(TokenType::Ident)?;
 
         let name = Identifier {
             token: token.clone(),
             value: token.get_literal(),
         };
 
-        if self.tokens.last()?.token_type != TokenType::Assign {
-            return None;
-        }
-        self.tokens.pop();
+        self.consume_expect_token(TokenType::Assign)?;
 
         let value = self.parse_expression(OperationPrecedence::Lowest)?;
 
-        if !self.tokens.is_empty() && self.tokens.last()?.token_type == TokenType::Semicolon {
+        if !self.tokens.is_empty() && self.peek_token()?.token_type == TokenType::Semicolon {
             self.tokens.pop();
         }
 
-        Some(StatementNode::LetStatementNode(Box::new(LetStatement {
+        Ok(StatementNode::LetStatementNode(Box::new(LetStatement {
             token,
             name,
             value,
@@ -90,15 +91,16 @@ impl Parser {
     }
 
     /// parse return statement
-    pub fn parse_return_statement(&mut self) -> Option<StatementNode> {
-        let token = self.tokens.last()?.clone();
+    fn parse_return_statement(&mut self) -> Result<StatementNode> {
+        self.consume_expect_token(TokenType::Return)?;
+        let token = self.peek_token()?.clone();
         let return_value = self.parse_expression(OperationPrecedence::Lowest)?;
 
-        if !self.tokens.is_empty() && self.tokens.last()?.token_type == TokenType::Semicolon {
+        if !self.tokens.is_empty() && self.peek_token()?.token_type == TokenType::Semicolon {
             self.tokens.pop();
         }
 
-        Some(StatementNode::ReturnStatementNode(Box::new(
+        Ok(StatementNode::ReturnStatementNode(Box::new(
             ReturnStatement {
                 token,
                 return_value,
@@ -107,86 +109,80 @@ impl Parser {
     }
 
     /// parse expression statement
-    pub fn parse_expression_statement(&mut self) -> Option<StatementNode> {
-        let token = self.tokens.last()?.clone();
+    fn parse_expression_statement(&mut self) -> Result<StatementNode> {
+        let token = self.peek_token()?.clone();
         let expression = self.parse_expression(OperationPrecedence::Lowest)?;
 
-        if !self.tokens.is_empty() && self.tokens.last()?.token_type == TokenType::Semicolon {
-            self.tokens.pop();
+        if !self.tokens.is_empty() && self.peek_token()?.token_type == TokenType::Semicolon {
+            self.pop_token()?;
         }
 
-        Some(StatementNode::ExpressionStatementNode(Box::new(
+        Ok(StatementNode::ExpressionStatementNode(Box::new(
             ExpressionStatement { token, expression },
         )))
     }
 
     /// parse expression
-    pub fn parse_expression(&mut self, precedence: OperationPrecedence) -> Option<ExpressionNode> {
-        let mut ex = self.prefix_parse(self.tokens.last()?.token_type)?;
+    fn parse_expression(&mut self, precedence: OperationPrecedence) -> Result<ExpressionNode> {
+        let tt = self.peek_token()?.token_type;
+        let mut ex = self.prefix_parse(tt)?;
 
         while !self.tokens.is_empty()
-            && self.tokens.last()?.token_type != TokenType::Semicolon
-            && precedence < get_precedence(self.tokens.last()?.token_type)
+            && self.expect_token(TokenType::Semicolon).is_err()
+            && precedence < get_precedence(self.peek_token()?.token_type)
         {
-            let tt = self.tokens.last()?.token_type;
-            ex = match self.infix_parse(tt, ex.clone()) {
-                Some(e) => e,
-                None => break,
-            };
+            let tt = self.peek_token()?.token_type;
+            ex = self.infix_parse(tt, ex.clone())?;
         }
 
-        Some(ex)
+        Ok(ex)
     }
 
     /// parse identifier
-    pub fn parse_identifier(&mut self) -> Option<ExpressionNode> {
-        let token = self.tokens.pop()?;
+    fn parse_identifier(&mut self) -> Result<ExpressionNode> {
+        let token = self.consume_expect_token(TokenType::Ident)?;
 
-        Some(ExpressionNode::IdentifierNode(Box::new(Identifier {
+        Ok(ExpressionNode::IdentifierNode(Box::new(Identifier {
             token: token.clone(),
             value: token.get_literal(),
         })))
     }
 
     /// parse integer literal
-    pub fn parse_integer_literal(&mut self) -> Option<ExpressionNode> {
-        let token = self.tokens.pop()?;
+    fn parse_integer_literal(&mut self) -> Result<ExpressionNode> {
+        let token = self.consume_expect_token(TokenType::Int)?;
 
-        Some(ExpressionNode::IntegerLiteralNode(Box::new(
+        Ok(ExpressionNode::IntegerLiteralNode(Box::new(
             IntegerLiteral {
                 token: token.clone(),
-                value: token.get_literal().parse().expect("failed to parse as i64"),
+                value: token.get_literal().parse()?,
             },
         )))
     }
 
     /// parse string literal
-    pub fn parse_string_literal(&mut self) -> Option<ExpressionNode> {
-        let token = self.tokens.pop()?;
+    fn parse_string_literal(&mut self) -> Result<ExpressionNode> {
+        let token = self.consume_expect_token(TokenType::StringToken)?;
 
-        Some(ExpressionNode::StringLiteralNode(Box::new(StringLiteral {
+        Ok(ExpressionNode::StringLiteralNode(Box::new(StringLiteral {
             token: token.clone(),
             value: token.get_literal(),
         })))
     }
 
     /// parse function literal
-    pub fn parse_function_literal(&mut self) -> Option<ExpressionNode> {
-        let token = self.tokens.pop()?;
+    fn parse_function_literal(&mut self) -> Result<ExpressionNode> {
+        let token = self.consume_expect_token(TokenType::Function)?;
 
-        if self.tokens.last()?.token_type != TokenType::LParen {
-            return None;
-        }
+        self.expect_token(TokenType::LParen)?;
 
         let parameters = self.parse_function_parameters()?;
 
-        if self.tokens.last()?.token_type != TokenType::LBrace {
-            return None;
-        }
+        self.expect_token(TokenType::LBrace)?;
 
-        let body = self.parse_block_statement();
+        let body = Some(self.parse_block_statement()?);
 
-        Some(ExpressionNode::FunctionLiteralNode(Box::new(
+        Ok(ExpressionNode::FunctionLiteralNode(Box::new(
             FunctionLiteral {
                 token,
                 parameters,
@@ -196,13 +192,12 @@ impl Parser {
     }
 
     /// parse prefix expression
-    pub fn parse_prefix_expression(&mut self) -> Option<ExpressionNode> {
-        let token = self.tokens.pop()?;
+    fn parse_prefix_expression(&mut self) -> Result<ExpressionNode> {
+        let token = self.pop_token()?;
         let operator = token.get_literal();
-
         let right = self.parse_expression(OperationPrecedence::Prefix)?;
 
-        Some(ExpressionNode::PrefixExpressionNode(Box::new(
+        Ok(ExpressionNode::PrefixExpressionNode(Box::new(
             PrefixExpression {
                 token,
                 operator,
@@ -212,58 +207,48 @@ impl Parser {
     }
 
     /// parse boolean expression
-    pub fn parse_boolean_expression(&mut self) -> Option<ExpressionNode> {
-        let token = self.tokens.pop()?;
+    fn parse_boolean_expression(&mut self) -> Result<ExpressionNode> {
+        let token = self.pop_token()?;
 
-        Some(ExpressionNode::BooleanExpressionNode(Box::new(Boolean {
+        Ok(ExpressionNode::BooleanExpressionNode(Box::new(Boolean {
             token: token.clone(),
             value: token.token_type == TokenType::True,
         })))
     }
 
     /// parse grouped expression
-    pub fn parse_grouped_expression(&mut self) -> Option<ExpressionNode> {
-        self.tokens.pop(); // drop LParen
+    fn parse_grouped_expression(&mut self) -> Result<ExpressionNode> {
+        self.pop_token()?; // drop LParen
 
         let exp = self.parse_expression(OperationPrecedence::Lowest)?;
 
-        if self.tokens.pop()?.token_type != TokenType::RParen {
-            None
-        } else {
-            Some(exp)
-        }
+        self.consume_expect_token(TokenType::RParen)?;
+
+        Ok(exp)
     }
 
     /// parse if expression
-    pub fn parse_if_expression(&mut self) -> Option<ExpressionNode> {
-        let token = self.tokens.pop()?; // drop 'if'
-
-        if self.tokens.last()?.token_type != TokenType::LParen {
-            return None;
-        }
+    fn parse_if_expression(&mut self) -> Result<ExpressionNode> {
+        let token = self.consume_expect_token(TokenType::If)?;
+        self.expect_token(TokenType::LParen)?;
 
         let condition = self.parse_expression(OperationPrecedence::Lowest)?;
 
-        if self.tokens.last()?.token_type != TokenType::LBrace {
-            return None;
-        }
+        self.expect_token(TokenType::LBrace)?;
 
-        let consequence = self.parse_block_statement();
+        let consequence = Some(self.parse_block_statement()?);
 
         // RParen has been dropped at grouped_expression
 
-        let alternative =
-            if self.tokens.last().unwrap_or(&DUMMY_TOKEN).token_type == TokenType::Else {
-                self.tokens.pop();
-                if self.tokens.last()?.token_type != TokenType::LBrace {
-                    return None;
-                }
-                self.parse_block_statement()
-            } else {
-                None
-            };
+        let alternative = if self.expect_token(TokenType::Else).is_ok() {
+            self.pop_token()?;
+            self.expect_token(TokenType::LBrace)?;
+            Some(self.parse_block_statement()?)
+        } else {
+            None
+        };
 
-        Some(ExpressionNode::IfExpressionNode(Box::new(IfExpression {
+        Ok(ExpressionNode::IfExpressionNode(Box::new(IfExpression {
             token,
             condition,
             consequence,
@@ -272,48 +257,41 @@ impl Parser {
     }
 
     /// parse block statement
-    pub fn parse_block_statement(&mut self) -> Option<StatementNode> {
+    fn parse_block_statement(&mut self) -> Result<StatementNode> {
         let mut block = BlockStatement {
-            token: self.tokens.pop()?,
+            token: self.pop_token()?,
             statements: Vec::new(),
         };
 
-        while self.tokens.last()?.token_type != TokenType::RBrace
-            && self.tokens.last()?.token_type != TokenType::EoF
-        {
-            let stmt = self.parse_statement()?;
-            block.statements.push(stmt);
+        while self.expect_token(TokenType::RBrace).is_err() {
+            block.statements.push(self.parse_statement()?);
         }
 
-        if self.tokens.pop()?.token_type != TokenType::RBrace {
-            None
-        } else {
-            Some(StatementNode::BlockStatementNode(Box::new(block)))
-        }
+        self.consume_expect_token(TokenType::RBrace)?;
+
+        Ok(StatementNode::BlockStatementNode(Box::new(block)))
     }
 
     /// parse function parameters
-    pub fn parse_function_parameters(&mut self) -> Option<Vec<ExpressionNode>> {
+    fn parse_function_parameters(&mut self) -> Result<Vec<ExpressionNode>> {
         let mut params = Vec::<ExpressionNode>::new();
 
-        self.tokens.pop(); // drop LParen
+        self.pop_token()?; // drop LParen
 
-        if self.tokens.last()?.token_type == TokenType::RParen {
+        if self.expect_token(TokenType::RParen).is_ok() {
             self.tokens.pop();
-            return Some(params);
+            return Ok(params);
         }
 
-        let token = self.tokens.pop()?;
+        let token = self.pop_token()?;
 
         params.push(ExpressionNode::IdentifierNode(Box::new(Identifier {
             token: token.clone(),
             value: token.get_literal(),
         })));
 
-        while self.tokens.last()?.token_type == TokenType::Comma {
-            self.tokens.pop();
-
-            let t = self.tokens.pop()?;
+        while self.consume_expect_token(TokenType::Comma).is_ok() {
+            let t = self.pop_token()?;
 
             params.push(ExpressionNode::IdentifierNode(Box::new(Identifier {
                 token: t.clone(),
@@ -321,20 +299,18 @@ impl Parser {
             })));
         }
 
-        if self.tokens.pop()?.token_type != TokenType::RParen {
-            None
-        } else {
-            Some(params)
-        }
+        self.consume_expect_token(TokenType::RParen)?;
+
+        Ok(params)
     }
 
     /// parse call expression
-    pub fn parse_call_expression(&mut self, left: ExpressionNode) -> Option<ExpressionNode> {
-        let token = self.tokens.pop()?;
+    fn parse_call_expression(&mut self, left: ExpressionNode) -> Result<ExpressionNode> {
+        let token = self.pop_token()?;
         let function = left;
         let arguments = self.parse_call_arguments()?;
 
-        Some(ExpressionNode::CallExpressionNode(Box::new(
+        Ok(ExpressionNode::CallExpressionNode(Box::new(
             CallExpression {
                 token,
                 function,
@@ -344,56 +320,53 @@ impl Parser {
     }
 
     /// parse index expression
-    pub fn parse_index_expression(&mut self, left: ExpressionNode) -> Option<ExpressionNode> {
-        let token = self.tokens.pop()?;
-
+    fn parse_index_expression(&mut self, left: ExpressionNode) -> Result<ExpressionNode> {
+        let token = self.pop_token()?;
         let index = self.parse_expression(OperationPrecedence::Lowest)?;
 
-        if self.tokens.pop()?.token_type != TokenType::RBracket {
-            None
-        } else {
-            Some(ExpressionNode::IndexExpressionNode(Box::new(
-                IndexExpression { token, left, index },
-            )))
-        }
+        self.consume_expect_token(TokenType::RBracket)?;
+
+        Ok(ExpressionNode::IndexExpressionNode(Box::new(
+            IndexExpression { token, left, index },
+        )))
     }
 
     /// parse function call arguments
-    pub fn parse_call_arguments(&mut self) -> Option<Vec<ExpressionNode>> {
+    fn parse_call_arguments(&mut self) -> Result<Vec<ExpressionNode>> {
         let mut arguments = Vec::<ExpressionNode>::new();
 
-        if self.tokens.last()?.token_type == TokenType::RParen {
+        if self.expect_token(TokenType::RParen).is_ok() {
             self.tokens.pop();
-            return Some(arguments);
+            return Ok(arguments);
         }
 
         let arg = self.parse_expression(OperationPrecedence::Lowest)?;
         arguments.push(arg);
 
-        while self.tokens.last()?.token_type == TokenType::Comma {
+        while !self.tokens.is_empty() && self.tokens.last().unwrap().token_type == TokenType::Comma
+        {
             self.tokens.pop();
             let arg = self.parse_expression(OperationPrecedence::Lowest)?;
             arguments.push(arg);
         }
 
-        if self.tokens.pop()?.token_type == TokenType::RParen {
-            Some(arguments)
+        if self.expect_token(TokenType::RParen).is_ok() {
+            self.tokens.pop();
+            Ok(arguments)
         } else {
-            None
+            Err(Error::new(ParseError::Unknown))
         }
     }
 
     /// parse infix expression
-    pub fn parse_infix_expression(&mut self, left: ExpressionNode) -> Option<ExpressionNode> {
-        let token = self.tokens.last()?.clone();
-        let operator = self.tokens.last()?.get_literal();
+    fn parse_infix_expression(&mut self, left: ExpressionNode) -> Result<ExpressionNode> {
+        let token = self.pop_token()?;
+        let operator = token.get_literal();
         let precedence = get_precedence(token.token_type);
-
-        self.tokens.pop();
 
         let right = self.parse_expression(precedence)?;
 
-        Some(ExpressionNode::InfixExpressionNode(Box::new(
+        Ok(ExpressionNode::InfixExpressionNode(Box::new(
             InfixExpression {
                 token,
                 left,
@@ -404,21 +377,20 @@ impl Parser {
     }
 
     /// parse expression list
-    fn parse_expression_list(&mut self, end: TokenType) -> Option<Vec<ExpressionNode>> {
+    fn parse_expression_list(&mut self, end: TokenType) -> Result<Vec<ExpressionNode>> {
         let mut list = Vec::<ExpressionNode>::new();
 
-        if self.tokens.last()?.token_type == end {
-            self.tokens.pop();
-            return Some(list);
+        if self.consume_expect_token(end).is_ok() {
+            return Ok(list);
         }
 
-        if let Some(elm) = self.parse_expression(OperationPrecedence::Lowest) {
+        if let Ok(elm) = self.parse_expression(OperationPrecedence::Lowest) {
             list.push(elm);
 
-            while self.tokens.last()?.token_type == TokenType::Comma {
+            while self.expect_token(TokenType::Comma).is_ok() {
                 self.tokens.pop();
 
-                if let Some(elm) = self.parse_expression(OperationPrecedence::Lowest) {
+                if let Ok(elm) = self.parse_expression(OperationPrecedence::Lowest) {
                     list.push(elm);
                 } else {
                     list.clear();
@@ -426,35 +398,41 @@ impl Parser {
                 }
             }
 
-            if self.tokens.pop()?.token_type != TokenType::RBracket {
+            if self.expect_token(TokenType::RBracket).is_err() {
                 list.clear();
             }
+
+            self.tokens.pop();
         }
 
-        Some(list)
+        Ok(list)
     }
 
     /// parse hash literal
-    fn parse_hash_literal(&mut self) -> Option<Vec<(ExpressionNode, ExpressionNode)>> {
+    fn parse_hash_literal(&mut self) -> Result<Vec<(ExpressionNode, ExpressionNode)>> {
         let mut hash = Vec::<(ExpressionNode, ExpressionNode)>::new();
 
-        while self.tokens.last()?.token_type != TokenType::RBrace {
+        while self.consume_expect_token(TokenType::RBrace).is_err() {
             let key = match self.parse_expression(OperationPrecedence::Lowest) {
-                Some(k) => k,
-                None => {
+                Ok(k) => k,
+                Err(_) => {
+                    // @todo
                     hash.clear();
                     break;
                 }
             };
 
-            if self.tokens.pop()?.token_type != TokenType::Colon {
+            if self.expect_token(TokenType::Colon).is_err() {
                 hash.clear();
                 break;
             }
 
+            self.pop_token()?;
+
             let value = match self.parse_expression(OperationPrecedence::Lowest) {
-                Some(v) => v,
-                None => {
+                Ok(v) => v,
+                Err(_) => {
+                    // @todo
                     hash.clear();
                     break;
                 }
@@ -463,18 +441,16 @@ impl Parser {
             let p = (key, value);
             hash.push(p);
 
-            if self.tokens.last()?.token_type == TokenType::Comma {
-                self.tokens.pop();
+            if self.expect_token(TokenType::Comma).is_ok() {
+                self.pop_token()?;
             }
         }
 
-        self.tokens.pop(); // drop RBrace
-
-        Some(hash)
+        Ok(hash)
     }
 
     /// parse prefix
-    fn prefix_parse(&mut self, tt: TokenType) -> Option<ExpressionNode> {
+    fn prefix_parse(&mut self, tt: TokenType) -> Result<ExpressionNode> {
         match tt {
             TokenType::Ident => self.parse_identifier(),
             TokenType::Int => self.parse_integer_literal(),
@@ -482,26 +458,22 @@ impl Parser {
             TokenType::Bang | TokenType::Minus => self.parse_prefix_expression(),
             TokenType::True | TokenType::False => self.parse_boolean_expression(),
             TokenType::LParen => self.parse_grouped_expression(),
-            TokenType::LBracket => Some(ExpressionNode::ArrayLiteralNode(Box::new(ArrayLiteral {
-                token: self.tokens.pop()?,
+            TokenType::LBracket => Ok(ExpressionNode::ArrayLiteralNode(Box::new(ArrayLiteral {
+                token: self.pop_token()?,
                 elements: self.parse_expression_list(TokenType::RBracket)?,
             }))),
-            TokenType::LBrace => Some(ExpressionNode::HashLiteralNode(Box::new(HashLiteral {
-                token: self.tokens.pop()?,
+            TokenType::LBrace => Ok(ExpressionNode::HashLiteralNode(Box::new(HashLiteral {
+                token: self.pop_token()?,
                 pairs: self.parse_hash_literal()?,
             }))),
             TokenType::If => self.parse_if_expression(),
             TokenType::Function => self.parse_function_literal(),
-            _ => {
-                //self.errors
-                //    .push(format!("unsupported by prefix_parser: {:?}", tt));
-                None
-            }
+            _ => Err(Error::new(ParseError::UnexpectedTokenForPrefixParser(tt))),
         }
     }
 
     /// parse infix
-    fn infix_parse(&mut self, tt: TokenType, left: ExpressionNode) -> Option<ExpressionNode> {
+    fn infix_parse(&mut self, tt: TokenType, left: ExpressionNode) -> Result<ExpressionNode> {
         match tt {
             TokenType::Plus
             | TokenType::Minus
@@ -513,7 +485,61 @@ impl Parser {
             | TokenType::NotEq => self.parse_infix_expression(left),
             TokenType::LParen => self.parse_call_expression(left),
             TokenType::LBracket => self.parse_index_expression(left),
-            _ => panic!("unsupported by infix_parser: {:?}", tt),
+            _ => Err(Error::new(ParseError::UnexpectedTokenForInfixParser(tt))),
+        }
+    }
+
+    /// peek token
+    fn peek_token(&mut self) -> Result<&Token> {
+        if let Some(token) = self.tokens.last() {
+            Ok(token)
+        } else {
+            Err(Error::new(ParseError::UnexpectedEof))
+        }
+    }
+
+    /// pop token
+    fn pop_token(&mut self) -> Result<Token> {
+        if let Some(token) = self.tokens.pop() {
+            Ok(token)
+        } else {
+            Err(Error::new(ParseError::UnexpectedEof))
+        }
+    }
+
+    /// check if the next token is expected one or not
+    fn expect_token(&mut self, expected: TokenType) -> Result<&Token> {
+        if let Some(token) = self.tokens.last() {
+            if token.token_type == expected {
+                Ok(token)
+            } else {
+                Err(Error::new(ParseError::UnexpectedToken {
+                    found: token.token_type,
+                    expected,
+                }))
+            }
+        } else {
+            Err(Error::new(ParseError::UnexpectedEof))
+        }
+    }
+
+    /// check if the next token is expected one or not, and consume it if so
+    fn consume_expect_token(&mut self, expected: TokenType) -> Result<Token> {
+        if let Some(token) = self.tokens.last() {
+            if token.token_type == expected {
+                if let Some(t) = self.tokens.pop() {
+                    Ok(t)
+                } else {
+                    Err(Error::new(ParseError::Unknown))
+                }
+            } else {
+                Err(Error::new(ParseError::UnexpectedToken {
+                    found: token.token_type,
+                    expected,
+                }))
+            }
+        } else {
+            Err(Error::new(ParseError::UnexpectedEof))
         }
     }
 }

@@ -14,18 +14,18 @@ use rsmonkey::evaluator::EvalNode;
 use rsmonkey::object::Environment;
 
 const PROMPT: &str = ">> ";
-const MONKEY_FACE: &str = r##"            __,__
-   .--.  .-"     "-.  .--.
-  / .. \/  .-. .-.  \/ .. \
- | |  '|  /   Y   \  |'  | |
- | \   \  \ 0 | 0 /  /   / |
-  \ '- ,\.-"""""""-./, -' /
-   ''-' /_   ^ ^   _\ '-''
-       |  \._   _./  |
-       \   \ '~' /   /
-        '._ '-=-' _.'
-           '-----'
-"##;
+//const MONKEY_FACE: &str = r##"            __,__
+//   .--.  .-"     "-.  .--.
+//  / .. \/  .-. .-.  \/ .. \
+// | |  '|  /   Y   \  |'  | |
+// | \   \  \ 0 | 0 /  /   / |
+//  \ '- ,\.-"""""""-./, -' /
+//   ''-' /_   ^ ^   _\ '-''
+//       |  \._   _./  |
+//       \   \ '~' /   /
+//        '._ '-=-' _.'
+//           '-----'
+//"##;
 
 fn read_input() {
     let username = env::vars().find(|x| x.0 == "USER").unwrap_or_default().1;

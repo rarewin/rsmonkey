@@ -1,3 +1,5 @@
+use anyhow::Result;
+
 use rsmonkey::ast::*;
 use rsmonkey::lexer::Lexer;
 use rsmonkey::parser::Parser;
@@ -11,7 +13,7 @@ enum TestLiteral {
 }
 
 #[test]
-fn test_let_statements() {
+fn test_let_statements() -> Result<()> {
     struct Test {
         input: &'static str,
         expected_identifier: &'static str,
@@ -39,23 +41,18 @@ fn test_let_statements() {
         let l = Lexer::new(tt.input.to_string());
         let mut p = Parser::new(l);
 
-        let program = p.parse_program();
-        check_parser_errors(p);
+        let program = p.next().unwrap()?;
 
-        assert!(
-            program.statements.len() == 1,
-            "length of program.statements should be {}, but got {}",
-            1,
-            program.statements.len()
-        );
-
-        let stmt = match &program.statements[0] {
+        let stmt = match program {
             StatementNode::LetStatementNode(s) => s,
             _ => panic!("let statement is expected"),
         };
 
-        test_let_statement(stmt, tt.expected_identifier, &tt.expected_value);
+        test_let_statement(&stmt, tt.expected_identifier, &tt.expected_value);
+        assert!(p.next().is_none());
     }
+
+    Ok(())
 }
 
 /// test let statement.
@@ -84,7 +81,7 @@ fn test_let_statement(s: &LetStatement, name: &str, value: &TestLiteral) {
 }
 
 #[test]
-fn test_return_statements() {
+fn test_return_statements() -> Result<()> {
     struct Test {
         input: &'static str,
         expected_value: TestLiteral,
@@ -109,28 +106,23 @@ fn test_return_statements() {
         let l = Lexer::new(tt.input.to_string());
         let mut p = Parser::new(l);
 
-        let program = p.parse_program();
-        check_parser_errors(p);
+        let program = p.next().unwrap()?;
 
-        assert!(
-            program.statements.len() == 1,
-            "length of program.statements should be {}, but got {}",
-            1,
-            program.statements.len()
-        );
-
-        let stmt = match &program.statements[0] {
+        let stmt = match program {
             StatementNode::ReturnStatementNode(rs) => rs,
             _ => panic!("return statement is expected"),
         };
 
         test_literal_expression(&stmt.return_value, &tt.expected_value);
+        assert!(p.next().is_none());
     }
+
+    Ok(())
 }
 
 #[test]
 fn test_string() {
-    let v = vec![StatementNode::LetStatementNode(Box::new(LetStatement {
+    let v = StatementNode::LetStatementNode(Box::new(LetStatement {
         token: Token::new(TokenType::Let, "let"),
         name: Identifier {
             token: Token::new(TokenType::Ident, "myVar"),
@@ -140,82 +132,65 @@ fn test_string() {
             token: Token::new(TokenType::Ident, "anotherVar"),
             value: "myVar".to_string(),
         })),
-    }))];
+    }));
 
-    let program = Program { statements: { v } };
-
-    assert_eq!(program.string(), "let myVar = anotherVar;");
+    assert_eq!(v.string(), "let myVar = anotherVar;");
 }
 
 #[test]
-fn test_identifier_expression() {
+fn test_identifier_expression() -> Result<()> {
     let input = r##"foobar;"##;
 
     let l = Lexer::new(input.to_string());
     let mut p = Parser::new(l);
 
-    let program = p.parse_program();
-    check_parser_errors(p);
+    let program = p.next().unwrap()?;
 
-    assert_eq!(
-        program.statements.len(),
-        1,
-        "program does not have enough statements. got {}",
-        program.statements.len()
-    );
-
-    let stmt = match &program.statements[0] {
+    let stmt = match program {
         StatementNode::ExpressionStatementNode(es) => es,
         _ => panic!("first statement is not expressionstatement"),
     };
 
     assert_eq!(stmt.token.get_literal(), "foobar");
+    assert!(p.next().is_none());
+
+    Ok(())
 }
 
 #[test]
-fn test_integer_literal_expression() {
+fn test_integer_literal_expression() -> Result<()> {
     let input = r##"5;"##;
 
     let l = Lexer::new(input.to_string());
     let mut p = Parser::new(l);
 
-    let program = p.parse_program();
-    check_parser_errors(p);
+    let program = p.next().unwrap()?;
 
-    assert_eq!(
-        program.statements.len(),
-        1,
-        "program does not have enough statements. got {}",
-        program.statements.len()
-    );
+    assert!(program.get_literal() == "5");
+    assert!(p.next().is_none());
 
-    assert!(program.statements[0].get_literal() == "5");
+    Ok(())
 }
 
 /// test string literal
 #[test]
-fn test_string_literal_expression() {
+fn test_string_literal_expression() -> Result<()> {
     let input = r##""hello world""##;
 
     let l = Lexer::new(input.to_string());
     let mut p = Parser::new(l);
 
-    let program = p.parse_program();
-    check_parser_errors(p);
+    let program = p.next().unwrap()?;
 
-    assert_eq!(
-        program.statements.len(),
-        1,
-        "program does not have enough statements. got {}",
-        program.statements.len()
-    );
+    assert!(program.get_literal() == "hello world");
+    assert!(p.next().is_none());
 
-    assert!(program.statements[0].get_literal() == "hello world");
+    Ok(())
 }
 
 /// test boolean
 #[test]
-fn test_boolean_literal_expression() {
+fn test_boolean_literal_expression() -> Result<()> {
     struct Test {
         input: &'static str,
         value: bool,
@@ -236,17 +211,9 @@ fn test_boolean_literal_expression() {
         let l = Lexer::new(tt.input.to_string());
         let mut p = Parser::new(l);
 
-        let program = p.parse_program();
-        check_parser_errors(p);
+        let program = p.next().unwrap()?;
 
-        assert_eq!(
-            program.statements.len(),
-            1,
-            "program does not have enough statements. got {}",
-            program.statements.len()
-        );
-
-        let stmt = match &program.statements[0] {
+        let stmt = match &program {
             StatementNode::ExpressionStatementNode(es) => es,
             _ => panic!("first statement is not expression statement"),
         };
@@ -261,11 +228,15 @@ fn test_boolean_literal_expression() {
             "{} is expected, but got {}",
             tt.value, exp.value,
         );
+
+        assert!(p.next().is_none());
     }
+
+    Ok(())
 }
 
 #[test]
-fn test_parsing_prefix_expressions() {
+fn test_parsing_prefix_expressions() -> Result<()> {
     struct Test {
         input: &'static str,
         operator: &'static str,
@@ -299,17 +270,9 @@ fn test_parsing_prefix_expressions() {
         let l = Lexer::new(tt.input.to_string());
         let mut p = Parser::new(l);
 
-        let program = p.parse_program();
-        check_parser_errors(p);
+        let program = p.next().unwrap()?;
 
-        assert_eq!(
-            program.statements.len(),
-            1,
-            "program does not have the expected number of statements. {}",
-            program.statements.len()
-        );
-
-        let stmt = match &program.statements[0] {
+        let stmt = match &program {
             StatementNode::ExpressionStatementNode(es) => es,
             _ => panic!("first statement is not expression statement"),
         };
@@ -326,11 +289,15 @@ fn test_parsing_prefix_expressions() {
         );
 
         test_literal_expression(&exp.right, &tt.value);
+
+        assert!(p.next().is_none());
     }
+
+    Ok(())
 }
 
 #[test]
-fn test_parsing_infix_expressions() {
+fn test_parsing_infix_expressions() -> Result<()> {
     struct Test {
         input: &'static str,
         left_value: TestLiteral,
@@ -411,10 +378,9 @@ fn test_parsing_infix_expressions() {
         let l = Lexer::new(tt.input.to_string());
         let mut p = Parser::new(l);
 
-        let program = p.parse_program();
-        check_parser_errors(p);
+        let program = p.next().unwrap()?;
 
-        let stmt = match &program.statements[0] {
+        let stmt = match &program {
             StatementNode::ExpressionStatementNode(es) => es,
             _ => panic!("first statement is not expression statement"),
         };
@@ -425,11 +391,14 @@ fn test_parsing_infix_expressions() {
             tt.operator,
             &tt.right_value,
         );
+        assert!(p.next().is_none());
     }
+
+    Ok(())
 }
 
 #[test]
-fn test_operator_precedence_parsing() {
+fn test_operator_precedence_parsing() -> Result<()> {
     struct Test {
         input: &'static str,
         expected: &'static str,
@@ -540,38 +509,30 @@ fn test_operator_precedence_parsing() {
 
     for tt in operator_precedence_test {
         let l = Lexer::new(tt.input.to_string());
-        let mut p = Parser::new(l);
+        let p = Parser::new(l);
 
-        let program = p.parse_program();
-        check_parser_errors(p);
+        let program_str = p.map(|c| c.unwrap().string()).collect::<String>();
 
         assert_eq!(
-            program.string(),
-            tt.expected,
+            program_str, tt.expected,
             r##"expected "{}", got "{}""##,
-            tt.expected,
-            program.string(),
+            tt.expected, program_str,
         );
     }
+
+    Ok(())
 }
 
 #[test]
-fn test_if_expression() {
+fn test_if_expression() -> Result<()> {
     let input = "if (x < y) { x };";
 
     let l = Lexer::new(input.to_string());
     let mut p = Parser::new(l);
 
-    let program = p.parse_program();
-    check_parser_errors(p);
+    let program = p.next().unwrap()?;
 
-    assert!(
-        program.statements.len() == 1,
-        "program does not have the expected number of statements. {}",
-        program.statements.len()
-    );
-
-    let exps = match &program.statements[0] {
+    let exps = match &program {
         StatementNode::ExpressionStatementNode(es) => es,
         _ => panic!("expression stateme is expected"),
     };
@@ -593,10 +554,10 @@ fn test_if_expression() {
         _ => panic!("consequence does not have block statement"),
     };
 
-    assert!(
-        cs.statements.len() == 1,
-        "consequence does not have the expected number of statements. {}",
-        cs.statements.len()
+    assert_eq!(
+        cs.statements.len(),
+        1,
+        "consequence does not have the expected number of statements.",
     );
 
     let conex = match &cs.statements[0] {
@@ -610,25 +571,20 @@ fn test_if_expression() {
         None => {}
         _ => panic!("alternative has unexpected statement node"),
     };
+
+    assert!(p.next().is_none());
+
+    Ok(())
 }
 
 #[test]
-fn test_if_else_expression() {
+fn test_if_else_expression() -> Result<()> {
     let input = "if (x < y) { x; } else { y };";
 
     let l = Lexer::new(input.to_string());
     let mut p = Parser::new(l);
 
-    let program = p.parse_program();
-    check_parser_errors(p);
-
-    assert!(
-        program.statements.len() == 1,
-        "program does not have the expected number of statements. {}",
-        program.statements.len()
-    );
-
-    let stmt = &program.statements[0];
+    let stmt = p.next().unwrap()?;
 
     let exps = match &stmt {
         StatementNode::ExpressionStatementNode(es) => es,
@@ -684,25 +640,21 @@ fn test_if_else_expression() {
     test_literal_expression(&alsex.expression, &TestLiteral::IdentifierLiteral("y"));
 
     assert_eq!(stmt.string(), "if (x < y) x else y");
+    assert!(p.next().is_none());
+
+    Ok(())
 }
 
 #[test]
-fn test_function_literal_parsing() {
+fn test_function_literal_parsing() -> Result<()> {
     let input = "fn(x, y) { x + y; }";
 
     let l = Lexer::new(input.to_string());
     let mut p = Parser::new(l);
 
-    let program = p.parse_program();
-    check_parser_errors(p);
+    let program = p.next().unwrap()?;
 
-    assert!(
-        program.statements.len() == 1,
-        "program does not have the expected number of statements. {}",
-        program.statements.len()
-    );
-
-    let exps = match &program.statements[0] {
+    let exps = match &program {
         StatementNode::ExpressionStatementNode(exps) => exps,
         _ => panic!("expression stateme is expected"),
     };
@@ -744,10 +696,14 @@ fn test_function_literal_parsing() {
         "+",
         &TestLiteral::IdentifierLiteral("y"),
     );
+
+    assert!(p.next().is_none());
+
+    Ok(())
 }
 
 #[test]
-fn test_function_parameter_parsing() {
+fn test_function_parameter_parsing() -> Result<()> {
     struct Test {
         input: &'static str,
         expected: Vec<&'static str>,
@@ -772,16 +728,9 @@ fn test_function_parameter_parsing() {
         let l = Lexer::new(tt.input.to_string());
         let mut p = Parser::new(l);
 
-        let program = p.parse_program();
-        check_parser_errors(p);
+        let program = p.next().unwrap()?;
 
-        assert!(
-            program.statements.len() == 1,
-            "program does not have the expected number of statements. {}",
-            program.statements.len()
-        );
-
-        let exps = match &program.statements[0] {
+        let exps = match &program {
             StatementNode::ExpressionStatementNode(exps) => exps,
             _ => panic!("expression stateme is expected"),
         };
@@ -804,26 +753,22 @@ fn test_function_parameter_parsing() {
                 &TestLiteral::IdentifierLiteral(tt.expected[i]),
             );
         }
+        assert!(p.next().is_none());
     }
+
+    Ok(())
 }
 
 #[test]
-fn test_call_expression_arsing() {
+fn test_call_expression_arsing() -> Result<()> {
     let input = "add(1, 2 * 3, 4 + 5);";
 
     let l = Lexer::new(input.to_string());
     let mut p = Parser::new(l);
 
-    let program = p.parse_program();
-    check_parser_errors(p);
+    let program = p.next().unwrap()?;
 
-    assert!(
-        program.statements.len() == 1,
-        "program does not have the expected number of statements. {}",
-        program.statements.len()
-    );
-
-    let exps = match &program.statements[0] {
+    let exps = match &program {
         StatementNode::ExpressionStatementNode(exps) => exps,
         _ => panic!("expression stateme is expected"),
     };
@@ -853,26 +798,23 @@ fn test_call_expression_arsing() {
         "+",
         &TestLiteral::IntegerLiteral(5),
     );
+
+    assert!(p.next().is_none());
+
+    Ok(())
 }
 
 /// test for array literal
 #[test]
-fn test_parsing_array_literal() {
+fn test_parsing_array_literal() -> Result<()> {
     let input = "[1, 2 * 2, 3 + 3];";
 
     let l = Lexer::new(input.to_string());
     let mut p = Parser::new(l);
 
-    let program = p.parse_program();
-    check_parser_errors(p);
+    let program = p.next().unwrap()?;
 
-    assert!(
-        program.statements.len() == 1,
-        "program does not have the expected number of statements. {}",
-        program.statements.len()
-    );
-
-    let exps = match &program.statements[0] {
+    let exps = match &program {
         StatementNode::ExpressionStatementNode(e) => e,
         _ => panic!("expression stateme is expected"),
     };
@@ -901,26 +843,23 @@ fn test_parsing_array_literal() {
         "+",
         &TestLiteral::IntegerLiteral(3),
     );
+
+    assert!(p.next().is_none());
+
+    Ok(())
 }
 
 /// test for index expressions
 #[test]
-fn test_parsing_index_expressions() {
+fn test_parsing_index_expressions() -> Result<()> {
     let input = "myArray[1 + 1]";
 
     let l = Lexer::new(input.to_string());
     let mut p = Parser::new(l);
 
-    let program = p.parse_program();
-    check_parser_errors(p);
+    let program = p.next().unwrap()?;
 
-    assert!(
-        program.statements.len() == 1,
-        "program does not have the expected number of statements. {}",
-        program.statements.len()
-    );
-
-    let exps = match &program.statements[0] {
+    let exps = match &program {
         StatementNode::ExpressionStatementNode(e) => e,
         _ => panic!("expression stateme is expected"),
     };
@@ -937,26 +876,22 @@ fn test_parsing_index_expressions() {
         "+",
         &TestLiteral::IntegerLiteral(1),
     );
+    assert!(p.next().is_none());
+
+    Ok(())
 }
 
 /// test hash
 #[test]
-fn test_parsing_hash_literals_string_keys() {
+fn test_parsing_hash_literals_string_keys() -> Result<()> {
     let input = r##"{"one": 1, "two": 2, "three": 3}"##;
 
     let l = Lexer::new(input.to_string());
     let mut p = Parser::new(l);
 
-    let program = p.parse_program();
-    check_parser_errors(p);
+    let program = p.next().unwrap()?;
 
-    assert!(
-        program.statements.len() == 1,
-        "program does not have the expected number of statements. {}",
-        program.statements.len()
-    );
-
-    let exps = match &program.statements[0] {
+    let exps = match &program {
         StatementNode::ExpressionStatementNode(e) => e,
         _ => panic!("expression stateme is expected"),
     };
@@ -978,25 +913,22 @@ fn test_parsing_hash_literals_string_keys() {
     test_literal_expression(&hl.pairs[0].1, &TestLiteral::IntegerLiteral(1));
     test_literal_expression(&hl.pairs[1].1, &TestLiteral::IntegerLiteral(2));
     test_literal_expression(&hl.pairs[2].1, &TestLiteral::IntegerLiteral(3));
+
+    assert!(p.next().is_none());
+
+    Ok(())
 }
 
 #[test]
-fn test_parsing_empty_hash_literal() {
+fn test_parsing_empty_hash_literal() -> Result<()> {
     let input = "{}";
 
     let l = Lexer::new(input.to_string());
     let mut p = Parser::new(l);
 
-    let program = p.parse_program();
-    check_parser_errors(p);
+    let program = p.next().unwrap()?;
 
-    assert!(
-        program.statements.len() == 1,
-        "program does not have the expected number of statements. {}",
-        program.statements.len()
-    );
-
-    let exps = match &program.statements[0] {
+    let exps = match &program {
         StatementNode::ExpressionStatementNode(e) => e,
         _ => panic!("hash literal stateme is expected"),
     };
@@ -1011,25 +943,22 @@ fn test_parsing_empty_hash_literal() {
         "the # of elements of {{}} should be 0, got {}",
         hl.pairs.len()
     );
+
+    assert!(p.next().is_none());
+
+    Ok(())
 }
 
 #[test]
-fn test_parsing_hash_literals_with_expressions() {
+fn test_parsing_hash_literals_with_expressions() -> Result<()> {
     let input = r##"{"one": 0 + 1, "two": 10 - 8, "three": 15 / 5}"##;
 
     let l = Lexer::new(input.to_string());
     let mut p = Parser::new(l);
 
-    let program = p.parse_program();
-    check_parser_errors(p);
+    let program = p.next().unwrap()?;
 
-    assert!(
-        program.statements.len() == 1,
-        "program does not have the expected number of statements. {}",
-        program.statements.len()
-    );
-
-    let exps = match &program.statements[0] {
+    let exps = match &program {
         StatementNode::ExpressionStatementNode(e) => e,
         _ => panic!("hash literal stateme is expected"),
     };
@@ -1068,20 +997,9 @@ fn test_parsing_hash_literals_with_expressions() {
         "/",
         &TestLiteral::IntegerLiteral(5),
     );
-}
+    assert!(p.next().is_none());
 
-fn check_parser_errors(p: Parser) {
-    let errors = p.errors();
-
-    if errors.is_empty() {
-        return;
-    }
-
-    for e in errors {
-        println!("parser error: {}", e);
-    }
-
-    panic!("parser has {} errors", errors.len());
+    Ok(())
 }
 
 /// test integer literal

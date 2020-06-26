@@ -136,24 +136,23 @@ fn test_next_token() {
         Token::new(TokenType::Colon, ":"),
         Token::new(TokenType::StringToken, "bar"),
         Token::new(TokenType::RBrace, "}"),
-        //
-        Token::new(TokenType::EoF, "EOF"),
     ];
 
-    let l = Lexer::new(input.to_string());
+    let mut l = Lexer::new(input.to_string());
 
     for tp in tests.iter() {
-        let tok = l.next_token();
-        assert_eq!(&tok, tp);
+        let tok = l.next().unwrap();
+        assert_eq!(&tok, tp, "{:?}", tok);
     }
+
+    assert_eq!(l.next(), None);
 }
 
 #[test]
 fn test_empty_input() {
     let input = "";
 
-    let l = Lexer::new(input.to_string());
-    let t = l.next_token();
+    let mut l = Lexer::new(input.to_string());
 
-    assert_eq!(t, Token::new(TokenType::EoF, "EOF"));
+    assert!(l.next().is_none());
 }

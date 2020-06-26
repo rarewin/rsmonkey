@@ -1,46 +1,31 @@
-use crate::ast::{
-    BlockStatement, ExpressionNode, LetStatement, Program, ReturnStatement, StatementNode,
-};
-use crate::object::{extend_environment, Array, Environment, Hash, Integer, Object};
 use std::rc::Rc;
 
-#[derive(Debug)]
-pub enum EvalNode {
-    EvalStatementNode(Box<StatementNode>),
-    EvalExpressionNode(Box<ExpressionNode>),
-}
+use anyhow::Result;
+
+use crate::ast::{BlockStatement, ExpressionNode, LetStatement, ReturnStatement, StatementNode};
+use crate::object::{extend_environment, Array, Environment, Hash, Integer, Object};
+use crate::parser::Parser;
 
 /// evaluator function
-pub fn eval(node: &EvalNode, env: Rc<Environment>) -> Object {
-    match node {
-        EvalNode::EvalStatementNode(sn) => eval_statement_node(sn, env),
-        EvalNode::EvalExpressionNode(en) => eval_expression_node(en, env),
+pub fn eval(parser: &mut Parser, env: Rc<Environment>) -> Result<Object> {
+    let mut result = Object::Null;
+    for stmt in parser {
+        result = eval_statement_node(&stmt?, env.clone());
+        if let Object::ReturnValueObject(rv) = result {
+            return Ok(rv.value);
+        }
     }
+    Ok(result)
 }
 
 /// evaluator function for statement node
 fn eval_statement_node(node: &StatementNode, env: Rc<Environment>) -> Object {
     match node {
-        StatementNode::ProgramStatementNode(ps) => eval_program(&ps, env),
         StatementNode::BlockStatementNode(bs) => eval_block_statement(&bs, env),
         StatementNode::ExpressionStatementNode(es) => eval_expression_node(&es.expression, env),
         StatementNode::ReturnStatementNode(rs) => eval_return_statement(&rs, env),
         StatementNode::LetStatementNode(ls) => eval_let_statement(&ls, env),
     }
-}
-
-/// evaluator function for program
-fn eval_program(prog: &Program, env: Rc<Environment>) -> Object {
-    let mut result = Object::Null;
-    for stmt in &prog.statements {
-        result = eval_statement_node(stmt, env.clone());
-        if let Object::ReturnValueObject(rv) = result {
-            return rv.value;
-        } else if let Object::ErrorObject(_) = result {
-            return result;
-        }
-    }
-    result
 }
 
 /// evaluator function for block statement

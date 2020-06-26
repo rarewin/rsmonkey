@@ -7,7 +7,6 @@ pub enum StatementNode {
     ReturnStatementNode(Box<ReturnStatement>),
     ExpressionStatementNode(Box<ExpressionStatement>),
     BlockStatementNode(Box<BlockStatement>),
-    ProgramStatementNode(Box<Program>),
 }
 
 /// expression node
@@ -161,12 +160,6 @@ pub struct IndexExpression {
     pub index: ExpressionNode,
 }
 
-/// struct for programs
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub struct Program {
-    pub statements: Vec<StatementNode>,
-}
-
 /// implementation of statement node
 impl StatementNode {
     /// get token's literal
@@ -180,13 +173,6 @@ impl StatementNode {
                     bs.statements[0].get_literal()
                 } else {
                     "(empty block statement)".into()
-                }
-            }
-            StatementNode::ProgramStatementNode(ps) => {
-                if !ps.statements.is_empty() {
-                    ps.statements[0].get_literal()
-                } else {
-                    "(empty program statement)".into()
                 }
             }
         }
@@ -208,13 +194,6 @@ impl StatementNode {
             StatementNode::BlockStatementNode(bs) => {
                 let mut ret = String::new();
                 for stmt in &bs.statements {
-                    ret.push_str(&stmt.string());
-                }
-                ret
-            }
-            StatementNode::ProgramStatementNode(ps) => {
-                let mut ret = String::new();
-                for stmt in &ps.statements {
                     ret.push_str(&stmt.string());
                 }
                 ret
@@ -314,39 +293,5 @@ impl ExpressionNode {
             ExpressionNode::CallExpressionNode(cen) => (*cen).token.get_literal(),
             _ => panic!("not supported string(): {:?}", self),
         }
-    }
-}
-
-/// Program
-impl Program {
-    /// constructor of Program
-    pub fn new() -> Program {
-        Program {
-            statements: Vec::new(),
-        }
-    }
-
-    /// get strings of all statements
-    pub fn string(&self) -> String {
-        let mut ret = String::new();
-        for stmt in &self.statements {
-            ret.push_str(&stmt.string());
-        }
-        ret
-    }
-
-    /// get the first token's literal
-    pub fn get_literal(&self) -> String {
-        if !self.statements.is_empty() {
-            self.statements[0].get_literal()
-        } else {
-            "".to_string()
-        }
-    }
-}
-
-impl Default for Program {
-    fn default() -> Self {
-        Self::new()
     }
 }

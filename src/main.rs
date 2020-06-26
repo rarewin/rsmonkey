@@ -8,24 +8,22 @@ use std::rc::Rc;
 use rsmonkey::lexer::Lexer;
 use rsmonkey::parser::Parser;
 
-use rsmonkey::ast::StatementNode;
 use rsmonkey::evaluator::eval;
-use rsmonkey::evaluator::EvalNode;
 use rsmonkey::object::Environment;
 
 const PROMPT: &str = ">> ";
-//const MONKEY_FACE: &str = r##"            __,__
-//   .--.  .-"     "-.  .--.
-//  / .. \/  .-. .-.  \/ .. \
-// | |  '|  /   Y   \  |'  | |
-// | \   \  \ 0 | 0 /  /   / |
-//  \ '- ,\.-"""""""-./, -' /
-//   ''-' /_   ^ ^   _\ '-''
-//       |  \._   _./  |
-//       \   \ '~' /   /
-//        '._ '-=-' _.'
-//           '-----'
-//"##;
+const MONKEY_FACE: &str = r##"            __,__
+   .--.  .-"     "-.  .--.
+  / .. \/  .-. .-.  \/ .. \
+ | |  '|  /   Y   \  |'  | |
+ | \   \  \ 0 | 0 /  /   / |
+  \ '- ,\.-"""""""-./, -' /
+   ''-' /_   ^ ^   _\ '-''
+       |  \._   _./  |
+       \   \ '~' /   /
+        '._ '-=-' _.'
+           '-----'
+"##;
 
 fn read_input() {
     let username = env::vars().find(|x| x.0 == "USER").unwrap_or_default().1;
@@ -51,30 +49,21 @@ fn read_input() {
 
         if let Some(Ok(input)) = lines.next() {
             let l = Lexer::new(input.to_string());
-            let mut p = Parser::new(l);
+            let mut parser = Parser::new(l);
 
-            let program = p.parse_program().unwrap(); // @todo
-
-            //            if !p.errors().is_empty() {
-            //                for e in p.errors() {
-            //                    println!(
-            //                        r##"{}
-            //Woops! We ran into some monkey business here!
-            //	parser error: {}"##,
-            //                        MONKEY_FACE, e
-            //                    );
-            //                    continue;
-            //                }
-            //            }
-
-            let evaluated = eval(
-                &EvalNode::EvalStatementNode(Box::new(StatementNode::ProgramStatementNode(
-                    Box::new(program),
-                ))),
-                env.clone(),
-            );
-
-            println!("{}", evaluated.inspect());
+            match eval(&mut parser, env.clone()) {
+                Ok(evaluated) => {
+                    println!("{}", evaluated.inspect());
+                }
+                Err(e) => {
+                    println!(
+                        r##"{}
+Woops! We ran into some monkey business here!
+parser error: {}"##,
+                        MONKEY_FACE, e
+                    );
+                }
+            }
         } else {
             break;
         }

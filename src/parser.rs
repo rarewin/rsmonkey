@@ -32,6 +32,18 @@ pub struct Parser {
     errors: Vec<String>,
 }
 
+impl Iterator for Parser {
+    type Item = Result<StatementNode>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.peek_token().is_ok() {
+            Some(self.parse_statement())
+        } else {
+            None
+        }
+    }
+}
+
 impl Parser {
     /// constructor
     pub fn new(l: Lexer) -> Parser {
@@ -41,17 +53,6 @@ impl Parser {
             tokens,
             errors: Vec::new(),
         }
-    }
-
-    /// parser Program
-    pub fn parse_program(&mut self) -> Result<Program> {
-        let mut program = Program::new();
-
-        while self.peek_token().is_ok() {
-            program.statements.push(self.parse_statement()?);
-        }
-
-        Ok(program)
     }
 
     /// parse statement

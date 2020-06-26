@@ -1,8 +1,6 @@
 use std::rc::Rc;
 
-use rsmonkey::ast::StatementNode;
 use rsmonkey::evaluator::eval;
-use rsmonkey::evaluator::EvalNode;
 use rsmonkey::lexer::Lexer;
 use rsmonkey::object::{Environment, Object};
 use rsmonkey::parser::Parser;
@@ -765,15 +763,8 @@ fn test_eval(input: &'static str) -> Object {
     let l = Lexer::new(input.to_string());
     let mut p = Parser::new(l);
 
-    let program = p.parse_program().unwrap();
     let env = Rc::new(Environment::new());
-
-    eval(
-        &EvalNode::EvalStatementNode(Box::new(StatementNode::ProgramStatementNode(Box::new(
-            program,
-        )))),
-        env,
-    )
+    eval(&mut p, env).unwrap()
 }
 
 /// test string literal

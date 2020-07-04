@@ -269,6 +269,9 @@ impl Environment {
             "push" => Object::BuiltinObject(Box::new(Builtin {
                 builtin: builtin_push,
             })),
+            "puts" => Object::BuiltinObject(Box::new(Builtin {
+                builtin: builtin_puts,
+            })),
             // normal function
             _ => match self {
                 Environment::Env { store, outer } => match store.borrow().get(key) {
@@ -399,4 +402,12 @@ fn builtin_push(parameters: Vec<Object>) -> Object {
             parameters[0].object_type()
         ))
     }
+}
+
+/// buitin function "puts"
+fn builtin_puts(parameters: Vec<Object>) -> Object {
+    for p in parameters {
+        println!("{}", p.inspect())
+    }
+    Object::Null
 }

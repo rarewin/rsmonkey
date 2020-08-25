@@ -323,11 +323,7 @@ fn eval_hash_index_expression(hash: &Hash, key: &Object) -> Object {
 
 /// check if error or not
 fn is_error(obj: &Object) -> bool {
-    if let Object::ErrorObject(_) = obj {
-        true
-    } else {
-        false
-    }
+    matches!(obj, Object::ErrorObject(_))
 }
 
 /// apply function

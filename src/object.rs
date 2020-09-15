@@ -44,7 +44,7 @@ impl Object {
             }
             Object::ArrayObject(ao) => {
                 let mut ret = String::new();
-                ret.push_str("[");
+                ret.push('[');
                 ret.push_str(
                     &((&ao.elements)
                         .iter()
@@ -52,12 +52,12 @@ impl Object {
                         .collect::<Vec<String>>()
                         .join(", ")),
                 );
-                ret.push_str("]");
+                ret.push(']');
                 ret
             }
             Object::HashObject(ho) => {
                 let mut ret = String::new();
-                ret.push_str("{");
+                ret.push('{');
                 ret.push_str(
                     &((&ho.pairs)
                         .iter()
@@ -65,7 +65,7 @@ impl Object {
                         .collect::<Vec<String>>()
                         .join(", ")),
                 );
-                ret.push_str("}");
+                ret.push('}');
                 ret
             }
             Object::BuiltinObject(_) => "builtin function".into(),

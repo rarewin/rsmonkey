@@ -1,6 +1,7 @@
 use crate::ast::{ExpressionNode, StatementNode};
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::fmt;
 use std::rc::Rc;
 
 /// object
@@ -18,15 +19,13 @@ pub enum Object {
     Null,
 }
 
-/// implementation of object
-impl Object {
-    /// inspect function
-    pub fn inspect(&self) -> String {
+impl fmt::Display for Object {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Object::IntegerObject(io) => io.value.to_string(),
-            Object::BooleanObject(bo) => bo.value.to_string(),
-            Object::StringObject(so) => so.value.to_string(),
-            Object::ReturnValueObject(rvo) => rvo.value.inspect(),
+            Object::IntegerObject(io) => write!(f, "{}", io.value),
+            Object::BooleanObject(bo) => write!(f, "{}", bo.value),
+            Object::StringObject(so) => write!(f, r##""{}""##, so.value),
+            Object::ReturnValueObject(rvo) => write!(f, "{}", rvo.value),
             Object::FunctionObject(fo) => {
                 let mut ret = String::new();
                 ret.push_str("fn(");
@@ -39,8 +38,12 @@ impl Object {
                 );
                 ret.push_str(") {\n");
                 ret.push_str(&fo.body.string());
-                ret.push_str("\n}");
-                ret
+                ret.push_str(if fo.body.string().is_empty() {
+                    "}"
+                } else {
+                    "\n}"
+                });
+                write!(f, "{}", ret)
             }
             Object::ArrayObject(ao) => {
                 let mut ret = String::new();
@@ -48,12 +51,12 @@ impl Object {
                 ret.push_str(
                     &((&ao.elements)
                         .iter()
-                        .map(|x| x.inspect())
+                        .map(|x| format!("{}", x))
                         .collect::<Vec<String>>()
                         .join(", ")),
                 );
                 ret.push(']');
-                ret
+                write!(f, "{}", ret)
             }
             Object::HashObject(ho) => {
                 let mut ret = String::new();
@@ -61,19 +64,22 @@ impl Object {
                 ret.push_str(
                     &((&ho.pairs)
                         .iter()
-                        .map(|x| format!("{}: {}", x.0.inspect(), x.1.inspect()))
+                        .map(|x| format!("{}: {}", x.0, x.1))
                         .collect::<Vec<String>>()
                         .join(", ")),
                 );
                 ret.push('}');
-                ret
+                write!(f, "{}", ret)
             }
-            Object::BuiltinObject(_) => "builtin function".into(),
-            Object::ErrorObject(eo) => format!("ERROR: {}", eo.message),
-            Object::Null => "(null)".into(),
+            Object::BuiltinObject(_) => write!(f, "builtin function"),
+            Object::Null => write!(f, ""),
+            Object::ErrorObject(eo) => write!(f, "ERROR: {}", eo.message), // @todo should be replaced by Err
         }
     }
+}
 
+/// implementation of object
+impl Object {
     /// object type function
     pub fn object_type(&self) -> &'static str {
         match self {
@@ -407,7 +413,7 @@ fn builtin_push(parameters: Vec<Object>) -> Object {
 /// buitin function "puts"
 fn builtin_puts(parameters: Vec<Object>) -> Object {
     for p in parameters {
-        println!("{}", p.inspect())
+        println!("{}", p);
     }
     Object::Null
 }

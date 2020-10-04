@@ -188,7 +188,7 @@ impl StatementNode {
                 &ls.value.string(),
             ),
             StatementNode::ReturnStatementNode(rs) => {
-                format!("{} {}", rs.token.get_literal(), &rs.return_value.string(),)
+                format!("return {};", &rs.return_value.string(),)
             }
             StatementNode::ExpressionStatementNode(es) => es.expression.string(),
             StatementNode::BlockStatementNode(bs) => {

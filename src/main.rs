@@ -53,7 +53,7 @@ fn read_input() {
 
             match eval(&mut parser, env.clone()) {
                 Ok(evaluated) => {
-                    println!("{}", evaluated.inspect());
+                    println!("{}", evaluated);
                 }
                 Err(e) => {
                     println!(

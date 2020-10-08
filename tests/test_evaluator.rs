@@ -1,56 +1,65 @@
 use std::rc::Rc;
 
+use anyhow::Result;
+
 use rsmonkey::evaluator::eval;
 use rsmonkey::lexer::Lexer;
 use rsmonkey::object::{Environment, Object};
 use rsmonkey::parser::Parser;
 
+#[derive(Debug)]
 enum TestLiteral {
     IntegerLiteral { value: i64 },
     BooleanLiteral { value: bool },
     StringLiteral { value: &'static str },
     ErrorLiteral { message: &'static str },
-    ArrayLiteral { array: Vec<TestLiteral> },
+    ArrayLiteral { array: Vec<Object> },
+    HashLiteral { pairs: Vec<(Object, Object)> },
     NullLiteral,
 }
 
 impl TestLiteral {
-    fn test_literal(&self, value: &Object) {
+    fn test_literal(&self, value: &Result<Object>) {
         match self {
             TestLiteral::IntegerLiteral { value: v } => {
-                if let Object::IntegerObject(io) = value {
+                if let Ok(Object::IntegerObject(io)) = value {
                     assert_eq!(io.value, *v);
                 } else {
                     panic!(
                         "object is not integer, got {:?}, expected {:?}",
-                        value.object_type(),
+                        value.as_ref().unwrap().object_type(),
                         v
                     );
                 }
             }
             TestLiteral::BooleanLiteral { value: v } => {
-                if let Object::BooleanObject(bo) = value {
+                if let Ok(Object::BooleanObject(bo)) = value {
                     assert_eq!(bo.value, *v);
                 } else {
-                    panic!("object is not boolean, got {:?}", value.object_type());
+                    panic!(
+                        "object is not boolean, got {:?}",
+                        value.as_ref().unwrap().object_type()
+                    );
                 }
             }
-            TestLiteral::StringLiteral { value: s } => {
-                if let Object::StringObject(so) = value {
-                    assert_eq!(so.value, *s);
-                } else {
-                    panic!("object is not string, got {:?}", value.object_type());
-                }
+            TestLiteral::NullLiteral => {
+                assert_eq!(value.as_ref().unwrap(), &Object::Null);
             }
             TestLiteral::ErrorLiteral { message: m } => {
-                if let Object::ErrorObject(eo) = value {
-                    assert_eq!(eo.message, *m);
+                assert_eq!(format!("{}", value.as_ref().unwrap_err()), m.to_string());
+            }
+            TestLiteral::StringLiteral { value: s } => {
+                if let Object::StringObject(so) = value.as_ref().unwrap() {
+                    assert_eq!(so.value, *s);
                 } else {
-                    panic!("object is not error, got {:?}", value.object_type());
+                    panic!(
+                        "object is not string, got {:?}",
+                        value.as_ref().unwrap().object_type()
+                    );
                 }
             }
             TestLiteral::ArrayLiteral { array } => {
-                if let Object::ArrayObject(al) = value {
+                if let Object::ArrayObject(al) = value.as_ref().unwrap() {
                     assert!(
                         al.elements.len() == array.len(),
                         "the length of array is expected {}, got {}",
@@ -58,13 +67,26 @@ impl TestLiteral {
                         al.elements.len()
                     );
                     for (i, a) in array.iter().enumerate() {
-                        a.test_literal(&al.elements[i]);
+                        assert_eq!(&al.elements[i], a);
                     }
                 } else {
                     panic!("object is not array literal, got {:?}", value);
                 }
             }
-            TestLiteral::NullLiteral => assert_eq!(*value, Object::Null),
+            TestLiteral::HashLiteral { pairs: p } => {
+                if let Ok(Object::HashObject(ho)) = value {
+                    assert_eq!(ho.pairs.len(), p.len());
+
+                    for (i, h) in p.iter().enumerate() {
+                        assert_eq!(&ho.pairs[i], h);
+                    }
+                } else {
+                    panic!(
+                        "object is not hash, got {:?}",
+                        value.as_ref().unwrap().object_type()
+                    );
+                }
+            }
         }
     }
 }
@@ -382,70 +404,70 @@ fn test_eval_return_statement() {
     }
 }
 
-///// test error handling
-//#[test]
-//fn test_error_handling() {
-//    struct Test {
-//        input: &'static str,
-//        expected: TestLiteral,
-//    }
-//
-//    let error_tests = vec![
-//        Test {
-//            input: "5 + true;",
-//            expected: TestLiteral::ErrorLiteral {
-//                message: "type mismatch: INTEGER + BOOLEAN",
-//            },
-//        },
-//        Test {
-//            input: "5 + true; 5;",
-//            expected: TestLiteral::ErrorLiteral {
-//                message: "type mismatch: INTEGER + BOOLEAN",
-//            },
-//        },
-//        Test {
-//            input: "-true",
-//            expected: TestLiteral::ErrorLiteral {
-//                message: "unknown operator: -BOOLEAN",
-//            },
-//        },
-//        Test {
-//            input: "true + false;",
-//            expected: TestLiteral::ErrorLiteral {
-//                message: "unkown operator: BOOLEAN + BOOLEAN",
-//            },
-//        },
-//        Test {
-//            input: "5; true + false; 5",
-//            expected: TestLiteral::ErrorLiteral {
-//                message: "unkown operator: BOOLEAN + BOOLEAN",
-//            },
-//        },
-//        Test {
-//            input: "if (10 > 1) { true + false; }",
-//            expected: TestLiteral::ErrorLiteral {
-//                message: "unkown operator: BOOLEAN + BOOLEAN",
-//            },
-//        },
-//        Test {
-//            input: "foobar",
-//            expected: TestLiteral::ErrorLiteral {
-//                message: "identifier not found: foobar",
-//            },
-//        },
-//        Test {
-//            input: r##""Hello" - "World""##,
-//            expected: TestLiteral::ErrorLiteral {
-//                message: "unkown operator: STRING - STRING",
-//            },
-//        },
-//    ];
-//
-//    for tt in error_tests {
-//        let evaluated = test_eval(tt.input);
-//        tt.expected.test_literal(&evaluated);
-//    }
-//}
+/// test error handling
+#[test]
+fn test_error_handling() {
+    struct Test {
+        input: &'static str,
+        expected: TestLiteral,
+    }
+
+    let error_tests = vec![
+        Test {
+            input: "5 + true;",
+            expected: TestLiteral::ErrorLiteral {
+                message: "type mismatch: INTEGER + BOOLEAN",
+            },
+        },
+        Test {
+            input: "5 + true; 5;",
+            expected: TestLiteral::ErrorLiteral {
+                message: "type mismatch: INTEGER + BOOLEAN",
+            },
+        },
+        Test {
+            input: "-true",
+            expected: TestLiteral::ErrorLiteral {
+                message: "unknown operator: -BOOLEAN",
+            },
+        },
+        Test {
+            input: "true + false;",
+            expected: TestLiteral::ErrorLiteral {
+                message: "unknown operator: BOOLEAN + BOOLEAN",
+            },
+        },
+        Test {
+            input: "5; true + false; 5",
+            expected: TestLiteral::ErrorLiteral {
+                message: "unknown operator: BOOLEAN + BOOLEAN",
+            },
+        },
+        Test {
+            input: "if (10 > 1) { true + false; }",
+            expected: TestLiteral::ErrorLiteral {
+                message: "unknown operator: BOOLEAN + BOOLEAN",
+            },
+        },
+        Test {
+            input: "foobar",
+            expected: TestLiteral::ErrorLiteral {
+                message: "identifier not found: foobar",
+            },
+        },
+        Test {
+            input: r##""Hello" - "World""##,
+            expected: TestLiteral::ErrorLiteral {
+                message: "unknown operator: STRING - STRING",
+            },
+        },
+    ];
+
+    for tt in error_tests {
+        let evaluated = test_eval(tt.input);
+        tt.expected.test_literal(&evaluated);
+    }
+}
 
 /// test let statement
 #[test]
@@ -488,7 +510,7 @@ fn test_function_object() {
     let evaluated = test_eval(input);
 
     let f = match evaluated {
-        Object::FunctionObject(f) => f,
+        Ok(Object::FunctionObject(f)) => f,
         _ => panic!("function object is expected, got {:?}", evaluated),
     };
 
@@ -604,7 +626,7 @@ fn test_hash() {
     let evaluated = test_eval(input);
 
     let ho = match &evaluated {
-        Object::HashObject(h) => h,
+        Ok(Object::HashObject(h)) => h,
         _ => panic!("hash object is expected, got {:?}", evaluated),
     };
 
@@ -615,18 +637,18 @@ fn test_hash() {
         ho.pairs.len(),
     );
 
-    (TestLiteral::StringLiteral { value: "one" }).test_literal(&ho.pairs[0].0);
-    (TestLiteral::IntegerLiteral { value: 1 }).test_literal(&ho.pairs[0].1);
-    (TestLiteral::StringLiteral { value: "two" }).test_literal(&ho.pairs[1].0);
-    (TestLiteral::IntegerLiteral { value: 2 }).test_literal(&ho.pairs[1].1);
-    (TestLiteral::StringLiteral { value: "three" }).test_literal(&ho.pairs[2].0);
-    (TestLiteral::IntegerLiteral { value: 3 }).test_literal(&ho.pairs[2].1);
-    (TestLiteral::IntegerLiteral { value: 4 }).test_literal(&ho.pairs[3].0);
-    (TestLiteral::IntegerLiteral { value: 4 }).test_literal(&ho.pairs[3].1);
-    (TestLiteral::BooleanLiteral { value: true }).test_literal(&ho.pairs[4].0);
-    (TestLiteral::IntegerLiteral { value: 5 }).test_literal(&ho.pairs[4].1);
-    (TestLiteral::BooleanLiteral { value: false }).test_literal(&ho.pairs[5].0);
-    (TestLiteral::IntegerLiteral { value: 6 }).test_literal(&ho.pairs[5].1);
+    let expected = TestLiteral::HashLiteral {
+        pairs: vec![
+            (Object::new_string("one"), Object::new_integer(1)),
+            (Object::new_string("two"), Object::new_integer(2)),
+            (Object::new_string("three"), Object::new_integer(3)),
+            (Object::new_integer(4), Object::new_integer(4)),
+            (Object::new_boolean(true), Object::new_integer(5)),
+            (Object::new_boolean(false), Object::new_integer(6)),
+        ],
+    };
+
+    expected.test_literal(&evaluated);
 }
 
 /// test hash index expression
@@ -690,7 +712,7 @@ fn test_array_literals() {
     let evaluated = test_eval(input);
 
     let ao = match &evaluated {
-        Object::ArrayObject(a) => a,
+        Ok(Object::ArrayObject(a)) => a,
         _ => panic!("array object is expected, got {:?}", evaluated),
     };
 
@@ -700,9 +722,14 @@ fn test_array_literals() {
         ao.elements.len()
     );
 
-    (TestLiteral::IntegerLiteral { value: 1 }).test_literal(&ao.elements[0]);
-    (TestLiteral::IntegerLiteral { value: 4 }).test_literal(&ao.elements[1]);
-    (TestLiteral::IntegerLiteral { value: 6 }).test_literal(&ao.elements[2]);
+    TestLiteral::ArrayLiteral {
+        array: vec![
+            Object::new_integer(1),
+            Object::new_integer(4),
+            Object::new_integer(6),
+        ],
+    }
+    .test_literal(&evaluated);
 }
 
 /// test index expressions
@@ -759,12 +786,12 @@ fn test_array_index_expressions() {
 }
 
 /// eval function
-fn test_eval(input: &'static str) -> Object {
+fn test_eval(input: &'static str) -> Result<Object> {
     let l = Lexer::new(input.to_string());
     let mut p = Parser::new(l);
 
     let env = Rc::new(Environment::new());
-    eval(&mut p, env).unwrap()
+    eval(&mut p, env)
 }
 
 /// test string literal
@@ -856,32 +883,29 @@ fn test_builtin_functions() {
         Test {
             input: r##"last(1);"##,
             expected: TestLiteral::ErrorLiteral {
-                message: "argument to `last` must be ARRAY, got INTEGER",
+                message: "first argument to `last` must be ARRAY, got INTEGER",
             },
         },
         Test {
             input: r##"rest([1, 2, 3, 4]);"##,
             expected: TestLiteral::ArrayLiteral {
                 array: vec![
-                    TestLiteral::IntegerLiteral { value: 2 },
-                    TestLiteral::IntegerLiteral { value: 3 },
-                    TestLiteral::IntegerLiteral { value: 4 },
+                    Object::new_integer(2),
+                    Object::new_integer(3),
+                    Object::new_integer(4),
                 ],
             },
         },
         Test {
             input: r##"rest(rest([1, 2, 3, 4]));"##,
             expected: TestLiteral::ArrayLiteral {
-                array: vec![
-                    TestLiteral::IntegerLiteral { value: 3 },
-                    TestLiteral::IntegerLiteral { value: 4 },
-                ],
+                array: vec![Object::new_integer(3), Object::new_integer(4)],
             },
         },
         Test {
             input: r##"rest(rest(rest([1, 2, 3, 4])));"##,
             expected: TestLiteral::ArrayLiteral {
-                array: vec![TestLiteral::IntegerLiteral { value: 4 }],
+                array: vec![Object::new_integer(4)],
             },
         },
         Test {
@@ -896,9 +920,9 @@ fn test_builtin_functions() {
             input: r##"let a = [1, 2]; push(a, 3);"##,
             expected: TestLiteral::ArrayLiteral {
                 array: vec![
-                    TestLiteral::IntegerLiteral { value: 1 },
-                    TestLiteral::IntegerLiteral { value: 2 },
-                    TestLiteral::IntegerLiteral { value: 3 },
+                    Object::new_integer(1),
+                    Object::new_integer(2),
+                    Object::new_integer(3),
                 ],
             },
         },
@@ -918,10 +942,10 @@ fn test_builtin_functions() {
                       map(a, double);"##,
             expected: TestLiteral::ArrayLiteral {
                 array: vec![
-                    TestLiteral::IntegerLiteral { value: 2 },
-                    TestLiteral::IntegerLiteral { value: 4 },
-                    TestLiteral::IntegerLiteral { value: 6 },
-                    TestLiteral::IntegerLiteral { value: 8 },
+                    Object::new_integer(2),
+                    Object::new_integer(4),
+                    Object::new_integer(6),
+                    Object::new_integer(8),
                 ],
             },
         },

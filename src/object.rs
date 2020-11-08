@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use std::fmt;
 use std::rc::Rc;
 
-use anyhow::{Error, Result};
 use thiserror::Error;
 
 use crate::ast::{ExpressionNode, StatementNode};
@@ -228,7 +227,7 @@ pub struct Function {
 /// struct for Builtin object
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Builtin {
-    pub builtin: fn(Vec<Object>) -> Result<Object>,
+    pub builtin: fn(Vec<Object>) -> Result<Object, ObjectError>,
 }
 
 /// struct for Environment
@@ -262,7 +261,7 @@ impl Environment {
     }
 
     /// get an element from hash map
-    pub fn get(&self, key: &str) -> Result<Object> {
+    pub fn get(&self, key: &str) -> Result<Object, ObjectError> {
         match key {
             // builtins
             "len" => Ok(Object::BuiltinObject(Box::new(Builtin {
@@ -289,7 +288,7 @@ impl Environment {
                     Some(o) => Ok(o.clone()),
                     _ => outer.get(key),
                 },
-                Environment::NoEnv => Err(Error::new(ObjectError::IdentifierNotFound(key.into()))),
+                Environment::NoEnv => Err(ObjectError::IdentifierNotFound(key.into())),
             },
         }
     }
@@ -310,30 +309,24 @@ pub fn extend_environment(inner: Rc<Environment>) -> Rc<Environment> {
 }
 
 /// builtin function "len"
-fn builtin_len(parameters: Vec<Object>) -> Result<Object> {
+fn builtin_len(parameters: Vec<Object>) -> Result<Object, ObjectError> {
     if parameters.len() != 1 {
-        return Err(Error::new(ObjectError::WrongNumberOfArguments(
-            parameters.len(),
-            1,
-        )));
+        return Err(ObjectError::WrongNumberOfArguments(parameters.len(), 1));
     }
 
     match &parameters[0] {
         Object::StringObject(so) => Ok(Object::new_integer(so.value.len() as i64)),
         Object::ArrayObject(ao) => Ok(Object::new_integer(ao.elements.len() as i64)),
-        _ => Err(Error::new(ObjectError::InvalidArgumentForLen(
+        _ => Err(ObjectError::InvalidArgumentForLen(
             parameters[0].object_type().into(),
-        ))),
+        )),
     }
 }
 
 /// builtin function "first"
-fn builtin_first(parameters: Vec<Object>) -> Result<Object> {
+fn builtin_first(parameters: Vec<Object>) -> Result<Object, ObjectError> {
     if parameters.len() != 1 {
-        return Err(Error::new(ObjectError::WrongNumberOfArguments(
-            parameters.len(),
-            1,
-        )));
+        return Err(ObjectError::WrongNumberOfArguments(parameters.len(), 1));
     }
 
     if let Object::ArrayObject(ao) = &parameters[0] {
@@ -343,19 +336,16 @@ fn builtin_first(parameters: Vec<Object>) -> Result<Object> {
             Ok(Object::Null)
         }
     } else {
-        Err(Error::new(ObjectError::InvalidArgumentForFitst(
+        Err(ObjectError::InvalidArgumentForFitst(
             parameters[0].object_type().into(),
-        )))
+        ))
     }
 }
 
 /// builtin function "last"
-fn builtin_last(parameters: Vec<Object>) -> Result<Object> {
+fn builtin_last(parameters: Vec<Object>) -> Result<Object, ObjectError> {
     if parameters.len() != 1 {
-        return Err(Error::new(ObjectError::WrongNumberOfArguments(
-            parameters.len(),
-            1,
-        )));
+        return Err(ObjectError::WrongNumberOfArguments(parameters.len(), 1));
     }
 
     if let Object::ArrayObject(ao) = &parameters[0] {
@@ -365,19 +355,16 @@ fn builtin_last(parameters: Vec<Object>) -> Result<Object> {
             Ok(Object::Null)
         }
     } else {
-        Err(Error::new(ObjectError::InvalidArgumentForLast(
+        Err(ObjectError::InvalidArgumentForLast(
             parameters[0].object_type().into(),
-        )))
+        ))
     }
 }
 
 /// builtin function "rest"
-fn builtin_rest(parameters: Vec<Object>) -> Result<Object> {
+fn builtin_rest(parameters: Vec<Object>) -> Result<Object, ObjectError> {
     if parameters.len() != 1 {
-        return Err(Error::new(ObjectError::WrongNumberOfArguments(
-            parameters.len(),
-            1,
-        )));
+        return Err(ObjectError::WrongNumberOfArguments(parameters.len(), 1));
     }
 
     if let Object::ArrayObject(ao) = &parameters[0] {
@@ -392,12 +379,9 @@ fn builtin_rest(parameters: Vec<Object>) -> Result<Object> {
 }
 
 /// builtin function "push"
-fn builtin_push(parameters: Vec<Object>) -> Result<Object> {
+fn builtin_push(parameters: Vec<Object>) -> Result<Object, ObjectError> {
     if parameters.len() != 2 {
-        return Err(Error::new(ObjectError::WrongNumberOfArguments(
-            parameters.len(),
-            2,
-        )));
+        return Err(ObjectError::WrongNumberOfArguments(parameters.len(), 2));
     }
 
     if let Object::ArrayObject(ao) = &parameters[0] {
@@ -405,14 +389,14 @@ fn builtin_push(parameters: Vec<Object>) -> Result<Object> {
         a.push(parameters[1].clone());
         Ok(Object::new_array(&a))
     } else {
-        Err(Error::new(ObjectError::InvalidArgumentForLast(
+        Err(ObjectError::InvalidArgumentForLast(
             parameters[0].object_type().into(),
-        )))
+        ))
     }
 }
 
 /// buitin function "puts"
-fn builtin_puts(parameters: Vec<Object>) -> Result<Object> {
+fn builtin_puts(parameters: Vec<Object>) -> Result<Object, ObjectError> {
     for p in parameters {
         println!("{}", p);
     }

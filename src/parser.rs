@@ -2,7 +2,6 @@ use crate::ast::*;
 use crate::lexer::Lexer;
 use crate::token::{Token, TokenType};
 
-use anyhow::{Error, Result};
 use thiserror::Error;
 
 /// error types
@@ -21,6 +20,9 @@ pub enum ParseError {
     UnexpectedTokenForPrefixParser(TokenType),
     #[error("unknown error")]
     Unknown,
+
+    #[error(transparent)]
+    InvalidStringForInteger(#[from] std::num::ParseIntError),
 }
 
 /// struct for parser
@@ -33,7 +35,7 @@ pub struct Parser {
 }
 
 impl Iterator for Parser {
-    type Item = Result<StatementNode>;
+    type Item = Result<StatementNode, ParseError>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.peek_token().is_ok() {
@@ -56,7 +58,7 @@ impl Parser {
     }
 
     /// parse statement
-    fn parse_statement(&mut self) -> Result<StatementNode> {
+    fn parse_statement(&mut self) -> Result<StatementNode, ParseError> {
         let token = self.peek_token()?;
 
         match token.token_type {
@@ -67,7 +69,7 @@ impl Parser {
     }
 
     /// parse let statement
-    fn parse_let_statement(&mut self) -> Result<StatementNode> {
+    fn parse_let_statement(&mut self) -> Result<StatementNode, ParseError> {
         self.consume_expect_token(TokenType::Let)?;
         let token = self.consume_expect_token(TokenType::Ident)?;
 
@@ -92,7 +94,7 @@ impl Parser {
     }
 
     /// parse return statement
-    fn parse_return_statement(&mut self) -> Result<StatementNode> {
+    fn parse_return_statement(&mut self) -> Result<StatementNode, ParseError> {
         self.consume_expect_token(TokenType::Return)?;
         let token = self.peek_token()?.clone();
         let return_value = self.parse_expression(OperationPrecedence::Lowest)?;
@@ -110,7 +112,7 @@ impl Parser {
     }
 
     /// parse expression statement
-    fn parse_expression_statement(&mut self) -> Result<StatementNode> {
+    fn parse_expression_statement(&mut self) -> Result<StatementNode, ParseError> {
         let token = self.peek_token()?.clone();
         let expression = self.parse_expression(OperationPrecedence::Lowest)?;
 
@@ -124,7 +126,10 @@ impl Parser {
     }
 
     /// parse expression
-    fn parse_expression(&mut self, precedence: OperationPrecedence) -> Result<ExpressionNode> {
+    fn parse_expression(
+        &mut self,
+        precedence: OperationPrecedence,
+    ) -> Result<ExpressionNode, ParseError> {
         let tt = self.peek_token()?.token_type;
         let mut ex = self.prefix_parse(tt)?;
 
@@ -140,7 +145,7 @@ impl Parser {
     }
 
     /// parse identifier
-    fn parse_identifier(&mut self) -> Result<ExpressionNode> {
+    fn parse_identifier(&mut self) -> Result<ExpressionNode, ParseError> {
         let token = self.consume_expect_token(TokenType::Ident)?;
 
         Ok(ExpressionNode::IdentifierNode(Box::new(Identifier {
@@ -150,7 +155,7 @@ impl Parser {
     }
 
     /// parse integer literal
-    fn parse_integer_literal(&mut self) -> Result<ExpressionNode> {
+    fn parse_integer_literal(&mut self) -> Result<ExpressionNode, ParseError> {
         let token = self.consume_expect_token(TokenType::Int)?;
 
         Ok(ExpressionNode::IntegerLiteralNode(Box::new(
@@ -162,7 +167,7 @@ impl Parser {
     }
 
     /// parse string literal
-    fn parse_string_literal(&mut self) -> Result<ExpressionNode> {
+    fn parse_string_literal(&mut self) -> Result<ExpressionNode, ParseError> {
         let token = self.consume_expect_token(TokenType::StringToken)?;
 
         Ok(ExpressionNode::StringLiteralNode(Box::new(StringLiteral {
@@ -172,7 +177,7 @@ impl Parser {
     }
 
     /// parse function literal
-    fn parse_function_literal(&mut self) -> Result<ExpressionNode> {
+    fn parse_function_literal(&mut self) -> Result<ExpressionNode, ParseError> {
         let token = self.consume_expect_token(TokenType::Function)?;
 
         self.expect_token(TokenType::LParen)?;
@@ -193,7 +198,7 @@ impl Parser {
     }
 
     /// parse prefix expression
-    fn parse_prefix_expression(&mut self) -> Result<ExpressionNode> {
+    fn parse_prefix_expression(&mut self) -> Result<ExpressionNode, ParseError> {
         let token = self.pop_token()?;
         let operator = token.get_literal();
         let right = self.parse_expression(OperationPrecedence::Prefix)?;
@@ -208,7 +213,7 @@ impl Parser {
     }
 
     /// parse boolean expression
-    fn parse_boolean_expression(&mut self) -> Result<ExpressionNode> {
+    fn parse_boolean_expression(&mut self) -> Result<ExpressionNode, ParseError> {
         let token = self.pop_token()?;
 
         Ok(ExpressionNode::BooleanExpressionNode(Box::new(Boolean {
@@ -218,7 +223,7 @@ impl Parser {
     }
 
     /// parse grouped expression
-    fn parse_grouped_expression(&mut self) -> Result<ExpressionNode> {
+    fn parse_grouped_expression(&mut self) -> Result<ExpressionNode, ParseError> {
         self.pop_token()?; // drop LParen
 
         let exp = self.parse_expression(OperationPrecedence::Lowest)?;
@@ -229,7 +234,7 @@ impl Parser {
     }
 
     /// parse if expression
-    fn parse_if_expression(&mut self) -> Result<ExpressionNode> {
+    fn parse_if_expression(&mut self) -> Result<ExpressionNode, ParseError> {
         let token = self.consume_expect_token(TokenType::If)?;
         self.expect_token(TokenType::LParen)?;
 
@@ -258,7 +263,7 @@ impl Parser {
     }
 
     /// parse block statement
-    fn parse_block_statement(&mut self) -> Result<StatementNode> {
+    fn parse_block_statement(&mut self) -> Result<StatementNode, ParseError> {
         let mut block = BlockStatement {
             token: self.pop_token()?,
             statements: Vec::new(),
@@ -274,7 +279,7 @@ impl Parser {
     }
 
     /// parse function parameters
-    fn parse_function_parameters(&mut self) -> Result<Vec<ExpressionNode>> {
+    fn parse_function_parameters(&mut self) -> Result<Vec<ExpressionNode>, ParseError> {
         let mut params = Vec::<ExpressionNode>::new();
 
         self.pop_token()?; // drop LParen
@@ -306,7 +311,10 @@ impl Parser {
     }
 
     /// parse call expression
-    fn parse_call_expression(&mut self, left: ExpressionNode) -> Result<ExpressionNode> {
+    fn parse_call_expression(
+        &mut self,
+        left: ExpressionNode,
+    ) -> Result<ExpressionNode, ParseError> {
         let token = self.pop_token()?;
         let function = left;
         let arguments = self.parse_call_arguments()?;
@@ -321,7 +329,10 @@ impl Parser {
     }
 
     /// parse index expression
-    fn parse_index_expression(&mut self, left: ExpressionNode) -> Result<ExpressionNode> {
+    fn parse_index_expression(
+        &mut self,
+        left: ExpressionNode,
+    ) -> Result<ExpressionNode, ParseError> {
         let token = self.pop_token()?;
         let index = self.parse_expression(OperationPrecedence::Lowest)?;
 
@@ -333,7 +344,7 @@ impl Parser {
     }
 
     /// parse function call arguments
-    fn parse_call_arguments(&mut self) -> Result<Vec<ExpressionNode>> {
+    fn parse_call_arguments(&mut self) -> Result<Vec<ExpressionNode>, ParseError> {
         let mut arguments = Vec::<ExpressionNode>::new();
 
         if self.expect_token(TokenType::RParen).is_ok() {
@@ -355,12 +366,15 @@ impl Parser {
             self.tokens.pop();
             Ok(arguments)
         } else {
-            Err(Error::new(ParseError::Unknown))
+            Err(ParseError::Unknown)
         }
     }
 
     /// parse infix expression
-    fn parse_infix_expression(&mut self, left: ExpressionNode) -> Result<ExpressionNode> {
+    fn parse_infix_expression(
+        &mut self,
+        left: ExpressionNode,
+    ) -> Result<ExpressionNode, ParseError> {
         let token = self.pop_token()?;
         let operator = token.get_literal();
         let precedence = get_precedence(token.token_type);
@@ -378,7 +392,7 @@ impl Parser {
     }
 
     /// parse expression list
-    fn parse_expression_list(&mut self, end: TokenType) -> Result<Vec<ExpressionNode>> {
+    fn parse_expression_list(&mut self, end: TokenType) -> Result<Vec<ExpressionNode>, ParseError> {
         let mut list = Vec::<ExpressionNode>::new();
 
         if self.consume_expect_token(end).is_ok() {
@@ -410,7 +424,7 @@ impl Parser {
     }
 
     /// parse hash literal
-    fn parse_hash_literal(&mut self) -> Result<Vec<(ExpressionNode, ExpressionNode)>> {
+    fn parse_hash_literal(&mut self) -> Result<Vec<(ExpressionNode, ExpressionNode)>, ParseError> {
         let mut hash = Vec::<(ExpressionNode, ExpressionNode)>::new();
 
         while self.consume_expect_token(TokenType::RBrace).is_err() {
@@ -451,7 +465,7 @@ impl Parser {
     }
 
     /// parse prefix
-    fn prefix_parse(&mut self, tt: TokenType) -> Result<ExpressionNode> {
+    fn prefix_parse(&mut self, tt: TokenType) -> Result<ExpressionNode, ParseError> {
         match tt {
             TokenType::Ident => self.parse_identifier(),
             TokenType::Int => self.parse_integer_literal(),
@@ -469,12 +483,16 @@ impl Parser {
             }))),
             TokenType::If => self.parse_if_expression(),
             TokenType::Function => self.parse_function_literal(),
-            _ => Err(Error::new(ParseError::UnexpectedTokenForPrefixParser(tt))),
+            _ => Err(ParseError::UnexpectedTokenForPrefixParser(tt)),
         }
     }
 
     /// parse infix
-    fn infix_parse(&mut self, tt: TokenType, left: ExpressionNode) -> Result<ExpressionNode> {
+    fn infix_parse(
+        &mut self,
+        tt: TokenType,
+        left: ExpressionNode,
+    ) -> Result<ExpressionNode, ParseError> {
         match tt {
             TokenType::Plus
             | TokenType::Minus
@@ -486,61 +504,61 @@ impl Parser {
             | TokenType::NotEq => self.parse_infix_expression(left),
             TokenType::LParen => self.parse_call_expression(left),
             TokenType::LBracket => self.parse_index_expression(left),
-            _ => Err(Error::new(ParseError::UnexpectedTokenForInfixParser(tt))),
+            _ => Err(ParseError::UnexpectedTokenForInfixParser(tt)),
         }
     }
 
     /// peek token
-    fn peek_token(&mut self) -> Result<&Token> {
+    fn peek_token(&mut self) -> Result<&Token, ParseError> {
         if let Some(token) = self.tokens.last() {
             Ok(token)
         } else {
-            Err(Error::new(ParseError::UnexpectedEof))
+            Err(ParseError::UnexpectedEof)
         }
     }
 
     /// pop token
-    fn pop_token(&mut self) -> Result<Token> {
+    fn pop_token(&mut self) -> Result<Token, ParseError> {
         if let Some(token) = self.tokens.pop() {
             Ok(token)
         } else {
-            Err(Error::new(ParseError::UnexpectedEof))
+            Err(ParseError::UnexpectedEof)
         }
     }
 
     /// check if the next token is expected one or not
-    fn expect_token(&mut self, expected: TokenType) -> Result<&Token> {
+    fn expect_token(&mut self, expected: TokenType) -> Result<&Token, ParseError> {
         if let Some(token) = self.tokens.last() {
             if token.token_type == expected {
                 Ok(token)
             } else {
-                Err(Error::new(ParseError::UnexpectedToken {
+                Err(ParseError::UnexpectedToken {
                     found: token.token_type,
                     expected,
-                }))
+                })
             }
         } else {
-            Err(Error::new(ParseError::UnexpectedEof))
+            Err(ParseError::UnexpectedEof)
         }
     }
 
     /// check if the next token is expected one or not, and consume it if so
-    fn consume_expect_token(&mut self, expected: TokenType) -> Result<Token> {
+    fn consume_expect_token(&mut self, expected: TokenType) -> Result<Token, ParseError> {
         if let Some(token) = self.tokens.last() {
             if token.token_type == expected {
                 if let Some(t) = self.tokens.pop() {
                     Ok(t)
                 } else {
-                    Err(Error::new(ParseError::Unknown))
+                    Err(ParseError::Unknown)
                 }
             } else {
-                Err(Error::new(ParseError::UnexpectedToken {
+                Err(ParseError::UnexpectedToken {
                     found: token.token_type,
                     expected,
-                }))
+                })
             }
         } else {
-            Err(Error::new(ParseError::UnexpectedEof))
+            Err(ParseError::UnexpectedEof)
         }
     }
 }

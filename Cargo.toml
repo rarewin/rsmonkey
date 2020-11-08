@@ -5,5 +5,4 @@ authors = ["Katsuki Kobayashi <rare@tirasweel.org>"]
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0"
 thiserror = "1.0"

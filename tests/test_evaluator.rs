@@ -1,8 +1,6 @@
 use std::rc::Rc;
 
-use anyhow::Result;
-
-use rsmonkey::evaluator::eval;
+use rsmonkey::evaluator::{eval, EvaluationError};
 use rsmonkey::lexer::Lexer;
 use rsmonkey::object::{Environment, Object};
 use rsmonkey::parser::Parser;
@@ -19,7 +17,7 @@ enum TestLiteral {
 }
 
 impl TestLiteral {
-    fn test_literal(&self, value: &Result<Object>) {
+    fn test_literal(&self, value: &Result<Object, EvaluationError>) {
         match self {
             TestLiteral::IntegerLiteral { value: v } => {
                 if let Ok(Object::IntegerObject(io)) = value {
@@ -786,7 +784,7 @@ fn test_array_index_expressions() {
 }
 
 /// eval function
-fn test_eval(input: &'static str) -> Result<Object> {
+fn test_eval(input: &'static str) -> Result<Object, EvaluationError> {
     let l = Lexer::new(input.to_string());
     let mut p = Parser::new(l);
 

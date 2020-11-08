@@ -1,8 +1,6 @@
-use anyhow::Result;
-
 use rsmonkey::ast::*;
 use rsmonkey::lexer::Lexer;
-use rsmonkey::parser::Parser;
+use rsmonkey::parser::{ParseError, Parser};
 use rsmonkey::token::{Token, TokenType};
 
 enum TestLiteral {
@@ -13,7 +11,7 @@ enum TestLiteral {
 }
 
 #[test]
-fn test_let_statements() -> Result<()> {
+fn test_let_statements() -> Result<(), ParseError> {
     struct Test {
         input: &'static str,
         expected_identifier: &'static str,
@@ -81,7 +79,7 @@ fn test_let_statement(s: &LetStatement, name: &str, value: &TestLiteral) {
 }
 
 #[test]
-fn test_return_statements() -> Result<()> {
+fn test_return_statements() -> Result<(), ParseError> {
     struct Test {
         input: &'static str,
         expected_value: TestLiteral,
@@ -138,7 +136,7 @@ fn test_string() {
 }
 
 #[test]
-fn test_identifier_expression() -> Result<()> {
+fn test_identifier_expression() -> Result<(), ParseError> {
     let input = r##"foobar;"##;
 
     let l = Lexer::new(input.to_string());
@@ -158,7 +156,7 @@ fn test_identifier_expression() -> Result<()> {
 }
 
 #[test]
-fn test_integer_literal_expression() -> Result<()> {
+fn test_integer_literal_expression() -> Result<(), ParseError> {
     let input = r##"5;"##;
 
     let l = Lexer::new(input.to_string());
@@ -174,7 +172,7 @@ fn test_integer_literal_expression() -> Result<()> {
 
 /// test string literal
 #[test]
-fn test_string_literal_expression() -> Result<()> {
+fn test_string_literal_expression() -> Result<(), ParseError> {
     let input = r##""hello world""##;
 
     let l = Lexer::new(input.to_string());
@@ -190,7 +188,7 @@ fn test_string_literal_expression() -> Result<()> {
 
 /// test boolean
 #[test]
-fn test_boolean_literal_expression() -> Result<()> {
+fn test_boolean_literal_expression() -> Result<(), ParseError> {
     struct Test {
         input: &'static str,
         value: bool,
@@ -236,7 +234,7 @@ fn test_boolean_literal_expression() -> Result<()> {
 }
 
 #[test]
-fn test_parsing_prefix_expressions() -> Result<()> {
+fn test_parsing_prefix_expressions() -> Result<(), ParseError> {
     struct Test {
         input: &'static str,
         operator: &'static str,
@@ -297,7 +295,7 @@ fn test_parsing_prefix_expressions() -> Result<()> {
 }
 
 #[test]
-fn test_parsing_infix_expressions() -> Result<()> {
+fn test_parsing_infix_expressions() -> Result<(), ParseError> {
     struct Test {
         input: &'static str,
         left_value: TestLiteral,
@@ -398,7 +396,7 @@ fn test_parsing_infix_expressions() -> Result<()> {
 }
 
 #[test]
-fn test_operator_precedence_parsing() -> Result<()> {
+fn test_operator_precedence_parsing() -> Result<(), ParseError> {
     struct Test {
         input: &'static str,
         expected: &'static str,
@@ -524,7 +522,7 @@ fn test_operator_precedence_parsing() -> Result<()> {
 }
 
 #[test]
-fn test_if_expression() -> Result<()> {
+fn test_if_expression() -> Result<(), ParseError> {
     let input = "if (x < y) { x };";
 
     let l = Lexer::new(input.to_string());
@@ -578,7 +576,7 @@ fn test_if_expression() -> Result<()> {
 }
 
 #[test]
-fn test_if_else_expression() -> Result<()> {
+fn test_if_else_expression() -> Result<(), ParseError> {
     let input = "if (x < y) { x; } else { y };";
 
     let l = Lexer::new(input.to_string());
@@ -646,7 +644,7 @@ fn test_if_else_expression() -> Result<()> {
 }
 
 #[test]
-fn test_function_literal_parsing() -> Result<()> {
+fn test_function_literal_parsing() -> Result<(), ParseError> {
     let input = "fn(x, y) { x + y; }";
 
     let l = Lexer::new(input.to_string());
@@ -703,7 +701,7 @@ fn test_function_literal_parsing() -> Result<()> {
 }
 
 #[test]
-fn test_function_parameter_parsing() -> Result<()> {
+fn test_function_parameter_parsing() -> Result<(), ParseError> {
     struct Test {
         input: &'static str,
         expected: Vec<&'static str>,
@@ -760,7 +758,7 @@ fn test_function_parameter_parsing() -> Result<()> {
 }
 
 #[test]
-fn test_call_expression_arsing() -> Result<()> {
+fn test_call_expression_arsing() -> Result<(), ParseError> {
     let input = "add(1, 2 * 3, 4 + 5);";
 
     let l = Lexer::new(input.to_string());
@@ -806,7 +804,7 @@ fn test_call_expression_arsing() -> Result<()> {
 
 /// test for array literal
 #[test]
-fn test_parsing_array_literal() -> Result<()> {
+fn test_parsing_array_literal() -> Result<(), ParseError> {
     let input = "[1, 2 * 2, 3 + 3];";
 
     let l = Lexer::new(input.to_string());
@@ -851,7 +849,7 @@ fn test_parsing_array_literal() -> Result<()> {
 
 /// test for index expressions
 #[test]
-fn test_parsing_index_expressions() -> Result<()> {
+fn test_parsing_index_expressions() -> Result<(), ParseError> {
     let input = "myArray[1 + 1]";
 
     let l = Lexer::new(input.to_string());
@@ -883,7 +881,7 @@ fn test_parsing_index_expressions() -> Result<()> {
 
 /// test hash
 #[test]
-fn test_parsing_hash_literals_string_keys() -> Result<()> {
+fn test_parsing_hash_literals_string_keys() -> Result<(), ParseError> {
     let input = r##"{"one": 1, "two": 2, "three": 3}"##;
 
     let l = Lexer::new(input.to_string());
@@ -920,7 +918,7 @@ fn test_parsing_hash_literals_string_keys() -> Result<()> {
 }
 
 #[test]
-fn test_parsing_empty_hash_literal() -> Result<()> {
+fn test_parsing_empty_hash_literal() -> Result<(), ParseError> {
     let input = "{}";
 
     let l = Lexer::new(input.to_string());
@@ -950,7 +948,7 @@ fn test_parsing_empty_hash_literal() -> Result<()> {
 }
 
 #[test]
-fn test_parsing_hash_literals_with_expressions() -> Result<()> {
+fn test_parsing_hash_literals_with_expressions() -> Result<(), ParseError> {
     let input = r##"{"one": 0 + 1, "two": 10 - 8, "three": 15 / 5}"##;
 
     let l = Lexer::new(input.to_string());

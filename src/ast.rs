@@ -192,11 +192,7 @@ impl StatementNode {
             }
             StatementNode::ExpressionStatementNode(es) => es.expression.string(),
             StatementNode::BlockStatementNode(bs) => {
-                let mut ret = String::new();
-                for stmt in &bs.statements {
-                    ret.push_str(&stmt.string());
-                }
-                ret
+                bs.statements.iter().map(|s| s.string()).collect()
             }
         }
     }

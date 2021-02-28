@@ -192,7 +192,7 @@ fn test_boolean_literal_expression() -> Result<(), ParseError> {
     struct Test {
         input: &'static str,
         value: bool,
-    };
+    }
 
     let boolean_test = vec![
         Test {
@@ -239,7 +239,7 @@ fn test_parsing_prefix_expressions() -> Result<(), ParseError> {
         input: &'static str,
         operator: &'static str,
         value: TestLiteral,
-    };
+    }
 
     let prefix_test = vec![
         Test {
@@ -301,7 +301,7 @@ fn test_parsing_infix_expressions() -> Result<(), ParseError> {
         left_value: TestLiteral,
         operator: &'static str,
         right_value: TestLiteral,
-    };
+    }
 
     let infix_test = vec![
         Test {
@@ -400,7 +400,7 @@ fn test_operator_precedence_parsing() -> Result<(), ParseError> {
     struct Test {
         input: &'static str,
         expected: &'static str,
-    };
+    }
 
     let operator_precedence_test = vec![
         Test {
@@ -705,7 +705,7 @@ fn test_function_parameter_parsing() -> Result<(), ParseError> {
     struct Test {
         input: &'static str,
         expected: Vec<&'static str>,
-    };
+    }
 
     let func_test = vec![
         Test {

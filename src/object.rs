@@ -396,6 +396,7 @@ fn builtin_push(parameters: Vec<Object>) -> Result<Object, ObjectError> {
 }
 
 /// buitin function "puts"
+#[allow(clippy::unnecessary_wraps)]
 fn builtin_puts(parameters: Vec<Object>) -> Result<Object, ObjectError> {
     for p in parameters {
         println!("{}", p);

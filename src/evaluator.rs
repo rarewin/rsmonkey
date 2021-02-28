@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::rc::Rc;
 
 use thiserror::Error;
@@ -27,7 +28,7 @@ pub enum EvaluationError {
 }
 
 /// evaluator function
-pub fn eval(parser: &mut Parser, env: Rc<Environment>) -> Result<Object, EvaluationError> {
+pub fn eval(parser: &mut Parser, env: Rc<RefCell<Environment>>) -> Result<Object, EvaluationError> {
     let mut result = Object::Null;
     for stmt in parser {
         result = eval_statement_node(&stmt.map_err(|_| EvaluationError::Unknown)?, env.clone())?;
@@ -41,7 +42,7 @@ pub fn eval(parser: &mut Parser, env: Rc<Environment>) -> Result<Object, Evaluat
 /// evaluator function for statement node
 fn eval_statement_node(
     node: &StatementNode,
-    env: Rc<Environment>,
+    env: Rc<RefCell<Environment>>,
 ) -> Result<Object, EvaluationError> {
     match node {
         StatementNode::BlockStatementNode(bs) => eval_block_statement(&bs, env),
@@ -54,7 +55,7 @@ fn eval_statement_node(
 /// evaluator function for block statement
 fn eval_block_statement(
     bl: &BlockStatement,
-    env: Rc<Environment>,
+    env: Rc<RefCell<Environment>>,
 ) -> Result<Object, EvaluationError> {
     let mut result = Object::Null;
     for stmt in &bl.statements {
@@ -69,7 +70,7 @@ fn eval_block_statement(
 /// evaluator function for return statement
 fn eval_return_statement(
     rs: &ReturnStatement,
-    env: Rc<Environment>,
+    env: Rc<RefCell<Environment>>,
 ) -> Result<Object, EvaluationError> {
     Ok(Object::new_return_value(eval_expression_node(
         &rs.return_value,
@@ -78,16 +79,19 @@ fn eval_return_statement(
 }
 
 /// evaluator function for let statement
-fn eval_let_statement(ls: &LetStatement, env: Rc<Environment>) -> Result<Object, EvaluationError> {
+fn eval_let_statement(
+    ls: &LetStatement,
+    env: Rc<RefCell<Environment>>,
+) -> Result<Object, EvaluationError> {
     let val = eval_expression_node(&ls.value, env.clone())?;
-    env.set(&ls.name.value, &val);
+    env.borrow_mut().set(&ls.name.value, &val);
     Ok(val)
 }
 
 /// evaluator function for expression node
 fn eval_expression_node(
     node: &ExpressionNode,
-    env: Rc<Environment>,
+    env: Rc<RefCell<Environment>>,
 ) -> Result<Object, EvaluationError> {
     match node {
         ExpressionNode::IntegerLiteralNode(il) => Ok(Object::new_integer(il.value)),
@@ -134,7 +138,9 @@ fn eval_expression_node(
                 }
             }
         }
-        ExpressionNode::IdentifierNode(id) => env.get(&id.value).map_err(EvaluationError::from),
+        ExpressionNode::IdentifierNode(id) => {
+            env.borrow().get(&id.value).map_err(EvaluationError::from)
+        }
         ExpressionNode::FunctionLiteralNode(fl) => {
             if let Some(body) = &fl.body {
                 Ok(Object::new_function(&fl.parameters, body, env))
@@ -272,7 +278,7 @@ fn eval_integer_infix_expression(
 /// evaluator function for expressions
 fn eval_expressions(
     exps: &[ExpressionNode],
-    env: Rc<Environment>,
+    env: Rc<RefCell<Environment>>,
 ) -> Result<Vec<Object>, EvaluationError> {
     let mut result = Vec::<Object>::new();
 
@@ -337,7 +343,10 @@ fn apply_function(function: &Object, args: &[Object]) -> Result<Object, Evaluati
             }
             let extended_env = extend_environment(fnc.env.clone());
             for (idx, p) in fnc.parameters.iter().enumerate() {
-                extended_env.set(&p.string(), &args[idx]);
+                extended_env
+                    .clone()
+                    .borrow_mut()
+                    .set(&p.string(), &args[idx]);
             }
             let evaluated = eval_statement_node(&fnc.body, extended_env)?;
             if let Object::ReturnValueObject(ro) = evaluated {

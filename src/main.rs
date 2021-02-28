@@ -1,5 +1,6 @@
 extern crate rsmonkey;
 
+use std::cell::RefCell;
 use std::env;
 use std::io;
 use std::io::{BufRead, BufReader, Write};
@@ -27,7 +28,7 @@ const MONKEY_FACE: &str = r##"            __,__
 
 fn read_input() {
     let username = env::vars().find(|x| x.0 == "USER").unwrap_or_default().1;
-    let env = Rc::new(Environment::new());
+    let env = Rc::new(RefCell::new(Environment::new()));
 
     println!(
         "Hello {}! This is the `RS'Monkey programming language!",

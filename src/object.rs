@@ -141,7 +141,7 @@ impl Object {
     pub fn new_function(
         parameters: &[ExpressionNode],
         body: &StatementNode,
-        env: Rc<Environment>,
+        env: Rc<RefCell<Environment>>,
     ) -> Object {
         Object::FunctionObject(Box::new(Function {
             parameters: parameters.to_vec(),
@@ -221,7 +221,7 @@ pub struct Hash {
 pub struct Function {
     pub parameters: Vec<ExpressionNode>,
     pub body: StatementNode,
-    pub env: Rc<Environment>,
+    pub env: Rc<RefCell<Environment>>,
 }
 
 /// struct for Builtin object
@@ -232,32 +232,24 @@ pub struct Builtin {
 
 /// struct for Environment
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub enum Environment {
-    Env {
-        store: Rc<RefCell<HashMap<String, Object>>>,
-        outer: Rc<Environment>,
-    },
-    NoEnv,
+pub struct Environment {
+    store: HashMap<String, Object>,
+    outer: Option<Rc<RefCell<Environment>>>,
 }
 
 /// implementation of Environment
 impl Environment {
     /// create new Environment
     pub fn new() -> Environment {
-        Environment::Env {
-            store: Rc::new(RefCell::new(HashMap::<String, Object>::new())),
-            outer: Rc::new(Environment::NoEnv),
+        Environment {
+            store: HashMap::<String, Object>::new(),
+            outer: None,
         }
     }
 
     /// set an element to hash map
-    pub fn set(&self, key: &str, value: &Object) {
-        match self {
-            Environment::Env { store, outer: _ } => {
-                store.borrow_mut().insert(key.to_string(), value.clone())
-            }
-            Environment::NoEnv => None,
-        };
+    pub fn set(&mut self, key: &str, value: &Object) {
+        self.store.insert(key.to_string(), value.clone());
     }
 
     /// get an element from hash map
@@ -283,12 +275,12 @@ impl Environment {
                 builtin: builtin_puts,
             }))),
             // normal function
-            _ => match self {
-                Environment::Env { store, outer } => match store.borrow().get(key) {
-                    Some(o) => Ok(o.clone()),
-                    _ => outer.get(key),
+            _ => match self.store.get(key) {
+                Some(obj) => Ok(obj.clone()),
+                None => match &self.outer {
+                    Some(outer_env) => outer_env.clone().borrow().get(key),
+                    None => Err(ObjectError::IdentifierNotFound(key.into())),
                 },
-                Environment::NoEnv => Err(ObjectError::IdentifierNotFound(key.into())),
             },
         }
     }
@@ -301,11 +293,11 @@ impl Default for Environment {
 }
 
 /// extend an Environment
-pub fn extend_environment(inner: Rc<Environment>) -> Rc<Environment> {
-    Rc::new(Environment::Env {
-        store: Rc::new(RefCell::new(HashMap::<String, Object>::new())),
-        outer: inner,
-    })
+pub fn extend_environment(inner: Rc<RefCell<Environment>>) -> Rc<RefCell<Environment>> {
+    Rc::new(RefCell::new(Environment {
+        store: HashMap::<String, Object>::new(),
+        outer: Some(inner),
+    }))
 }
 
 /// builtin function "len"

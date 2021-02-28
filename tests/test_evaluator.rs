@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::rc::Rc;
 
 use rsmonkey::evaluator::{eval, EvaluationError};
@@ -788,7 +789,7 @@ fn test_eval(input: &'static str) -> Result<Object, EvaluationError> {
     let l = Lexer::new(input.to_string());
     let mut p = Parser::new(l);
 
-    let env = Rc::new(Environment::new());
+    let env = Rc::new(RefCell::new(Environment::new()));
     eval(&mut p, env)
 }
 

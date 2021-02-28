@@ -392,11 +392,11 @@ impl Parser {
     }
 
     /// parse expression list
-    fn parse_expression_list(&mut self, end: TokenType) -> Result<Vec<ExpressionNode>, ParseError> {
+    fn parse_expression_list(&mut self, end: TokenType) -> Vec<ExpressionNode> {
         let mut list = Vec::<ExpressionNode>::new();
 
         if self.consume_expect_token(end).is_ok() {
-            return Ok(list);
+            return list;
         }
 
         if let Ok(elm) = self.parse_expression(OperationPrecedence::Lowest) {
@@ -420,7 +420,7 @@ impl Parser {
             self.tokens.pop();
         }
 
-        Ok(list)
+        list
     }
 
     /// parse hash literal
@@ -475,7 +475,7 @@ impl Parser {
             TokenType::LParen => self.parse_grouped_expression(),
             TokenType::LBracket => Ok(ExpressionNode::ArrayLiteralNode(Box::new(ArrayLiteral {
                 token: self.pop_token()?,
-                elements: self.parse_expression_list(TokenType::RBracket)?,
+                elements: self.parse_expression_list(TokenType::RBracket),
             }))),
             TokenType::LBrace => Ok(ExpressionNode::HashLiteralNode(Box::new(HashLiteral {
                 token: self.pop_token()?,
@@ -498,8 +498,8 @@ impl Parser {
             | TokenType::Minus
             | TokenType::Asterisk
             | TokenType::Slash
-            | TokenType::GT
-            | TokenType::LT
+            | TokenType::Gt
+            | TokenType::Lt
             | TokenType::Eq
             | TokenType::NotEq => self.parse_infix_expression(left),
             TokenType::LParen => self.parse_call_expression(left),
@@ -568,7 +568,7 @@ fn get_precedence(tt: TokenType) -> OperationPrecedence {
     match tt {
         TokenType::LParen => OperationPrecedence::Call,
         TokenType::Eq | TokenType::NotEq => OperationPrecedence::Equals,
-        TokenType::LT | TokenType::GT => OperationPrecedence::LessGreater,
+        TokenType::Lt | TokenType::Gt => OperationPrecedence::LessGreater,
         TokenType::Plus | TokenType::Minus => OperationPrecedence::Sum,
         TokenType::Slash | TokenType::Asterisk => OperationPrecedence::Product,
         TokenType::LBracket => OperationPrecedence::Index,

@@ -183,6 +183,7 @@ fn eval_prefix_expression_node(operator: &str, right: &Object) -> Result<Object,
 }
 
 /// evaluator function for bang operation expression node
+#[allow(clippy::unnecessary_wraps)]
 fn eval_bang_operation_expression_node(right: &Object) -> Result<Object, EvaluationError> {
     match right {
         Object::BooleanObject(bl) => Ok(Object::new_boolean(!(*bl).value)),
@@ -303,6 +304,7 @@ fn eval_index_expression(left: &Object, index: &Object) -> Result<Object, Evalua
 }
 
 /// evaluator function for array index expression
+#[allow(clippy::unnecessary_wraps)]
 fn eval_array_index_expression(array: &Array, index: &Integer) -> Result<Object, EvaluationError> {
     let idx = index.value;
     let max = array.elements.len();
@@ -315,6 +317,7 @@ fn eval_array_index_expression(array: &Array, index: &Integer) -> Result<Object,
 }
 
 /// evaluator function for hash
+#[allow(clippy::unnecessary_wraps)]
 fn eval_hash_index_expression(hash: &Hash, key: &Object) -> Result<Object, EvaluationError> {
     match hash.pairs.iter().find(|&k| k.0 == *key) {
         Some(o) => Ok(o.1.clone()),

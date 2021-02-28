@@ -48,8 +48,8 @@ impl Iterator for Lexer {
             }
             '/' => Some(Token::new(TokenType::Slash, "/")),
             '*' => Some(Token::new(TokenType::Asterisk, "*")),
-            '<' => Some(Token::new(TokenType::LT, "<")),
-            '>' => Some(Token::new(TokenType::GT, ">")),
+            '<' => Some(Token::new(TokenType::Lt, "<")),
+            '>' => Some(Token::new(TokenType::Gt, ">")),
             '(' => Some(Token::new(TokenType::LParen, "(")),
             ')' => Some(Token::new(TokenType::RParen, ")")),
             '{' => Some(Token::new(TokenType::LBrace, "{")),

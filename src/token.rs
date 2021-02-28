@@ -123,9 +123,9 @@ pub enum TokenType {
     Slash,
 
     /// less than `<`
-    LT,
+    Lt,
     /// greater than `>`
-    GT,
+    Gt,
 
     /// equal `==`
     Eq,

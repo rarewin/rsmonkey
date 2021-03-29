@@ -2,9 +2,9 @@
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Token {
     /// type of token
-    pub token_type: TokenType,
+    token_type: TokenType,
     /// literal string
-    pub literal: String,
+    literal: String,
 }
 
 impl Token {

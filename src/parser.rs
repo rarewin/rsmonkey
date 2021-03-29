@@ -61,7 +61,7 @@ impl Parser {
     fn parse_statement(&mut self) -> Result<StatementNode, ParseError> {
         let token = self.peek_token()?;
 
-        match token.token_type {
+        match token.get_token_type() {
             TokenType::Let => self.parse_let_statement(),
             TokenType::Return => self.parse_return_statement(),
             _ => self.parse_expression_statement(),
@@ -82,7 +82,7 @@ impl Parser {
 
         let value = self.parse_expression(OperationPrecedence::Lowest)?;
 
-        if !self.tokens.is_empty() && self.peek_token()?.token_type == TokenType::Semicolon {
+        if !self.tokens.is_empty() && self.peek_token()?.get_token_type() == TokenType::Semicolon {
             self.tokens.pop();
         }
 
@@ -99,7 +99,7 @@ impl Parser {
         let token = self.peek_token()?.clone();
         let return_value = self.parse_expression(OperationPrecedence::Lowest)?;
 
-        if !self.tokens.is_empty() && self.peek_token()?.token_type == TokenType::Semicolon {
+        if !self.tokens.is_empty() && self.peek_token()?.get_token_type() == TokenType::Semicolon {
             self.tokens.pop();
         }
 
@@ -116,7 +116,7 @@ impl Parser {
         let token = self.peek_token()?.clone();
         let expression = self.parse_expression(OperationPrecedence::Lowest)?;
 
-        if !self.tokens.is_empty() && self.peek_token()?.token_type == TokenType::Semicolon {
+        if !self.tokens.is_empty() && self.peek_token()?.get_token_type() == TokenType::Semicolon {
             self.pop_token()?;
         }
 
@@ -130,14 +130,14 @@ impl Parser {
         &mut self,
         precedence: OperationPrecedence,
     ) -> Result<ExpressionNode, ParseError> {
-        let tt = self.peek_token()?.token_type;
+        let tt = self.peek_token()?.get_token_type();
         let mut ex = self.prefix_parse(tt)?;
 
         while !self.tokens.is_empty()
             && self.expect_token(TokenType::Semicolon).is_err()
-            && precedence < get_precedence(self.peek_token()?.token_type)
+            && precedence < get_precedence(self.peek_token()?.get_token_type())
         {
-            let tt = self.peek_token()?.token_type;
+            let tt = self.peek_token()?.get_token_type();
             ex = self.infix_parse(tt, ex.clone())?;
         }
 
@@ -218,7 +218,7 @@ impl Parser {
 
         Ok(ExpressionNode::BooleanExpressionNode(Box::new(Boolean {
             token: token.clone(),
-            value: token.token_type == TokenType::True,
+            value: token.get_token_type() == TokenType::True,
         })))
     }
 
@@ -355,7 +355,8 @@ impl Parser {
         let arg = self.parse_expression(OperationPrecedence::Lowest)?;
         arguments.push(arg);
 
-        while !self.tokens.is_empty() && self.tokens.last().unwrap().token_type == TokenType::Comma
+        while !self.tokens.is_empty()
+            && self.tokens.last().unwrap().get_token_type() == TokenType::Comma
         {
             self.tokens.pop();
             let arg = self.parse_expression(OperationPrecedence::Lowest)?;
@@ -377,7 +378,7 @@ impl Parser {
     ) -> Result<ExpressionNode, ParseError> {
         let token = self.pop_token()?;
         let operator = token.get_literal();
-        let precedence = get_precedence(token.token_type);
+        let precedence = get_precedence(token.get_token_type());
 
         let right = self.parse_expression(precedence)?;
 
@@ -529,11 +530,11 @@ impl Parser {
     /// check if the next token is expected one or not
     fn expect_token(&mut self, expected: TokenType) -> Result<&Token, ParseError> {
         if let Some(token) = self.tokens.last() {
-            if token.token_type == expected {
+            if token.get_token_type() == expected {
                 Ok(token)
             } else {
                 Err(ParseError::UnexpectedToken {
-                    found: token.token_type,
+                    found: token.get_token_type(),
                     expected,
                 })
             }
@@ -545,7 +546,7 @@ impl Parser {
     /// check if the next token is expected one or not, and consume it if so
     fn consume_expect_token(&mut self, expected: TokenType) -> Result<Token, ParseError> {
         if let Some(token) = self.tokens.last() {
-            if token.token_type == expected {
+            if token.get_token_type() == expected {
                 if let Some(t) = self.tokens.pop() {
                     Ok(t)
                 } else {
@@ -553,7 +554,7 @@ impl Parser {
                 }
             } else {
                 Err(ParseError::UnexpectedToken {
-                    found: token.token_type,
+                    found: token.get_token_type(),
                     expected,
                 })
             }

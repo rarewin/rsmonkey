@@ -1,4 +1,4 @@
-use crate::token::{Token, TokenType};
+use crate::token::Token;
 
 #[derive(Debug)]
 pub struct Lexer {
@@ -29,37 +29,37 @@ impl Iterator for Lexer {
             '=' => {
                 let ch = self.input.pop()?;
                 if ch == '=' {
-                    Some(Token::new(TokenType::Eq, "=="))
+                    Some(Token::Eq)
                 } else {
                     self.input.push(ch);
-                    Some(Token::new(TokenType::Assign, "="))
+                    Some(Token::Assign)
                 }
             }
-            '+' => Some(Token::new(TokenType::Plus, "+")),
-            '-' => Some(Token::new(TokenType::Minus, "-")),
+            '+' => Some(Token::Plus),
+            '-' => Some(Token::Minus),
             '!' => {
                 let ch = self.input.pop()?;
                 if ch == '=' {
-                    Some(Token::new(TokenType::NotEq, "!="))
+                    Some(Token::NotEq)
                 } else {
                     self.input.push(ch);
-                    Some(Token::new(TokenType::Bang, "!"))
+                    Some(Token::Bang)
                 }
             }
-            '/' => Some(Token::new(TokenType::Slash, "/")),
-            '*' => Some(Token::new(TokenType::Asterisk, "*")),
-            '<' => Some(Token::new(TokenType::Lt, "<")),
-            '>' => Some(Token::new(TokenType::Gt, ">")),
-            '(' => Some(Token::new(TokenType::LParen, "(")),
-            ')' => Some(Token::new(TokenType::RParen, ")")),
-            '{' => Some(Token::new(TokenType::LBrace, "{")),
-            '}' => Some(Token::new(TokenType::RBrace, "}")),
-            '[' => Some(Token::new(TokenType::LBracket, "[")),
-            ']' => Some(Token::new(TokenType::RBracket, "]")),
-            ',' => Some(Token::new(TokenType::Comma, ",")),
-            ';' => Some(Token::new(TokenType::Semicolon, ";")),
-            ':' => Some(Token::new(TokenType::Colon, ":")),
-            '\0' => Some(Token::new(TokenType::EoF, "EOF")),
+            '/' => Some(Token::Slash),
+            '*' => Some(Token::Asterisk),
+            '<' => Some(Token::Lt),
+            '>' => Some(Token::Gt),
+            '(' => Some(Token::LParen),
+            ')' => Some(Token::RParen),
+            '{' => Some(Token::LBrace),
+            '}' => Some(Token::RBrace),
+            '[' => Some(Token::LBracket),
+            ']' => Some(Token::RBracket),
+            ',' => Some(Token::Comma),
+            ';' => Some(Token::Semicolon),
+            ':' => Some(Token::Colon),
+            '\0' => Some(Token::EoF),
             '"' => {
                 let string = self
                     .input
@@ -70,7 +70,7 @@ impl Iterator for Lexer {
                 for _ in 0..(string.len() + 1) {
                     self.input.pop();
                 }
-                Some(Token::new(TokenType::StringToken, &string))
+                Some(Token::StringToken(string))
             }
             'a'..='z' | 'A'..='Z' | '_' => {
                 self.input.push(ch);
@@ -83,7 +83,7 @@ impl Iterator for Lexer {
                 for _ in 0..v.len() {
                     self.input.pop();
                 }
-                Some(Token::new(lookup_ident(&v), &v))
+                Some(lookup_ident(&v))
             }
             '0'..='9' => {
                 self.input.push(ch);
@@ -96,7 +96,7 @@ impl Iterator for Lexer {
                 for _ in 0..fig.len() {
                     self.input.pop();
                 }
-                Some(Token::new(TokenType::Int, &fig))
+                Some(Token::Int(fig.parse().unwrap())) // @todo  change unwrap()
             }
             _ => None,
         }
@@ -104,15 +104,15 @@ impl Iterator for Lexer {
 }
 
 /// lookup identifier
-fn lookup_ident(s: &str) -> TokenType {
+fn lookup_ident(s: &str) -> Token {
     match s {
-        "let" => TokenType::Let,
-        "fn" => TokenType::Function,
-        "if" => TokenType::If,
-        "else" => TokenType::Else,
-        "return" => TokenType::Return,
-        "true" => TokenType::True,
-        "false" => TokenType::False,
-        _ => TokenType::Ident,
+        "let" => Token::Let,
+        "fn" => Token::Function,
+        "if" => Token::If,
+        "else" => Token::Else,
+        "return" => Token::Return,
+        "true" => Token::True,
+        "false" => Token::False,
+        _ => Token::Ident(s.into()),
     }
 }

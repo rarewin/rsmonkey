@@ -1,7 +1,7 @@
 use rsmonkey::ast::*;
 use rsmonkey::lexer::Lexer;
 use rsmonkey::parser::{ParseError, Parser};
-use rsmonkey::token::{Token, TokenType};
+use rsmonkey::token::Token;
 
 enum TestLiteral {
     IntegerLiteral(i64),
@@ -121,13 +121,13 @@ fn test_return_statements() -> Result<(), ParseError> {
 #[test]
 fn test_string() {
     let v = StatementNode::LetStatementNode(Box::new(LetStatement {
-        token: Token::new(TokenType::Let, "let"),
+        token: Token::Let,
         name: Identifier {
-            token: Token::new(TokenType::Ident, "myVar"),
+            token: Token::Ident("myVar".into()),
             value: "myVar".to_string(),
         },
         value: ExpressionNode::IdentifierNode(Box::new(Identifier {
-            token: Token::new(TokenType::Ident, "anotherVar"),
+            token: Token::Ident("anotherVar".into()),
             value: "myVar".to_string(),
         })),
     }));

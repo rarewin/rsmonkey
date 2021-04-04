@@ -73,6 +73,12 @@ pub enum Token {
     StringToken(String),
 }
 
+impl std::fmt::Display for Token {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, "{}", self.get_literal())
+    }
+}
+
 impl Token {
     pub fn is_eof(&self) -> bool {
         *self == Token::EoF

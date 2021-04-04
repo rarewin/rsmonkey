@@ -5,7 +5,7 @@ use thiserror::Error;
 
 use crate::ast::{BlockStatement, ExpressionNode, LetStatement, ReturnStatement, StatementNode};
 use crate::object::{extend_environment, Array, Environment, Hash, Integer, Object, ObjectError};
-use crate::parser::Parser;
+use crate::parser::{ParseError, Parser};
 
 /// error
 #[derive(Debug, Error)]
@@ -25,13 +25,15 @@ pub enum EvaluationError {
 
     #[error(transparent)]
     ObjectEvaluationError(#[from] ObjectError),
+    #[error(transparent)]
+    ParseError(#[from] ParseError),
 }
 
 /// evaluator function
 pub fn eval(parser: &mut Parser, env: Rc<RefCell<Environment>>) -> Result<Object, EvaluationError> {
     let mut result = Object::Null;
     for stmt in parser {
-        result = eval_statement_node(&stmt.map_err(|_| EvaluationError::Unknown)?, env.clone())?;
+        result = eval_statement_node(&stmt?, env.clone())?;
         if let Object::ReturnValueObject(rv) = result {
             return Ok(rv.value);
         }

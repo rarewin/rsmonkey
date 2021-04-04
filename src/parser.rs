@@ -7,7 +7,7 @@ use thiserror::Error;
 /// error types
 #[derive(Debug, Error)]
 pub enum ParseError {
-    #[error(r##"unexpected token "{found:?}", "{expected:?}" was expected"##)]
+    #[error(r##"unexpected token "{found:}", "{expected:}" was expected"##)]
     UnexpectedToken { found: Token, expected: Token },
     #[error("unexpected EOF")]
     UnexpectedEof,
@@ -48,6 +48,7 @@ impl Parser {
     pub fn new(l: Lexer) -> Parser {
         let mut tokens = l.collect::<Vec<Token>>();
         tokens.reverse();
+
         Parser {
             tokens,
             errors: Vec::new(),
@@ -68,16 +69,25 @@ impl Parser {
     /// parse let statement
     fn parse_let_statement(&mut self) -> Result<StatementNode, ParseError> {
         self.consume_expect_token(Token::Let)?;
-        let (token, name) = if let Some(Token::Ident(ident)) = self.tokens.pop() {
-            (
-                Token::Ident(ident.to_string()),
-                Identifier {
-                    token: Token::Ident(ident.to_string()),
-                    value: ident,
-                },
-            )
-        } else {
-            return Err(ParseError::Unknown);
+
+        let token = match self.tokens.pop() {
+            Some(t) => t,
+            None => {
+                return Err(ParseError::UnexpectedEof);
+            }
+        };
+
+        let name = match &token {
+            Token::Ident(ident) => Identifier {
+                token: Token::Ident(ident.to_string()),
+                value: ident.to_string(),
+            },
+            _ => {
+                return Err(ParseError::UnexpectedToken {
+                    found: token,
+                    expected: Token::Ident("IDENT".into()),
+                })
+            }
         };
 
         self.consume_expect_token(Token::Assign)?;
@@ -148,19 +158,36 @@ impl Parser {
 
     /// parse identifier
     fn parse_identifier(&mut self) -> Result<ExpressionNode, ParseError> {
-        if let Some(Token::Ident(ident)) = self.tokens.pop() {
+        let token = match self.tokens.pop() {
+            Some(t) => t,
+            None => {
+                return Err(ParseError::Unknown);
+            }
+        };
+
+        if let Token::Ident(ident) = token {
             Ok(ExpressionNode::IdentifierNode(Box::new(Identifier {
                 token: Token::Ident(ident.to_string()),
                 value: ident,
             })))
         } else {
-            Err(ParseError::Unknown)
+            Err(ParseError::UnexpectedToken {
+                found: token,
+                expected: Token::Ident("IDENT".into()),
+            })
         }
     }
 
     /// parse integer literal
     fn parse_integer_literal(&mut self) -> Result<ExpressionNode, ParseError> {
-        if let Some(Token::Int(int)) = self.tokens.pop() {
+        let token = match self.tokens.pop() {
+            Some(t) => t,
+            None => {
+                return Err(ParseError::Unknown);
+            }
+        };
+
+        if let Token::Int(int) = token {
             Ok(ExpressionNode::IntegerLiteralNode(Box::new(
                 IntegerLiteral {
                     token: Token::Int(int),
@@ -168,19 +195,30 @@ impl Parser {
                 },
             )))
         } else {
-            Err(ParseError::Unknown)
+            Err(ParseError::UnexpectedToken {
+                found: token,
+                expected: Token::Int(0),
+            })
         }
     }
 
     /// parse string literal
     fn parse_string_literal(&mut self) -> Result<ExpressionNode, ParseError> {
-        if let Some(Token::StringToken(string)) = self.tokens.pop() {
+        let token = match self.tokens.pop() {
+            Some(t) => t,
+            None => return Err(ParseError::Unknown),
+        };
+
+        if let Token::StringToken(string) = token {
             Ok(ExpressionNode::StringLiteralNode(Box::new(StringLiteral {
                 token: Token::StringToken(string.to_string()),
                 value: string,
             })))
         } else {
-            Err(ParseError::Unknown)
+            Err(ParseError::UnexpectedToken {
+                found: token,
+                expected: Token::StringToken("STRING".into()),
+            })
         }
     }
 

@@ -8,7 +8,7 @@ use rsmonkey::parser::Parser;
 
 /// eval function
 fn test_eval(input: &'static str) -> Object {
-    let l = Lexer::from(input.to_string());
+    let l = Lexer::new(input);
     let mut p = Parser::new(l);
 
     let env = Rc::new(RefCell::new(Environment::new()));

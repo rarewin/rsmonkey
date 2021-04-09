@@ -786,7 +786,7 @@ fn test_array_index_expressions() {
 
 /// eval function
 fn test_eval(input: &'static str) -> Result<Object, EvaluationError> {
-    let l = Lexer::from(input.to_string());
+    let l = Lexer::new(input);
     let mut p = Parser::new(l);
 
     let env = Rc::new(RefCell::new(Environment::new()));

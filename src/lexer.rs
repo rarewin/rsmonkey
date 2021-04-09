@@ -7,7 +7,7 @@ pub struct Lexer {
 
 impl Lexer {
     /// create new lexer
-    pub fn from(input: String) -> Lexer {
+    pub fn new(input: &str) -> Lexer {
         let mut input = input.chars().peekable();
         let mut tokens = Vec::new();
 

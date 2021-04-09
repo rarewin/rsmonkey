@@ -27,8 +27,6 @@ pub enum ParseError {
 pub struct Parser {
     /// tokens
     tokens: Vec<Token>,
-    /// error string
-    errors: Vec<String>,
 }
 
 impl Iterator for Parser {
@@ -49,10 +47,7 @@ impl Parser {
         let mut tokens = l.into_iter().collect::<Vec<Token>>();
         tokens.reverse();
 
-        Parser {
-            tokens,
-            errors: Vec::new(),
-        }
+        Parser { tokens }
     }
 
     /// parse statement

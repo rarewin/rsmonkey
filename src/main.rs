@@ -49,7 +49,7 @@ fn read_input() {
         stdout.flush().unwrap();
 
         if let Some(Ok(input)) = lines.next() {
-            let l = Lexer::new(input.to_string());
+            let l = Lexer::from(input.to_string());
             let mut parser = Parser::new(l);
 
             match eval(&mut parser, env.clone()) {

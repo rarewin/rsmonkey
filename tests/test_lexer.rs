@@ -138,7 +138,7 @@ fn test_next_token() {
         Token::RBrace,
     ];
 
-    let mut l = Lexer::new(input.to_string());
+    let mut l = Lexer::from(input.to_string()).into_iter();
 
     for tp in tests.iter() {
         let tok = l.next().unwrap();
@@ -152,7 +152,7 @@ fn test_next_token() {
 fn test_empty_input() {
     let input = "";
 
-    let mut l = Lexer::new(input.to_string());
+    let mut l = Lexer::from(input.to_string()).into_iter();
 
     assert!(l.next().is_none());
 }

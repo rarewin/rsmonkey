@@ -46,7 +46,7 @@ impl Iterator for Parser {
 impl Parser {
     /// constructor
     pub fn new(l: Lexer) -> Parser {
-        let mut tokens = l.collect::<Vec<Token>>();
+        let mut tokens = l.into_iter().collect::<Vec<Token>>();
         tokens.reverse();
 
         Parser {

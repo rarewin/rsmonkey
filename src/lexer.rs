@@ -2,104 +2,102 @@ use crate::token::Token;
 
 #[derive(Debug)]
 pub struct Lexer {
-    input: Vec<char>,
+    tokens: Vec<Token>,
 }
 
 impl Lexer {
     /// create new lexer
-    pub fn new(input: String) -> Lexer {
-        let mut input = input.chars().collect::<Vec<char>>();
-        input.reverse();
-        Lexer { input }
+    pub fn from(input: String) -> Lexer {
+        let mut input = input.chars().peekable();
+        let mut tokens = Vec::new();
+
+        while let Some(ch) = input.next() {
+            if ch.is_ascii_whitespace() {
+                continue;
+            }
+
+            match ch {
+                '+' => tokens.push(Token::Plus),
+                '-' => tokens.push(Token::Minus),
+                '*' => tokens.push(Token::Asterisk),
+                '<' => tokens.push(Token::Lt),
+                '>' => tokens.push(Token::Gt),
+                '(' => tokens.push(Token::LParen),
+                ')' => tokens.push(Token::RParen),
+                '{' => tokens.push(Token::LBrace),
+                '}' => tokens.push(Token::RBrace),
+                '[' => tokens.push(Token::LBracket),
+                ']' => tokens.push(Token::RBracket),
+                ',' => tokens.push(Token::Comma),
+                ';' => tokens.push(Token::Semicolon),
+                ':' => tokens.push(Token::Colon),
+                '/' => tokens.push(Token::Slash),
+                '\0' => tokens.push(Token::EoF),
+                '=' => {
+                    if let Some(&'=') = input.peek() {
+                        tokens.push(Token::Eq);
+                        input.next(); // consume '='
+                    } else {
+                        tokens.push(Token::Assign);
+                    }
+                }
+                '!' => {
+                    if let Some(&'=') = input.peek() {
+                        tokens.push(Token::NotEq);
+                        input.next(); // consume '='
+                    } else {
+                        tokens.push(Token::Bang);
+                    }
+                }
+                'a'..='z' | 'A'..='Z' | '_' => {
+                    let mut v = String::from(ch);
+                    while let Some(next) = input.peek() {
+                        if next.is_ascii_alphabetic() || *next == '_' {
+                            v.push(*next);
+                            input.next();
+                        } else {
+                            break;
+                        }
+                    }
+                    tokens.push(lookup_ident(&v));
+                }
+                '0'..='9' => {
+                    let mut fig = String::from(ch);
+                    while let Some(next) = input.peek() {
+                        if next.is_ascii_digit() {
+                            fig.push(*next);
+                            input.next();
+                        } else {
+                            break;
+                        }
+                    }
+                    tokens.push(Token::Int(fig.parse().unwrap())); // @todo  change unwrap()
+                }
+                '"' => {
+                    let mut string = String::new();
+                    while let Some(next) = input.next() {
+                        if next == '"' {
+                            break;
+                        } else {
+                            string.push(next);
+                        }
+                    }
+                    tokens.push(Token::StringToken(string));
+                }
+                _ => unimplemented!("{:?}", ch),
+            }
+        }
+
+        Lexer { tokens }
     }
 }
 
-impl Iterator for Lexer {
+impl IntoIterator for Lexer {
     type Item = Token;
+    type IntoIter = std::vec::IntoIter<Self::Item>;
 
-    /// get next token
-    fn next(&mut self) -> Option<Self::Item> {
-        let mut ch = self.input.pop()?;
-
-        while ch.is_ascii_whitespace() {
-            ch = self.input.pop()?;
-        }
-
-        match ch {
-            '=' => {
-                let ch = self.input.pop()?;
-                if ch == '=' {
-                    Some(Token::Eq)
-                } else {
-                    self.input.push(ch);
-                    Some(Token::Assign)
-                }
-            }
-            '+' => Some(Token::Plus),
-            '-' => Some(Token::Minus),
-            '!' => {
-                let ch = self.input.pop()?;
-                if ch == '=' {
-                    Some(Token::NotEq)
-                } else {
-                    self.input.push(ch);
-                    Some(Token::Bang)
-                }
-            }
-            '/' => Some(Token::Slash),
-            '*' => Some(Token::Asterisk),
-            '<' => Some(Token::Lt),
-            '>' => Some(Token::Gt),
-            '(' => Some(Token::LParen),
-            ')' => Some(Token::RParen),
-            '{' => Some(Token::LBrace),
-            '}' => Some(Token::RBrace),
-            '[' => Some(Token::LBracket),
-            ']' => Some(Token::RBracket),
-            ',' => Some(Token::Comma),
-            ';' => Some(Token::Semicolon),
-            ':' => Some(Token::Colon),
-            '\0' => Some(Token::EoF),
-            '"' => {
-                let string = self
-                    .input
-                    .iter()
-                    .rev()
-                    .take_while(|c| **c != '"')
-                    .collect::<String>();
-                for _ in 0..(string.len() + 1) {
-                    self.input.pop();
-                }
-                Some(Token::StringToken(string))
-            }
-            'a'..='z' | 'A'..='Z' | '_' => {
-                self.input.push(ch);
-                let v = self
-                    .input
-                    .iter()
-                    .rev()
-                    .take_while(|c| c.is_ascii_alphabetic() || **c == '_')
-                    .collect::<String>();
-                for _ in 0..v.len() {
-                    self.input.pop();
-                }
-                Some(lookup_ident(&v))
-            }
-            '0'..='9' => {
-                self.input.push(ch);
-                let fig = self
-                    .input
-                    .iter()
-                    .rev()
-                    .take_while(|c| c.is_ascii_digit())
-                    .collect::<String>();
-                for _ in 0..fig.len() {
-                    self.input.pop();
-                }
-                Some(Token::Int(fig.parse().unwrap())) // @todo  change unwrap()
-            }
-            _ => None,
-        }
+    fn into_iter(self) -> Self::IntoIter {
+        self.tokens.into_iter()
     }
 }
 

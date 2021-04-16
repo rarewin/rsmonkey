@@ -70,7 +70,7 @@ pub enum Token {
     Return,
 
     /// string
-    StringToken(String),
+    String(String),
 }
 
 impl std::fmt::Display for Token {
@@ -116,7 +116,7 @@ impl Token {
             Token::If => "if".into(),
             Token::Else => "else".into(),
             Token::Return => "return".into(),
-            Token::StringToken(string) => string.to_string(),
+            Token::String(string) => string.to_string(),
         }
     }
 }

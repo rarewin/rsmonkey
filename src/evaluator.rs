@@ -30,7 +30,7 @@ pub enum EvaluationError {
 }
 
 /// evaluator function
-pub fn eval(parser: &mut Parser, env: Rc<RefCell<Environment>>) -> Result<Object, EvaluationError> {
+pub fn eval(parser: Parser, env: Rc<RefCell<Environment>>) -> Result<Object, EvaluationError> {
     let mut result = Object::Null;
     for stmt in parser {
         result = eval_statement_node(&stmt?, env.clone())?;

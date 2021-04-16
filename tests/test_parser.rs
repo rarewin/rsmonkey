@@ -9,7 +9,6 @@ enum TestLiteral {
     StringLiteral(&'static str),
     BooleanLiteral(bool),
 }
-
 #[test]
 fn test_let_statements() -> Result<(), ParseError> {
     struct Test {
@@ -37,7 +36,7 @@ fn test_let_statements() -> Result<(), ParseError> {
 
     for tt in let_statement_test {
         let l = Lexer::new(tt.input);
-        let mut p = Parser::new(l);
+        let mut p = Parser::new(l).into_iter();
 
         let program = p.next().unwrap()?;
 
@@ -102,7 +101,7 @@ fn test_return_statements() -> Result<(), ParseError> {
 
     for tt in return_statement_test {
         let l = Lexer::new(tt.input);
-        let mut p = Parser::new(l);
+        let mut p = Parser::new(l).into_iter();
 
         let program = p.next().unwrap()?;
 
@@ -140,7 +139,7 @@ fn test_identifier_expression() -> Result<(), ParseError> {
     let input = r##"foobar;"##;
 
     let l = Lexer::new(input);
-    let mut p = Parser::new(l);
+    let mut p = Parser::new(l).into_iter();
 
     let program = p.next().unwrap()?;
 
@@ -160,7 +159,7 @@ fn test_integer_literal_expression() -> Result<(), ParseError> {
     let input = r##"5;"##;
 
     let l = Lexer::new(input);
-    let mut p = Parser::new(l);
+    let mut p = Parser::new(l).into_iter();
 
     let program = p.next().unwrap()?;
 
@@ -176,7 +175,7 @@ fn test_string_literal_expression() -> Result<(), ParseError> {
     let input = r##""hello world""##;
 
     let l = Lexer::new(input);
-    let mut p = Parser::new(l);
+    let mut p = Parser::new(l).into_iter();
 
     let program = p.next().unwrap()?;
 
@@ -207,7 +206,7 @@ fn test_boolean_literal_expression() -> Result<(), ParseError> {
 
     for tt in boolean_test {
         let l = Lexer::new(tt.input);
-        let mut p = Parser::new(l);
+        let mut p = Parser::new(l).into_iter();
 
         let program = p.next().unwrap()?;
 
@@ -266,7 +265,7 @@ fn test_parsing_prefix_expressions() -> Result<(), ParseError> {
 
     for tt in prefix_test {
         let l = Lexer::new(tt.input);
-        let mut p = Parser::new(l);
+        let mut p = Parser::new(l).into_iter();
 
         let program = p.next().unwrap()?;
 
@@ -374,7 +373,7 @@ fn test_parsing_infix_expressions() -> Result<(), ParseError> {
 
     for tt in infix_test {
         let l = Lexer::new(tt.input);
-        let mut p = Parser::new(l);
+        let mut p = Parser::new(l).into_iter();
 
         let program = p.next().unwrap()?;
 
@@ -507,7 +506,7 @@ fn test_operator_precedence_parsing() -> Result<(), ParseError> {
 
     for tt in operator_precedence_test {
         let l = Lexer::new(tt.input);
-        let p = Parser::new(l);
+        let p = Parser::new(l).into_iter();
 
         let program_str = p.map(|c| c.unwrap().string()).collect::<String>();
 
@@ -526,7 +525,7 @@ fn test_if_expression() -> Result<(), ParseError> {
     let input = "if (x < y) { x };";
 
     let l = Lexer::new(input);
-    let mut p = Parser::new(l);
+    let mut p = Parser::new(l).into_iter();
 
     let program = p.next().unwrap()?;
 
@@ -580,7 +579,7 @@ fn test_if_else_expression() -> Result<(), ParseError> {
     let input = "if (x < y) { x; } else { y };";
 
     let l = Lexer::new(input);
-    let mut p = Parser::new(l);
+    let mut p = Parser::new(l).into_iter();
 
     let stmt = p.next().unwrap()?;
 
@@ -648,7 +647,7 @@ fn test_function_literal_parsing() -> Result<(), ParseError> {
     let input = "fn(x, y) { x + y; }";
 
     let l = Lexer::new(input);
-    let mut p = Parser::new(l);
+    let mut p = Parser::new(l).into_iter();
 
     let program = p.next().unwrap()?;
 
@@ -724,7 +723,7 @@ fn test_function_parameter_parsing() -> Result<(), ParseError> {
 
     for tt in func_test {
         let l = Lexer::new(tt.input);
-        let mut p = Parser::new(l);
+        let mut p = Parser::new(l).into_iter();
 
         let program = p.next().unwrap()?;
 
@@ -758,11 +757,11 @@ fn test_function_parameter_parsing() -> Result<(), ParseError> {
 }
 
 #[test]
-fn test_call_expression_arsing() -> Result<(), ParseError> {
+fn test_call_expression_parsing() -> Result<(), ParseError> {
     let input = "add(1, 2 * 3, 4 + 5);";
 
     let l = Lexer::new(input);
-    let mut p = Parser::new(l);
+    let mut p = Parser::new(l).into_iter();
 
     let program = p.next().unwrap()?;
 
@@ -808,7 +807,7 @@ fn test_parsing_array_literal() -> Result<(), ParseError> {
     let input = "[1, 2 * 2, 3 + 3];";
 
     let l = Lexer::new(input);
-    let mut p = Parser::new(l);
+    let mut p = Parser::new(l).into_iter();
 
     let program = p.next().unwrap()?;
 
@@ -853,7 +852,7 @@ fn test_parsing_index_expressions() -> Result<(), ParseError> {
     let input = "myArray[1 + 1]";
 
     let l = Lexer::new(input);
-    let mut p = Parser::new(l);
+    let mut p = Parser::new(l).into_iter();
 
     let program = p.next().unwrap()?;
 
@@ -885,7 +884,7 @@ fn test_parsing_hash_literals_string_keys() -> Result<(), ParseError> {
     let input = r##"{"one": 1, "two": 2, "three": 3}"##;
 
     let l = Lexer::new(input);
-    let mut p = Parser::new(l);
+    let mut p = Parser::new(l).into_iter();
 
     let program = p.next().unwrap()?;
 
@@ -922,7 +921,7 @@ fn test_parsing_empty_hash_literal() -> Result<(), ParseError> {
     let input = "{}";
 
     let l = Lexer::new(input);
-    let mut p = Parser::new(l);
+    let mut p = Parser::new(l).into_iter();
 
     let program = p.next().unwrap()?;
 
@@ -952,7 +951,7 @@ fn test_parsing_hash_literals_with_expressions() -> Result<(), ParseError> {
     let input = r##"{"one": 0 + 1, "two": 10 - 8, "three": 15 / 5}"##;
 
     let l = Lexer::new(input);
-    let mut p = Parser::new(l);
+    let mut p = Parser::new(l).into_iter();
 
     let program = p.next().unwrap()?;
 

@@ -121,8 +121,8 @@ fn test_next_token() {
         Token::NotEq,
         Token::Int(9),
         Token::Semicolon,
-        Token::StringToken("foobar".into()),
-        Token::StringToken("foo bar".into()),
+        Token::String("foobar".into()),
+        Token::String("foo bar".into()),
         //
         Token::LBracket,
         Token::Int(1),
@@ -132,9 +132,9 @@ fn test_next_token() {
         Token::Semicolon,
         //
         Token::LBrace,
-        Token::StringToken("foo".into()),
+        Token::String("foo".into()),
         Token::Colon,
-        Token::StringToken("bar".into()),
+        Token::String("bar".into()),
         Token::RBrace,
     ];
 

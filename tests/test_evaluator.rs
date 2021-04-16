@@ -470,7 +470,7 @@ fn test_error_handling() {
 
 /// test let statement
 #[test]
-fn test_let_statements() {
+fn test_eval_let_statements() {
     struct Test {
         input: &'static str,
         expected: TestLiteral,
@@ -787,10 +787,10 @@ fn test_array_index_expressions() {
 /// eval function
 fn test_eval(input: &'static str) -> Result<Object, EvaluationError> {
     let l = Lexer::new(input);
-    let mut p = Parser::new(l);
+    let p = Parser::new(l);
 
     let env = Rc::new(RefCell::new(Environment::new()));
-    eval(&mut p, env)
+    eval(p, env)
 }
 
 /// test string literal

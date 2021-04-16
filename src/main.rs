@@ -50,9 +50,9 @@ fn read_input() {
 
         if let Some(Ok(input)) = lines.next() {
             let l = Lexer::new(&input);
-            let mut parser = Parser::new(l);
+            let parser = Parser::new(l);
 
-            match eval(&mut parser, env.clone()) {
+            match eval(parser, env.clone()) {
                 Ok(evaluated) => {
                     println!("{}", evaluated);
                 }

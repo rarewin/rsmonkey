@@ -9,10 +9,10 @@ use rsmonkey::parser::Parser;
 /// eval function
 fn test_eval(input: &'static str) -> Object {
     let l = Lexer::new(input);
-    let mut p = Parser::new(l);
+    let p = Parser::new(l);
 
     let env = Rc::new(RefCell::new(Environment::new()));
-    eval(&mut p, env).unwrap()
+    eval(p, env).unwrap()
 }
 
 #[test]

@@ -75,6 +75,7 @@ impl Lexer {
                 }
                 '"' => {
                     let mut string = String::new();
+                    #[allow(clippy::while_let_on_iterator)]
                     while let Some(next) = input.next() {
                         if next == '"' {
                             break;
@@ -82,7 +83,7 @@ impl Lexer {
                             string.push(next);
                         }
                     }
-                    tokens.push(Token::StringToken(string));
+                    tokens.push(Token::String(string));
                 }
                 _ => unimplemented!("{:?}", ch),
             }

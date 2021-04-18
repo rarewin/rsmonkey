@@ -70,11 +70,11 @@ fn test_let_statement(s: &LetStatement, name: &str, value: &TestLiteral) {
         s.name,
     );
     assert_eq!(
-        s.name.token.get_literal(),
+        String::from(&s.name.token),
         name,
         "expected identifier is '{}', but got '{}'.",
         name,
-        s.name.token.get_literal()
+        s.name.token
     );
     test_literal_expression(&s.value, value);
 }
@@ -131,7 +131,7 @@ fn test_string() {
         })),
     }));
 
-    assert_eq!(v.string(), "let myVar = anotherVar;");
+    assert_eq!(String::from(&v), "let myVar = anotherVar;");
 }
 
 #[test]
@@ -148,7 +148,7 @@ fn test_identifier_expression() -> Result<(), ParseError> {
         _ => panic!("first statement is not expressionstatement"),
     };
 
-    assert_eq!(stmt.token.get_literal(), "foobar");
+    assert_eq!(String::from(stmt.token), "foobar");
     assert!(p.next().is_none());
 
     Ok(())
@@ -497,7 +497,7 @@ fn test_operator_precedence_parsing() -> Result<(), ParseError> {
         let l = Lexer::new(tt.input);
         let p = Parser::new(l).into_iter();
 
-        let program_str = p.map(|c| c.unwrap().string()).collect::<String>();
+        let program_str = p.map(|c| String::from(&c.unwrap())).collect::<String>();
 
         assert_eq!(
             program_str, tt.expected,
@@ -625,7 +625,7 @@ fn test_if_else_expression() -> Result<(), ParseError> {
 
     test_literal_expression(&alsex.expression, &TestLiteral::IdentifierLiteral("y"));
 
-    assert_eq!(stmt.string(), "if (x < y) x else y");
+    assert_eq!(String::from(&stmt), "if (x < y) x else y");
     assert!(p.next().is_none());
 
     Ok(())
@@ -1008,11 +1008,11 @@ fn test_integer_literal(en: &ExpressionNode, value: i64) {
         il
     );
     assert_eq!(
-        il.token.get_literal(),
+        String::from(&il.token),
         format!("{}", value),
         "get_literal() is expected as {} bug got {}",
         format!("{}", value),
-        il.token.get_literal(),
+        il.token
     );
 }
 
@@ -1037,10 +1037,10 @@ fn test_identifier_literal(en: &ExpressionNode, value: &'static str) {
     );
 
     assert_eq!(
-        id.token.get_literal(),
+        String::from(&id.token),
         value,
         r##"get_literal() is expected as "{}" but got "{:?}""##,
-        id.token.get_literal(),
+        id.token,
         id,
     );
 }
@@ -1066,10 +1066,10 @@ fn test_string_literal(en: &ExpressionNode, value: &'static str) {
     );
 
     assert_eq!(
-        id.token.get_literal(),
+        String::from(&id.token),
         value,
         r##"get_literal() is expected as "{}" but got "{:?}""##,
-        id.token.get_literal(),
+        id.token,
         id,
     );
 }
@@ -1088,11 +1088,11 @@ fn test_boolean_literal(en: &ExpressionNode, value: bool) {
     );
 
     assert_eq!(
-        bl.token.get_literal(),
+        String::from(&bl.token),
         format!("{:?}", value),
-        r##"{:?} is expected, but got {:?}"##,
+        r##"{:?} is expected, but got {}"##,
         format!("{:?}", value),
-        bl.token.get_literal(),
+        bl.token
     );
 }
 

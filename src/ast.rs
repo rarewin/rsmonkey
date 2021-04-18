@@ -160,9 +160,9 @@ impl StatementNode {
     /// get token's literal
     pub fn get_literal(&self) -> String {
         match self {
-            StatementNode::LetStatementNode(ls) => ls.token.get_literal(),
-            StatementNode::ReturnStatementNode(rs) => rs.token.get_literal(),
-            StatementNode::ExpressionStatementNode(es) => es.token.get_literal(),
+            StatementNode::LetStatementNode(ls) => (&ls.token).into(),
+            StatementNode::ReturnStatementNode(rs) => (&rs.token).into(),
+            StatementNode::ExpressionStatementNode(es) => (&es.token).into(),
             StatementNode::BlockStatementNode(bs) => {
                 if !bs.statements.is_empty() {
                     bs.statements[0].get_literal()
@@ -172,22 +172,31 @@ impl StatementNode {
             }
         }
     }
+}
 
-    /// get string of the statement
-    pub fn string(&self) -> String {
-        match self {
-            StatementNode::LetStatementNode(ls) => format!(
-                "{} {} = {};",
-                ls.token.get_literal(),
-                ls.name.token.get_literal(),
-                &ls.value.string(),
-            ),
-            StatementNode::ReturnStatementNode(rs) => {
-                format!("return {};", &rs.return_value.string(),)
+impl From<StatementNode> for String {
+    fn from(sn: StatementNode) -> Self {
+        Self::from(&sn)
+    }
+}
+
+impl From<&StatementNode> for String {
+    fn from(sn: &StatementNode) -> Self {
+        match sn {
+            StatementNode::LetStatementNode(ls) => {
+                format!(
+                    "{} {} = {};",
+                    ls.token,
+                    ls.name.token,
+                    String::from(&ls.value),
+                )
             }
-            StatementNode::ExpressionStatementNode(es) => es.expression.string(),
+            StatementNode::ReturnStatementNode(rs) => {
+                format!("return {};", String::from(&rs.return_value))
+            }
+            StatementNode::ExpressionStatementNode(es) => String::from(&es.expression),
             StatementNode::BlockStatementNode(bs) => {
-                bs.statements.iter().map(|s| s.string()).collect()
+                bs.statements.iter().map(String::from).collect()
             }
         }
     }
@@ -195,56 +204,77 @@ impl StatementNode {
 
 /// implementation of expression node
 impl ExpressionNode {
-    /// get string of the expression node
-    pub fn string(&self) -> String {
+    /// get the token's literal
+    pub fn get_literal(&self) -> String {
         match self {
+            ExpressionNode::IdentifierNode(idn) => (&idn.token).into(),
+            ExpressionNode::IntegerLiteralNode(iln) => (&iln.token).into(),
+            ExpressionNode::FunctionLiteralNode(fln) => (&fln.token).into(),
+            ExpressionNode::PrefixExpressionNode(pen) => (&pen.token).into(),
+            ExpressionNode::InfixExpressionNode(ien) => (&ien.token).into(),
+            ExpressionNode::BooleanExpressionNode(ben) => (&ben.token).into(),
+            ExpressionNode::CallExpressionNode(cen) => (&cen.token).into(),
+            _ => panic!("not supported string(): {:?}", self),
+        }
+    }
+}
+
+impl From<ExpressionNode> for String {
+    fn from(en: ExpressionNode) -> Self {
+        Self::from(&en)
+    }
+}
+
+impl From<&ExpressionNode> for String {
+    fn from(en: &ExpressionNode) -> Self {
+        match en {
             ExpressionNode::IdentifierNode(_) | ExpressionNode::IntegerLiteralNode(_) => {
-                self.get_literal()
+                en.get_literal()
             }
             ExpressionNode::FunctionLiteralNode(fln) => format!(
                 "{}({}){}",
-                &self.get_literal(),
+                &en.get_literal(),
                 &((&fln.parameters)
                     .iter()
-                    .map(|x| x.string())
+                    .map(String::from)
                     .collect::<Vec<String>>()
                     .join(", ")),
                 if let Some(body) = &fln.body {
-                    body.string()
+                    String::from(body)
                 } else {
                     "".into()
                 }
             ),
             ExpressionNode::PrefixExpressionNode(pen) => {
-                format!("({}{})", pen.token, &pen.right.string())
+                format!("({}{})", pen.token, String::from(&pen.right))
             }
             ExpressionNode::InfixExpressionNode(ien) => format!(
                 "({} {} {})",
-                ien.left.string(),
+                String::from(&ien.left),
                 ien.token,
-                ien.right.string(),
+                String::from(&ien.right),
             ),
-            ExpressionNode::BooleanExpressionNode(ben) => ben.token.get_literal(),
+            ExpressionNode::BooleanExpressionNode(ben) => (&ben.token).into(),
             ExpressionNode::IfExpressionNode(ien) => format!(
                 "if {} {}{}",
-                ien.condition.string(),
+                String::from(&ien.condition),
                 if let Some(consequence) = &ien.consequence {
-                    consequence.string()
+                    String::from(consequence)
                 } else {
                     "".into()
                 },
                 if let Some(alternative) = &ien.alternative {
-                    format!(" else {}", alternative.string())
+                    format!(" else {}", String::from(alternative))
                 } else {
                     "".into()
                 }
             ),
             ExpressionNode::CallExpressionNode(cen) => format!(
                 "{}({})",
-                &cen.function.string(),
+                String::from(&cen.function),
                 &((&cen.arguments)
                     .iter()
-                    .map(|x| x.string())
+                    .map(String::from)
                     .collect::<Vec<String>>()
                     .join(", "))
             ),
@@ -252,37 +282,28 @@ impl ExpressionNode {
                 "[{}]",
                 &((&al.elements)
                     .iter()
-                    .map(|x| x.string())
+                    .map(String::from)
                     .collect::<Vec<String>>()
                     .join(", "))
             ),
             ExpressionNode::IndexExpressionNode(ien) => {
-                format!("({}[{}])", &ien.left.string(), &ien.index.string())
+                format!(
+                    "({}[{}])",
+                    String::from(&ien.left),
+                    String::from(&ien.index)
+                )
             }
-            ExpressionNode::HashLiteralNode(hln) => format!(
-                "{{{}}}",
-                &((&hln.pairs)
-                    .iter()
-                    .map(|x| format!("{}:{}", x.0.string(), x.1.string()))
-                    .collect::<Vec<String>>()
-                    .join(", "))
-            ),
-
-            _ => panic!("not supported string(): {:?}", self),
-        }
-    }
-
-    /// get the token's literal
-    pub fn get_literal(&self) -> String {
-        match self {
-            ExpressionNode::IdentifierNode(idn) => (*idn).token.get_literal(),
-            ExpressionNode::IntegerLiteralNode(iln) => (*iln).token.get_literal(),
-            ExpressionNode::FunctionLiteralNode(fln) => (*fln).token.get_literal(),
-            ExpressionNode::PrefixExpressionNode(pen) => (*pen).token.get_literal(),
-            ExpressionNode::InfixExpressionNode(ien) => (*ien).token.get_literal(),
-            ExpressionNode::BooleanExpressionNode(ben) => (*ben).token.get_literal(),
-            ExpressionNode::CallExpressionNode(cen) => (*cen).token.get_literal(),
-            _ => panic!("not supported string(): {:?}", self),
+            ExpressionNode::HashLiteralNode(hln) => {
+                format!(
+                    "{{{}}}",
+                    &((&hln.pairs)
+                        .iter()
+                        .map(|x| format!("{}:{}", String::from(&x.0), String::from(&x.1)))
+                        .collect::<Vec<String>>()
+                        .join(", "))
+                )
+            }
+            _ => panic!("not supported string(): {:?}", en),
         }
     }
 }

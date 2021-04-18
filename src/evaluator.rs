@@ -349,7 +349,7 @@ fn apply_function(function: &Object, args: &[Object]) -> Result<Object, Evaluati
                 extended_env
                     .clone()
                     .borrow_mut()
-                    .set(&p.string(), &args[idx]);
+                    .set(&String::from(p), &args[idx]);
             }
             let evaluated = eval_statement_node(&fnc.body, extended_env)?;
             if let Object::ReturnValueObject(ro) = evaluated {

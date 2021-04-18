@@ -55,12 +55,9 @@ impl fmt::Display for Object {
                         .join(", ")),
                 );
                 ret.push_str(") {\n");
-                ret.push_str(&fo.body.string());
-                ret.push_str(if fo.body.string().is_empty() {
-                    "}"
-                } else {
-                    "\n}"
-                });
+                let body = String::from(&fo.body);
+                ret.push_str(&body);
+                ret.push_str(if body.is_empty() { "}" } else { "\n}" });
                 write!(f, "{}", ret)
             }
             Object::ArrayObject(ao) => {
@@ -92,6 +89,12 @@ impl fmt::Display for Object {
             Object::BuiltinObject(_) => write!(f, "builtin function"),
             Object::Null => write!(f, ""),
         }
+    }
+}
+
+impl From<Token> for Object {
+    fn from(token: Token) -> Self {
+        Self::from(&token)
     }
 }
 

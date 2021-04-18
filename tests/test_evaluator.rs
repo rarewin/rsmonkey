@@ -519,16 +519,17 @@ fn test_function_object() {
         f.parameters.len()
     );
 
-    assert!(
-        f.parameters[0].string() == "x",
+    assert_eq!(
+        String::from(&f.parameters[0]),
+        "x",
         "parameter should be 'x', got '{}'",
-        f.parameters[0].string()
+        String::from(&f.parameters[0])
     );
 
     assert!(
-        f.body.string() == "(x + 2)",
+        String::from(&f.body) == "(x + 2)",
         r##"body should be "(x + 2)", got {}"##,
-        f.body.string()
+        String::from(&f.body)
     );
 }
 

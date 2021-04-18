@@ -75,13 +75,19 @@ pub enum Token {
 
 impl std::fmt::Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "{}", self.get_literal())
+        write!(f, "{}", String::from(self))
     }
 }
 
-impl Token {
-    pub fn get_literal(&self) -> String {
-        match self {
+impl From<Token> for String {
+    fn from(t: Token) -> Self {
+        String::from(&t)
+    }
+}
+
+impl From<&Token> for String {
+    fn from(t: &Token) -> Self {
+        match t {
             Token::Illegal => "Illegal".into(),
             Token::EoF => "EoF".into(),
             Token::Ident(ident) => ident.to_string(),

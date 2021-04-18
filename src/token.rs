@@ -80,10 +80,6 @@ impl std::fmt::Display for Token {
 }
 
 impl Token {
-    pub fn is_eof(&self) -> bool {
-        *self == Token::EoF
-    }
-
     pub fn get_literal(&self) -> String {
         match self {
             Token::Illegal => "Illegal".into(),

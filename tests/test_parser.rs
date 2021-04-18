@@ -63,9 +63,11 @@ fn test_let_statements() -> Result<(), ParseError> {
 /// ```
 fn test_let_statement(s: &LetStatement, name: &str, value: &TestLiteral) {
     assert_eq!(
-        s.name.value, name,
-        "expected identifier is '{}', but got '{}'.",
-        name, s.name.value,
+        Token::Ident(format!("{}", s.name.token)),
+        Token::Ident(name.to_string()),
+        "expected identifier is '{}', but got '{:?}'.",
+        name,
+        s.name,
     );
     assert_eq!(
         s.name.token.get_literal(),
@@ -123,11 +125,9 @@ fn test_string() {
         token: Token::Let,
         name: Identifier {
             token: Token::Ident("myVar".into()),
-            value: "myVar".into(),
         },
         value: ExpressionNode::IdentifierNode(Box::new(Identifier {
             token: Token::Ident("anotherVar".into()),
-            value: "myVar".into(),
         })),
     }));
 
@@ -236,29 +236,24 @@ fn test_boolean_literal_expression() -> Result<(), ParseError> {
 fn test_parsing_prefix_expressions() -> Result<(), ParseError> {
     struct Test {
         input: &'static str,
-        operator: &'static str,
         value: TestLiteral,
     }
 
     let prefix_test = vec![
         Test {
             input: "!5;",
-            operator: "!",
             value: TestLiteral::IntegerLiteral(5),
         },
         Test {
             input: "-15;",
-            operator: "-",
             value: TestLiteral::IntegerLiteral(15),
         },
         Test {
             input: "!true;",
-            operator: "!",
             value: TestLiteral::BooleanLiteral(true),
         },
         Test {
             input: "!false;",
-            operator: "!",
             value: TestLiteral::BooleanLiteral(false),
         },
     ];
@@ -278,12 +273,6 @@ fn test_parsing_prefix_expressions() -> Result<(), ParseError> {
             ExpressionNode::PrefixExpressionNode(pe) => pe,
             _ => panic!("this expression statement does not have prefix expression"),
         };
-
-        assert_eq!(
-            tt.operator, exp.operator,
-            "unexpected operator {} (expected {})",
-            exp.operator, tt.operator
-        );
 
         test_literal_expression(&exp.right, &tt.value);
 
@@ -1012,11 +1001,12 @@ fn test_integer_literal(en: &ExpressionNode, value: i64) {
     };
 
     assert_eq!(
-        il.value, value,
-        "integer value is expected as {} but got {}",
-        value, il.value
+        il.token,
+        Token::Int(value),
+        "integer value is expected as {} but got {:?}",
+        value,
+        il
     );
-
     assert_eq!(
         il.token.get_literal(),
         format!("{}", value),
@@ -1039,17 +1029,19 @@ fn test_identifier_literal(en: &ExpressionNode, value: &'static str) {
     };
 
     assert_eq!(
-        id.value, value,
-        r##"value is expected as "{}" but got "{}""##,
-        value, id.value,
+        id.token,
+        Token::Ident(value.to_string()),
+        r##"value is expected as "{}" but got "{:?}""##,
+        value,
+        id,
     );
 
     assert_eq!(
         id.token.get_literal(),
         value,
-        r##"get_literal() is expected as "{}" but got "{}""##,
+        r##"get_literal() is expected as "{}" but got "{:?}""##,
         id.token.get_literal(),
-        id.value,
+        id,
     );
 }
 
@@ -1066,17 +1058,19 @@ fn test_string_literal(en: &ExpressionNode, value: &'static str) {
     };
 
     assert_eq!(
-        id.value, value,
-        r##"value is expected as "{}" but got "{}""##,
-        value, id.value,
+        id.token,
+        Token::String(value.to_string()),
+        r##"value is expected as "{}" but got "{:?}""##,
+        value,
+        id,
     );
 
     assert_eq!(
         id.token.get_literal(),
         value,
-        r##"get_literal() is expected as "{}" but got "{}""##,
+        r##"get_literal() is expected as "{}" but got "{:?}""##,
         id.token.get_literal(),
-        id.value,
+        id,
     );
 }
 
@@ -1127,9 +1121,11 @@ fn test_infix_expression(
     test_literal_expression(&ifn.left, &ex_left);
 
     assert_eq!(
-        ifn.operator, ex_operator,
+        format!("{}", ifn.token),
+        ex_operator,
         "unexpected operator {} (expected {})",
-        ifn.operator, ex_operator,
+        ifn.token,
+        ex_operator,
     );
 
     test_literal_expression(&ifn.right, &ex_right);

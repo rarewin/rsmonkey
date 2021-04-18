@@ -72,21 +72,18 @@ pub struct BlockStatement {
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Identifier {
     pub token: Token,
-    pub value: String,
 }
 
 /// struct for integer literal
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct IntegerLiteral {
     pub token: Token,
-    pub value: i64,
 }
 
 /// struct for string literal
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct StringLiteral {
     pub token: Token,
-    pub value: String,
 }
 
 /// struct for function literal
@@ -101,7 +98,6 @@ pub struct FunctionLiteral {
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct PrefixExpression {
     pub token: Token,
-    pub operator: String,
     pub right: ExpressionNode,
 }
 
@@ -110,7 +106,6 @@ pub struct PrefixExpression {
 pub struct InfixExpression {
     pub token: Token,
     pub left: ExpressionNode,
-    pub operator: String,
     pub right: ExpressionNode,
 }
 
@@ -221,12 +216,12 @@ impl ExpressionNode {
                 }
             ),
             ExpressionNode::PrefixExpressionNode(pen) => {
-                format!("({}{})", pen.operator, &pen.right.string())
+                format!("({}{})", pen.token, &pen.right.string())
             }
             ExpressionNode::InfixExpressionNode(ien) => format!(
                 "({} {} {})",
                 ien.left.string(),
-                ien.operator,
+                ien.token,
                 ien.right.string(),
             ),
             ExpressionNode::BooleanExpressionNode(ben) => ben.token.get_literal(),

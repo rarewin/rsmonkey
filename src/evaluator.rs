@@ -86,7 +86,7 @@ fn eval_let_statement(
     env: Rc<RefCell<Environment>>,
 ) -> Result<Object, EvaluationError> {
     let val = eval_expression_node(&ls.value, env.clone())?;
-    env.borrow_mut().set(&ls.name.value, &val);
+    env.borrow_mut().set(&format!("{}", &ls.name.token), &val);
     Ok(val)
 }
 
@@ -96,17 +96,17 @@ fn eval_expression_node(
     env: Rc<RefCell<Environment>>,
 ) -> Result<Object, EvaluationError> {
     match node {
-        ExpressionNode::IntegerLiteralNode(il) => Ok(Object::new_integer(il.value)),
-        ExpressionNode::StringLiteralNode(sl) => Ok(Object::new_string(&sl.value)),
+        ExpressionNode::IntegerLiteralNode(il) => Ok(Object::from(&il.token)),
+        ExpressionNode::StringLiteralNode(sl) => Ok(Object::from(&sl.token)),
         ExpressionNode::BooleanExpressionNode(be) => Ok(Object::new_boolean(be.value)),
         ExpressionNode::PrefixExpressionNode(pe) => {
             let right = eval_expression_node(&pe.right, env)?;
-            eval_prefix_expression_node(&pe.operator, &right)
+            eval_prefix_expression_node(&format!("{}", pe.token), &right)
         }
         ExpressionNode::InfixExpressionNode(ie) => {
             let left = eval_expression_node(&ie.left, env.clone())?;
             let right = eval_expression_node(&ie.right, env)?;
-            eval_infix_expression_node(&ie.operator, &left, &right)
+            eval_infix_expression_node(&format!("{}", ie.token), &left, &right)
         }
         ExpressionNode::IfExpressionNode(ie) => {
             let condition = eval_expression_node(&ie.condition, env.clone())?;
@@ -140,9 +140,10 @@ fn eval_expression_node(
                 }
             }
         }
-        ExpressionNode::IdentifierNode(id) => {
-            env.borrow().get(&id.value).map_err(EvaluationError::from)
-        }
+        ExpressionNode::IdentifierNode(id) => env
+            .borrow()
+            .get(&format!("{}", id.token))
+            .map_err(EvaluationError::from),
         ExpressionNode::FunctionLiteralNode(fl) => {
             if let Some(body) = &fl.body {
                 Ok(Object::new_function(&fl.parameters, body, env))

@@ -6,6 +6,7 @@ use std::rc::Rc;
 use thiserror::Error;
 
 use crate::ast::{ExpressionNode, StatementNode};
+use crate::token::Token;
 
 /// object
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -90,6 +91,16 @@ impl fmt::Display for Object {
             }
             Object::BuiltinObject(_) => write!(f, "builtin function"),
             Object::Null => write!(f, ""),
+        }
+    }
+}
+
+impl From<&Token> for Object {
+    fn from(token: &Token) -> Self {
+        match token {
+            Token::Int(i) => Object::new_integer(*i),
+            Token::String(s) => Object::new_string(s),
+            _ => todo!("{:?}", token),
         }
     }
 }

@@ -463,7 +463,7 @@ fn test_error_handling() {
     ];
 
     for tt in error_tests {
-        let evaluated = test_eval(tt.input);
+        let evaluated = dbg!(test_eval(tt.input));
         tt.expected.test_literal(&evaluated);
     }
 }

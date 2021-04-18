@@ -76,8 +76,7 @@ where
 
     let name = if let Token::Ident(id) = ident {
         Identifier {
-            token: Token::Ident(id.to_string()),
-            value: id,
+            token: Token::Ident(id),
         }
     } else {
         return Err(ParseError::UnexpectedEof);
@@ -158,17 +157,15 @@ where
 {
     let token = l.next().ok_or(ParseError::UnexpectedEof)?;
 
-    match token.clone() {
-        Token::Int(value) => Ok(ExpressionNode::IntegerLiteralNode(Box::new(
-            IntegerLiteral { token, value },
+    match token {
+        Token::Int(_) => Ok(ExpressionNode::IntegerLiteralNode(Box::new(
+            IntegerLiteral { token },
         ))),
-        Token::String(value) => Ok(ExpressionNode::StringLiteralNode(Box::new(StringLiteral {
+        Token::String(_) => Ok(ExpressionNode::StringLiteralNode(Box::new(StringLiteral {
             token,
-            value,
         }))),
-        Token::Ident(value) => Ok(ExpressionNode::IdentifierNode(Box::new(Identifier {
+        Token::Ident(_) => Ok(ExpressionNode::IdentifierNode(Box::new(Identifier {
             token,
-            value,
         }))),
         Token::True => Ok(ExpressionNode::BooleanExpressionNode(Box::new(Boolean {
             token,
@@ -243,15 +240,10 @@ fn parse_prefix_expression<I>(
 where
     I: Iterator<Item = Token>,
 {
-    let operator = format!("{}", token);
     let right = parse_expression(l, OperationPrecedence::Prefix)?;
 
     Ok(ExpressionNode::PrefixExpressionNode(Box::new(
-        PrefixExpression {
-            token,
-            operator,
-            right,
-        },
+        PrefixExpression { token, right },
     )))
 }
 
@@ -270,15 +262,9 @@ where
         | Token::Lt
         | Token::Eq
         | Token::NotEq => {
-            let operator = format!("{}", &token);
             let right = parse_expression(l, get_precedence(&token))?;
             Ok(ExpressionNode::InfixExpressionNode(Box::new(
-                InfixExpression {
-                    token,
-                    left,
-                    operator,
-                    right,
-                },
+                InfixExpression { token, left, right },
             )))
         }
         Token::LParen => {
@@ -415,8 +401,7 @@ where
     let token = l.next().ok_or(ParseError::UnexpectedEof)?;
 
     params.push(ExpressionNode::IdentifierNode(Box::new(Identifier {
-        token: token.clone(),
-        value: format!("{}", token),
+        token,
     })));
 
     while l.peek() == Some(&Token::Comma) {
@@ -425,8 +410,7 @@ where
         let token = l.next().ok_or(ParseError::UnexpectedEof)?;
 
         params.push(ExpressionNode::IdentifierNode(Box::new(Identifier {
-            token: token.clone(),
-            value: format!("{}", token),
+            token,
         })));
     }
 

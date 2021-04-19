@@ -98,7 +98,7 @@ fn eval_expression_node(
     match node {
         ExpressionNode::IntegerLiteralNode(il) => Ok(Object::from(&il.token)),
         ExpressionNode::StringLiteralNode(sl) => Ok(Object::from(&sl.token)),
-        ExpressionNode::BooleanExpressionNode(be) => Ok(Object::new_boolean(be.value)),
+        ExpressionNode::BooleanExpressionNode(be) => Ok(Object::from(be.value)),
         ExpressionNode::PrefixExpressionNode(pe) => {
             let right = eval_expression_node(&pe.right, env)?;
             eval_prefix_expression_node(&format!("{}", pe.token), &right)
@@ -195,16 +195,16 @@ fn eval_prefix_expression_node(operator: &str, right: &Object) -> Result<Object,
 #[allow(clippy::unnecessary_wraps)]
 fn eval_bang_operation_expression_node(right: &Object) -> Result<Object, EvaluationError> {
     match right {
-        Object::BooleanObject(bl) => Ok(Object::new_boolean(!(*bl).value)),
-        Object::Null => Ok(Object::new_boolean(true)),
-        _ => Ok(Object::new_boolean(false)),
+        Object::BooleanObject(bl) => Ok(Object::from(!(*bl).value)),
+        Object::Null => Ok(Object::from(true)),
+        _ => Ok(Object::from(false)),
     }
 }
 
 /// evaluator function for minus operation expression node
 fn eval_minus_operation_expression_node(right: &Object) -> Result<Object, EvaluationError> {
     if let Object::IntegerObject(integer) = right {
-        Ok(Object::new_integer(-integer.value))
+        Ok(Object::from(-integer.value))
     } else {
         Err(EvaluationError::UnknownOperator(format!(
             "-{}",
@@ -231,14 +231,14 @@ fn eval_infix_expression_node(
                 let mut s = String::new();
                 s.push_str(&(*left_str).value);
                 s.push_str(&(*right_str).value);
-                return Ok(Object::new_string(&s));
+                return Ok(Object::from(&s));
             }
         }
     }
 
     match operator {
-        "==" => Ok(Object::new_boolean(left == right)),
-        "!=" => Ok(Object::new_boolean(left != right)),
+        "==" => Ok(Object::from(left == right)),
+        "!=" => Ok(Object::from(left != right)),
         _ => {
             if left.object_type() != right.object_type() {
                 Err(EvaluationError::TypeMismatch(format!(
@@ -266,14 +266,14 @@ fn eval_integer_infix_expression(
     right: &Integer,
 ) -> Result<Object, EvaluationError> {
     match operator {
-        "+" => Ok(Object::new_integer(left.value + right.value)),
-        "-" => Ok(Object::new_integer(left.value - right.value)),
-        "*" => Ok(Object::new_integer(left.value * right.value)),
-        "/" => Ok(Object::new_integer(left.value / right.value)),
-        "<" => Ok(Object::new_boolean(left.value < right.value)),
-        ">" => Ok(Object::new_boolean(left.value > right.value)),
-        "==" => Ok(Object::new_boolean(left.value == right.value)),
-        "!=" => Ok(Object::new_boolean(left.value != right.value)),
+        "+" => Ok(Object::from(left.value + right.value)),
+        "-" => Ok(Object::from(left.value - right.value)),
+        "*" => Ok(Object::from(left.value * right.value)),
+        "/" => Ok(Object::from(left.value / right.value)),
+        "<" => Ok(Object::from(left.value < right.value)),
+        ">" => Ok(Object::from(left.value > right.value)),
+        "==" => Ok(Object::from(left.value == right.value)),
+        "!=" => Ok(Object::from(left.value != right.value)),
         _ => Err(EvaluationError::Unknown),
     }
 }

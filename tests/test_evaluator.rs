@@ -639,12 +639,12 @@ fn test_hash() {
 
     let expected = TestLiteral::HashLiteral {
         pairs: vec![
-            (Object::new_string("one"), Object::new_integer(1)),
-            (Object::new_string("two"), Object::new_integer(2)),
-            (Object::new_string("three"), Object::new_integer(3)),
-            (Object::new_integer(4), Object::new_integer(4)),
-            (Object::new_boolean(true), Object::new_integer(5)),
-            (Object::new_boolean(false), Object::new_integer(6)),
+            (Object::from("one"), Object::from(1)),
+            (Object::from("two"), Object::from(2)),
+            (Object::from("three"), Object::from(3)),
+            (Object::from(4), Object::from(4)),
+            (Object::from(true), Object::from(5)),
+            (Object::from(false), Object::from(6)),
         ],
     };
 
@@ -723,11 +723,7 @@ fn test_array_literals() {
     );
 
     TestLiteral::ArrayLiteral {
-        array: vec![
-            Object::new_integer(1),
-            Object::new_integer(4),
-            Object::new_integer(6),
-        ],
+        array: vec![Object::from(1), Object::from(4), Object::from(6)],
     }
     .test_literal(&evaluated);
 }
@@ -889,23 +885,19 @@ fn test_builtin_functions() {
         Test {
             input: r##"rest([1, 2, 3, 4]);"##,
             expected: TestLiteral::ArrayLiteral {
-                array: vec![
-                    Object::new_integer(2),
-                    Object::new_integer(3),
-                    Object::new_integer(4),
-                ],
+                array: vec![Object::from(2), Object::from(3), Object::from(4)],
             },
         },
         Test {
             input: r##"rest(rest([1, 2, 3, 4]));"##,
             expected: TestLiteral::ArrayLiteral {
-                array: vec![Object::new_integer(3), Object::new_integer(4)],
+                array: vec![Object::from(3), Object::from(4)],
             },
         },
         Test {
             input: r##"rest(rest(rest([1, 2, 3, 4])));"##,
             expected: TestLiteral::ArrayLiteral {
-                array: vec![Object::new_integer(4)],
+                array: vec![Object::from(4)],
             },
         },
         Test {
@@ -919,11 +911,7 @@ fn test_builtin_functions() {
         Test {
             input: r##"let a = [1, 2]; push(a, 3);"##,
             expected: TestLiteral::ArrayLiteral {
-                array: vec![
-                    Object::new_integer(1),
-                    Object::new_integer(2),
-                    Object::new_integer(3),
-                ],
+                array: vec![Object::from(1), Object::from(2), Object::from(3)],
             },
         },
         Test {
@@ -942,10 +930,10 @@ fn test_builtin_functions() {
                       map(a, double);"##,
             expected: TestLiteral::ArrayLiteral {
                 array: vec![
-                    Object::new_integer(2),
-                    Object::new_integer(4),
-                    Object::new_integer(6),
-                    Object::new_integer(8),
+                    Object::from(2),
+                    Object::from(4),
+                    Object::from(6),
+                    Object::from(8),
                 ],
             },
         },

@@ -101,9 +101,41 @@ impl From<Token> for Object {
 impl From<&Token> for Object {
     fn from(token: &Token) -> Self {
         match token {
-            Token::Int(i) => Object::new_integer(*i),
-            Token::String(s) => Object::new_string(s),
+            Token::Int(i) => Object::from(*i),
+            Token::String(s) => Object::from(s),
             _ => todo!("{:?}", token),
+        }
+    }
+}
+
+impl From<i64> for Object {
+    fn from(value: i64) -> Self {
+        Object::IntegerObject(Box::new(Integer { value }))
+    }
+}
+
+impl From<&String> for Object {
+    fn from(value: &String) -> Self {
+        Object::StringObject(Box::new(StringObj {
+            value: value.to_string(),
+        }))
+    }
+}
+
+impl From<&str> for Object {
+    fn from(value: &str) -> Self {
+        Object::StringObject(Box::new(StringObj {
+            value: value.to_string(),
+        }))
+    }
+}
+
+impl From<bool> for Object {
+    fn from(value: bool) -> Self {
+        if value {
+            Object::BooleanObject(Box::new(TRUE))
+        } else {
+            Object::BooleanObject(Box::new(FALSE))
         }
     }
 }
@@ -122,27 +154,6 @@ impl Object {
             Object::HashObject(_) => HASH_OBJ,
             Object::BuiltinObject(_) => BUILTIN_OBJ,
             Object::Null => "(null)",
-        }
-    }
-
-    /// create a new integer object
-    pub fn new_integer(value: i64) -> Object {
-        Object::IntegerObject(Box::new(Integer { value }))
-    }
-
-    /// create a new string object
-    pub fn new_string(value: &str) -> Object {
-        Object::StringObject(Box::new(StringObj {
-            value: value.to_string(),
-        }))
-    }
-
-    /// create a new boolean object
-    pub fn new_boolean(value: bool) -> Object {
-        if value {
-            Object::BooleanObject(Box::new(TRUE))
-        } else {
-            Object::BooleanObject(Box::new(FALSE))
         }
     }
 
@@ -321,8 +332,8 @@ fn builtin_len(parameters: Vec<Object>) -> Result<Object, ObjectError> {
     }
 
     match &parameters[0] {
-        Object::StringObject(so) => Ok(Object::new_integer(so.value.len() as i64)),
-        Object::ArrayObject(ao) => Ok(Object::new_integer(ao.elements.len() as i64)),
+        Object::StringObject(so) => Ok(Object::from(so.value.len() as i64)),
+        Object::ArrayObject(ao) => Ok(Object::from(ao.elements.len() as i64)),
         _ => Err(ObjectError::InvalidArgumentForLen(
             parameters[0].object_type().into(),
         )),

@@ -18,24 +18,18 @@ fn test_eval(input: &'static str) -> Object {
 #[test]
 fn test_display_strings() {
     let test_data = vec![
-        (Object::new_integer(1), "1"),
-        (Object::new_integer(-100), "-100"),
-        (Object::new_boolean(true), "true"),
-        (Object::new_boolean(false), "false"),
-        (Object::new_string("hoge"), r##""hoge""##),
-        (Object::new_string("SHIROBAKO"), r##""SHIROBAKO""##),
+        (Object::from(1), "1"),
+        (Object::from(-100), "-100"),
+        (Object::from(true), "true"),
+        (Object::from(false), "false"),
+        (Object::from("hoge"), r##""hoge""##),
+        (Object::from("SHIROBAKO"), r##""SHIROBAKO""##),
         (
-            Object::new_string("The Legend of Heroes"),
+            Object::from("The Legend of Heroes"),
             r##""The Legend of Heroes""##,
         ),
-        (
-            Object::new_return_value(Object::new_integer(-1234)),
-            "-1234",
-        ),
-        (
-            Object::new_return_value(Object::new_boolean(false)),
-            "false",
-        ),
+        (Object::new_return_value(Object::from(-1234)), "-1234"),
+        (Object::new_return_value(Object::from(false)), "false"),
         (
             test_eval("fn(){}"),
             r##"fn() {

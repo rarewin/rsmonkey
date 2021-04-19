@@ -50,7 +50,7 @@ impl fmt::Display for Object {
                 ret.push_str(
                     &((&fo.parameters)
                         .iter()
-                        .map(|x| x.get_literal())
+                        .map(|x| format!("{}", x))
                         .collect::<Vec<String>>()
                         .join(", ")),
                 );

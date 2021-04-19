@@ -74,10 +74,22 @@ pub struct Identifier {
     pub token: Token,
 }
 
+impl std::fmt::Display for Identifier {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        self.token.fmt(f)
+    }
+}
+
 /// struct for integer literal
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct IntegerLiteral {
     pub token: Token,
+}
+
+impl std::fmt::Display for IntegerLiteral {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        self.token.fmt(f)
+    }
 }
 
 /// struct for string literal
@@ -94,11 +106,23 @@ pub struct FunctionLiteral {
     pub body: Option<StatementNode>,
 }
 
+impl std::fmt::Display for FunctionLiteral {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        self.token.fmt(f)
+    }
+}
+
 /// struct for prefix expression
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct PrefixExpression {
     pub token: Token,
     pub right: ExpressionNode,
+}
+
+impl std::fmt::Display for PrefixExpression {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        self.token.fmt(f)
+    }
 }
 
 /// struct for infix expression
@@ -109,11 +133,23 @@ pub struct InfixExpression {
     pub right: ExpressionNode,
 }
 
+impl std::fmt::Display for InfixExpression {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        self.token.fmt(f)
+    }
+}
+
 /// struct for boolean
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Boolean {
     pub token: Token,
     pub value: bool,
+}
+
+impl std::fmt::Display for Boolean {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        self.token.fmt(f)
+    }
 }
 
 /// struft for if expression
@@ -131,6 +167,12 @@ pub struct CallExpression {
     pub token: Token,
     pub function: ExpressionNode,
     pub arguments: Vec<ExpressionNode>,
+}
+
+impl std::fmt::Display for CallExpression {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        self.token.fmt(f)
+    }
 }
 
 /// struct for array literal
@@ -155,21 +197,11 @@ pub struct IndexExpression {
     pub index: ExpressionNode,
 }
 
-/// implementation of statement node
-impl StatementNode {
-    /// get token's literal
-    pub fn get_literal(&self) -> String {
+impl std::fmt::Display for StatementNode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
-            StatementNode::LetStatementNode(ls) => (&ls.token).into(),
-            StatementNode::ReturnStatementNode(rs) => (&rs.token).into(),
-            StatementNode::ExpressionStatementNode(es) => (&es.token).into(),
-            StatementNode::BlockStatementNode(bs) => {
-                if !bs.statements.is_empty() {
-                    bs.statements[0].get_literal()
-                } else {
-                    "(empty block statement)".into()
-                }
-            }
+            StatementNode::ExpressionStatementNode(es) => write!(f, "{}", es.token),
+            _ => todo!("{:?}", self),
         }
     }
 }
@@ -202,19 +234,17 @@ impl From<&StatementNode> for String {
     }
 }
 
-/// implementation of expression node
-impl ExpressionNode {
-    /// get the token's literal
-    pub fn get_literal(&self) -> String {
+impl std::fmt::Display for ExpressionNode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
-            ExpressionNode::IdentifierNode(idn) => (&idn.token).into(),
-            ExpressionNode::IntegerLiteralNode(iln) => (&iln.token).into(),
-            ExpressionNode::FunctionLiteralNode(fln) => (&fln.token).into(),
-            ExpressionNode::PrefixExpressionNode(pen) => (&pen.token).into(),
-            ExpressionNode::InfixExpressionNode(ien) => (&ien.token).into(),
-            ExpressionNode::BooleanExpressionNode(ben) => (&ben.token).into(),
-            ExpressionNode::CallExpressionNode(cen) => (&cen.token).into(),
-            _ => panic!("not supported string(): {:?}", self),
+            ExpressionNode::IdentifierNode(id) => id.fmt(f),
+            ExpressionNode::IntegerLiteralNode(il) => il.fmt(f),
+            ExpressionNode::FunctionLiteralNode(fl) => fl.fmt(f),
+            ExpressionNode::PrefixExpressionNode(pe) => pe.fmt(f),
+            ExpressionNode::InfixExpressionNode(ie) => ie.fmt(f),
+            ExpressionNode::BooleanExpressionNode(b) => b.fmt(f),
+            ExpressionNode::CallExpressionNode(ce) => ce.fmt(f),
+            _ => todo!("{:?}", self),
         }
     }
 }
@@ -228,12 +258,11 @@ impl From<ExpressionNode> for String {
 impl From<&ExpressionNode> for String {
     fn from(en: &ExpressionNode) -> Self {
         match en {
-            ExpressionNode::IdentifierNode(_) | ExpressionNode::IntegerLiteralNode(_) => {
-                en.get_literal()
-            }
+            ExpressionNode::IdentifierNode(idn) => (&idn.token).into(),
+            ExpressionNode::IntegerLiteralNode(iln) => (&iln.token).into(),
             ExpressionNode::FunctionLiteralNode(fln) => format!(
                 "{}({}){}",
-                &en.get_literal(),
+                &fln.token,
                 &((&fln.parameters)
                     .iter()
                     .map(String::from)
@@ -303,7 +332,7 @@ impl From<&ExpressionNode> for String {
                         .join(", "))
                 )
             }
-            _ => panic!("not supported string(): {:?}", en),
+            _ => todo!("not supported: {:?}", en),
         }
     }
 }

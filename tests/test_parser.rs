@@ -163,7 +163,7 @@ fn test_integer_literal_expression() -> Result<(), ParseError> {
 
     let program = p.next().unwrap()?;
 
-    assert!(program.get_literal() == "5");
+    assert_eq!(format!("{}", program), "5");
     assert!(p.next().is_none());
 
     Ok(())
@@ -179,7 +179,7 @@ fn test_string_literal_expression() -> Result<(), ParseError> {
 
     let program = p.next().unwrap()?;
 
-    assert!(program.get_literal() == "hello world");
+    assert_eq!(format!("{}", program), "hello world");
     assert!(p.next().is_none());
 
     Ok(())
@@ -1000,20 +1000,7 @@ fn test_integer_literal(en: &ExpressionNode, value: i64) {
         _ => panic!("unexpected node"),
     };
 
-    assert_eq!(
-        il.token,
-        Token::Int(value),
-        "integer value is expected as {} but got {:?}",
-        value,
-        il
-    );
-    assert_eq!(
-        String::from(&il.token),
-        format!("{}", value),
-        "get_literal() is expected as {} bug got {}",
-        format!("{}", value),
-        il.token
-    );
+    assert_eq!(il.token, Token::Int(value),);
 }
 
 /// test identifier literal
@@ -1028,21 +1015,7 @@ fn test_identifier_literal(en: &ExpressionNode, value: &'static str) {
         _ => panic!("unexpected node"),
     };
 
-    assert_eq!(
-        id.token,
-        Token::Ident(value.to_string()),
-        r##"value is expected as "{}" but got "{:?}""##,
-        value,
-        id,
-    );
-
-    assert_eq!(
-        String::from(&id.token),
-        value,
-        r##"get_literal() is expected as "{}" but got "{:?}""##,
-        id.token,
-        id,
-    );
+    assert_eq!(id.token, Token::Ident(value.to_string()),);
 }
 
 /// test string literal
@@ -1057,21 +1030,7 @@ fn test_string_literal(en: &ExpressionNode, value: &'static str) {
         _ => panic!("unexpected node, {:?}", en),
     };
 
-    assert_eq!(
-        id.token,
-        Token::String(value.to_string()),
-        r##"value is expected as "{}" but got "{:?}""##,
-        value,
-        id,
-    );
-
-    assert_eq!(
-        String::from(&id.token),
-        value,
-        r##"get_literal() is expected as "{}" but got "{:?}""##,
-        id.token,
-        id,
-    );
+    assert_eq!(id.token, Token::String(value.to_string()),);
 }
 
 /// test boolean literal

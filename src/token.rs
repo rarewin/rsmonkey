@@ -75,7 +75,7 @@ pub enum Token {
 
 impl std::fmt::Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "{}", String::from(self))
+        write!(f, "{}", String::from(self),)
     }
 }
 

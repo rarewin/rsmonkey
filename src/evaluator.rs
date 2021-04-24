@@ -6,6 +6,7 @@ use thiserror::Error;
 use crate::ast::{BlockStatement, ExpressionNode, LetStatement, ReturnStatement, StatementNode};
 use crate::object::{extend_environment, Array, Environment, Hash, Integer, Object, ObjectError};
 use crate::parser::{ParseError, Parser};
+use crate::token::Token;
 
 /// error
 #[derive(Debug, Error)]
@@ -101,12 +102,12 @@ fn eval_expression_node(
         ExpressionNode::BooleanExpressionNode(be) => Ok(Object::from(be.value)),
         ExpressionNode::PrefixExpressionNode(pe) => {
             let right = eval_expression_node(&pe.right, env)?;
-            eval_prefix_expression_node(&format!("{}", pe.token), &right)
+            eval_prefix_expression_node(&pe.token, &right)
         }
         ExpressionNode::InfixExpressionNode(ie) => {
             let left = eval_expression_node(&ie.left, env.clone())?;
             let right = eval_expression_node(&ie.right, env)?;
-            eval_infix_expression_node(&format!("{}", ie.token), &left, &right)
+            eval_infix_expression_node(&ie.token, &left, &right)
         }
         ExpressionNode::IfExpressionNode(ie) => {
             let condition = eval_expression_node(&ie.condition, env.clone())?;
@@ -142,7 +143,7 @@ fn eval_expression_node(
         }
         ExpressionNode::IdentifierNode(id) => env
             .borrow()
-            .get(&format!("{}", id.token))
+            .get(&String::from(&id.token))
             .map_err(EvaluationError::from),
         ExpressionNode::FunctionLiteralNode(fl) => {
             if let Some(body) = &fl.body {
@@ -179,10 +180,13 @@ fn eval_expression_node(
 }
 
 /// evaluator function for prefix expression node
-fn eval_prefix_expression_node(operator: &str, right: &Object) -> Result<Object, EvaluationError> {
+fn eval_prefix_expression_node(
+    operator: &Token,
+    right: &Object,
+) -> Result<Object, EvaluationError> {
     match operator {
-        "!" => eval_bang_operation_expression_node(right),
-        "-" => eval_minus_operation_expression_node(right),
+        Token::Bang => eval_bang_operation_expression_node(right),
+        Token::Minus => eval_minus_operation_expression_node(right),
         _ => Err(EvaluationError::UnknownOperator(format!(
             "{}{}",
             operator,
@@ -215,7 +219,7 @@ fn eval_minus_operation_expression_node(right: &Object) -> Result<Object, Evalua
 
 /// evaluator function for infix expression node
 fn eval_infix_expression_node(
-    operator: &str,
+    operator: &Token,
     left: &Object,
     right: &Object,
 ) -> Result<Object, EvaluationError> {
@@ -227,7 +231,7 @@ fn eval_infix_expression_node(
 
     if let Object::StringObject(left_str) = left {
         if let Object::StringObject(right_str) = right {
-            if operator == "+" {
+            if operator == &Token::Plus {
                 let mut s = String::new();
                 s.push_str(&(*left_str).value);
                 s.push_str(&(*right_str).value);
@@ -237,8 +241,8 @@ fn eval_infix_expression_node(
     }
 
     match operator {
-        "==" => Ok(Object::from(left == right)),
-        "!=" => Ok(Object::from(left != right)),
+        Token::Eq => Ok(Object::from(left == right)),
+        Token::NotEq => Ok(Object::from(left != right)),
         _ => {
             if left.object_type() != right.object_type() {
                 Err(EvaluationError::TypeMismatch(format!(
@@ -261,19 +265,19 @@ fn eval_infix_expression_node(
 
 /// evaluator function for integer
 fn eval_integer_infix_expression(
-    operator: &str,
+    operator: &Token,
     left: &Integer,
     right: &Integer,
 ) -> Result<Object, EvaluationError> {
     match operator {
-        "+" => Ok(Object::from(left.value + right.value)),
-        "-" => Ok(Object::from(left.value - right.value)),
-        "*" => Ok(Object::from(left.value * right.value)),
-        "/" => Ok(Object::from(left.value / right.value)),
-        "<" => Ok(Object::from(left.value < right.value)),
-        ">" => Ok(Object::from(left.value > right.value)),
-        "==" => Ok(Object::from(left.value == right.value)),
-        "!=" => Ok(Object::from(left.value != right.value)),
+        Token::Plus => Ok(Object::from(left.value + right.value)),
+        Token::Minus => Ok(Object::from(left.value - right.value)),
+        Token::Asterisk => Ok(Object::from(left.value * right.value)),
+        Token::Slash => Ok(Object::from(left.value / right.value)),
+        Token::Lt => Ok(Object::from(left.value < right.value)),
+        Token::Gt => Ok(Object::from(left.value > right.value)),
+        Token::Eq => Ok(Object::from(left.value == right.value)),
+        Token::NotEq => Ok(Object::from(left.value != right.value)),
         _ => Err(EvaluationError::Unknown),
     }
 }

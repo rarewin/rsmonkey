@@ -3,7 +3,7 @@ use std::rc::Rc;
 
 use thiserror::Error;
 
-use crate::ast::{BlockStatement, ExpressionNode, LetStatement, ReturnStatement, StatementNode};
+use crate::ast::{ExpressionNode, StatementNode};
 use crate::object::{extend_environment, Array, Environment, Hash, Integer, Object, ObjectError};
 use crate::parser::{ParseError, Parser};
 use crate::token::Token;
@@ -48,47 +48,41 @@ fn eval_statement_node(
     env: Rc<RefCell<Environment>>,
 ) -> Result<Object, EvaluationError> {
     match node {
-        StatementNode::BlockStatementNode(bs) => eval_block_statement(&bs, env),
-        StatementNode::ExpressionStatementNode(es) => eval_expression_node(&es.expression, env),
-        StatementNode::ReturnStatementNode(rs) => eval_return_statement(&rs, env),
-        StatementNode::LetStatementNode(ls) => eval_let_statement(&ls, env),
-    }
-}
+        StatementNode::BlockStatement {
+            token: _,
+            statements,
+        } => {
+            let mut ret = Object::Null;
 
-/// evaluator function for block statement
-fn eval_block_statement(
-    bl: &BlockStatement,
-    env: Rc<RefCell<Environment>>,
-) -> Result<Object, EvaluationError> {
-    let mut result = Object::Null;
-    for stmt in &bl.statements {
-        result = eval_statement_node(stmt, env.clone())?;
-        if let Object::ReturnValueObject(rv) = result {
-            return Ok(Object::ReturnValueObject(rv));
+            for stmt in statements {
+                ret = eval_statement_node(stmt, env.clone())?;
+                if let Object::ReturnValueObject(r) = ret {
+                    return Ok(Object::ReturnValueObject(r));
+                }
+            }
+            Ok(ret)
+        }
+        StatementNode::ExpressionStatement {
+            token: _,
+            expression,
+        } => eval_expression_node(expression, env),
+        StatementNode::ReturnStatement {
+            token: _,
+            return_value,
+        } => Ok(Object::new_return_value(eval_expression_node(
+            return_value,
+            env.clone(),
+        )?)),
+        StatementNode::LetStatement {
+            token: _,
+            name,
+            value,
+        } => {
+            let val = eval_expression_node(&value, env.clone())?;
+            env.borrow_mut().set(&String::from(&name.token), &val);
+            Ok(val)
         }
     }
-    Ok(result)
-}
-
-/// evaluator function for return statement
-fn eval_return_statement(
-    rs: &ReturnStatement,
-    env: Rc<RefCell<Environment>>,
-) -> Result<Object, EvaluationError> {
-    Ok(Object::new_return_value(eval_expression_node(
-        &rs.return_value,
-        env,
-    )?))
-}
-
-/// evaluator function for let statement
-fn eval_let_statement(
-    ls: &LetStatement,
-    env: Rc<RefCell<Environment>>,
-) -> Result<Object, EvaluationError> {
-    let val = eval_expression_node(&ls.value, env.clone())?;
-    env.borrow_mut().set(&format!("{}", &ls.name.token), &val);
-    Ok(val)
 }
 
 /// evaluator function for expression node

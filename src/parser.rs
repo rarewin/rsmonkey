@@ -90,11 +90,7 @@ where
         consume_expect(l, Token::Semicolon)?;
     }
 
-    Ok(StatementNode::LetStatementNode(Box::new(LetStatement {
-        token,
-        name,
-        value,
-    })))
+    Ok(StatementNode::LetStatement { token, name, value })
 }
 
 fn parse_return_statement<I>(l: &mut Peekable<I>) -> Result<StatementNode, ParseError>
@@ -108,12 +104,10 @@ where
         consume_expect(l, Token::Semicolon)?;
     }
 
-    Ok(StatementNode::ReturnStatementNode(Box::new(
-        ReturnStatement {
-            token,
-            return_value,
-        },
-    )))
+    Ok(StatementNode::ReturnStatement {
+        token,
+        return_value,
+    })
 }
 
 fn parse_expression_statement<I>(l: &mut Peekable<I>) -> Result<StatementNode, ParseError>
@@ -127,9 +121,7 @@ where
         l.next();
     }
 
-    Ok(StatementNode::ExpressionStatementNode(Box::new(
-        ExpressionStatement { token, expression },
-    )))
+    Ok(StatementNode::ExpressionStatement { token, expression })
 }
 
 fn parse_expression<I>(
@@ -370,19 +362,15 @@ where
     I: Iterator<Item = Token>,
 {
     let token = consume_expect(l, Token::LBrace)?;
-
-    let mut block = BlockStatement {
-        token,
-        statements: Vec::new(),
-    };
+    let mut statements = Vec::new();
 
     while l.peek() != Some(&Token::RBrace) {
-        block.statements.push(parse_statement(l)?);
+        statements.push(parse_statement(l)?);
     }
 
     consume_expect(l, Token::RBrace)?;
 
-    Ok(StatementNode::BlockStatementNode(Box::new(block)))
+    Ok(StatementNode::BlockStatement { token, statements })
 }
 
 fn parse_function_parameters<I>(l: &mut Peekable<I>) -> Result<Vec<ExpressionNode>, ParseError>

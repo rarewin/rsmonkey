@@ -3,10 +3,23 @@ use crate::token::Token;
 /// statement node
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum StatementNode {
-    LetStatementNode(Box<LetStatement>),
-    ReturnStatementNode(Box<ReturnStatement>),
-    ExpressionStatementNode(Box<ExpressionStatement>),
-    BlockStatementNode(Box<BlockStatement>),
+    LetStatement {
+        token: Token,
+        name: Identifier,
+        value: ExpressionNode,
+    },
+    ReturnStatement {
+        token: Token,
+        return_value: ExpressionNode,
+    },
+    ExpressionStatement {
+        token: Token,
+        expression: ExpressionNode,
+    },
+    BlockStatement {
+        token: Token,
+        statements: Vec<StatementNode>,
+    },
 }
 
 /// expression node
@@ -37,35 +50,6 @@ pub enum OperationPrecedence {
     Prefix,      // -X or !X
     Call,        // function call
     Index,       // array[index]
-}
-
-/// struct for let statement
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub struct LetStatement {
-    pub token: Token,
-    pub name: Identifier,
-    pub value: ExpressionNode,
-}
-
-/// struct for return statement
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub struct ReturnStatement {
-    pub token: Token,
-    pub return_value: ExpressionNode,
-}
-
-/// struct for expression statement
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub struct ExpressionStatement {
-    pub token: Token,
-    pub expression: ExpressionNode,
-}
-
-/// struct for block statement
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub struct BlockStatement {
-    pub token: Token,
-    pub statements: Vec<StatementNode>,
 }
 
 /// struct for identifier
@@ -200,7 +184,10 @@ pub struct IndexExpression {
 impl std::fmt::Display for StatementNode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
-            StatementNode::ExpressionStatementNode(es) => write!(f, "{}", es.token),
+            StatementNode::ExpressionStatement {
+                token,
+                expression: _,
+            } => write!(f, "{}", token),
             _ => todo!("{:?}", self),
         }
     }
@@ -215,21 +202,23 @@ impl From<StatementNode> for String {
 impl From<&StatementNode> for String {
     fn from(sn: &StatementNode) -> Self {
         match sn {
-            StatementNode::LetStatementNode(ls) => {
-                format!(
-                    "{} {} = {};",
-                    ls.token,
-                    ls.name.token,
-                    String::from(&ls.value),
-                )
+            StatementNode::LetStatement { token, name, value } => {
+                format!("{} {} = {};", token, name.token, String::from(value),)
             }
-            StatementNode::ReturnStatementNode(rs) => {
-                format!("return {};", String::from(&rs.return_value))
+            StatementNode::ReturnStatement {
+                token: _,
+                return_value,
+            } => {
+                format!("return {};", String::from(return_value))
             }
-            StatementNode::ExpressionStatementNode(es) => String::from(&es.expression),
-            StatementNode::BlockStatementNode(bs) => {
-                bs.statements.iter().map(String::from).collect()
-            }
+            StatementNode::ExpressionStatement {
+                token: _,
+                expression,
+            } => String::from(expression),
+            StatementNode::BlockStatement {
+                token: _,
+                statements,
+            } => statements.iter().map(String::from).collect(),
         }
     }
 }

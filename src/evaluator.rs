@@ -48,10 +48,7 @@ fn eval_statement_node(
     env: Rc<RefCell<Environment>>,
 ) -> Result<Object, EvaluationError> {
     match node {
-        StatementNode::BlockStatement {
-            token: _,
-            statements,
-        } => {
+        StatementNode::BlockStatement { statements } => {
             let mut ret = Object::Null;
 
             for stmt in statements {
@@ -62,22 +59,11 @@ fn eval_statement_node(
             }
             Ok(ret)
         }
-        StatementNode::ExpressionStatement {
-            token: _,
-            expression,
-        } => eval_expression_node(expression, env),
-        StatementNode::ReturnStatement {
-            token: _,
-            return_value,
-        } => Ok(Object::new_return_value(eval_expression_node(
-            return_value,
-            env,
-        )?)),
-        StatementNode::LetStatement {
-            token: _,
-            name,
-            value,
-        } => {
+        StatementNode::ExpressionStatement { expression } => eval_expression_node(expression, env),
+        StatementNode::ReturnStatement { return_value } => Ok(Object::new_return_value(
+            eval_expression_node(return_value, env)?,
+        )),
+        StatementNode::LetStatement { name, value } => {
             let val = eval_expression_node(&value, env.clone())?;
             env.borrow_mut().set(&String::from(name), &val);
             Ok(val)
@@ -93,7 +79,7 @@ fn eval_expression_node(
     match node {
         ExpressionNode::IntegerLiteral { token } => Ok(Object::from(token)),
         ExpressionNode::StringLiteral { token } => Ok(Object::from(token)),
-        ExpressionNode::Boolean { token: _, value } => Ok(Object::from(*value)),
+        ExpressionNode::Boolean { token } => Ok(Object::from(token)),
         ExpressionNode::PrefixExpression { token, right } => {
             let right = eval_expression_node(right, env)?;
             eval_prefix_expression_node(token, &right)
@@ -104,7 +90,6 @@ fn eval_expression_node(
             eval_infix_expression_node(token, &left, &right)
         }
         ExpressionNode::IfExpression {
-            token: _,
             condition,
             consequence,
             alternative,

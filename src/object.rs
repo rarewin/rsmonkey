@@ -111,6 +111,7 @@ impl From<&Token> for Object {
         match token {
             Token::Int(i) => Object::from(*i),
             Token::String(s) => Object::from(s),
+            Token::Boolean(b) => Object::from(*b),
             _ => todo!("{:?}", token),
         }
     }

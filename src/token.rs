@@ -58,10 +58,8 @@ pub enum Token {
     Function,
     /// let
     Let,
-    /// true
-    True,
-    /// false
-    False,
+    /// true or false
+    Boolean(bool),
     /// if
     If,
     /// else
@@ -113,8 +111,7 @@ impl From<&Token> for String {
             Token::RBracket => "]".into(),
             Token::Function => "fn".into(),
             Token::Let => "let".into(),
-            Token::True => "true".into(),
-            Token::False => "false".into(),
+            Token::Boolean(b) => (if *b { "true" } else { "false" }).into(),
             Token::If => "if".into(),
             Token::Else => "else".into(),
             Token::Return => "return".into(),

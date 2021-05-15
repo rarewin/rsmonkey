@@ -110,8 +110,8 @@ fn lookup_ident(s: &str) -> Token {
         "if" => Token::If,
         "else" => Token::Else,
         "return" => Token::Return,
-        "true" => Token::True,
-        "false" => Token::False,
+        "true" => Token::Boolean(true),
+        "false" => Token::Boolean(false),
         _ => Token::Ident(s.into()),
     }
 }

@@ -3,23 +3,10 @@ use crate::token::Token;
 /// statement node
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum StatementNode {
-    LetStatement {
-        token: Token,
-        name: Token,
-        value: ExpressionNode,
-    },
-    ReturnStatement {
-        token: Token,
-        return_value: ExpressionNode,
-    },
-    ExpressionStatement {
-        token: Token,
-        expression: ExpressionNode,
-    },
-    BlockStatement {
-        token: Token,
-        statements: Vec<StatementNode>,
-    },
+    LetStatement { name: Token, value: ExpressionNode },
+    ReturnStatement { return_value: ExpressionNode },
+    ExpressionStatement { expression: ExpressionNode },
+    BlockStatement { statements: Vec<StatementNode> },
 }
 
 /// expression node
@@ -50,10 +37,8 @@ pub enum ExpressionNode {
     },
     Boolean {
         token: Token,
-        value: bool,
     },
     IfExpression {
-        token: Token,
         condition: Box<ExpressionNode>,
         consequence: Option<Box<StatementNode>>,
         alternative: Option<Box<StatementNode>>,
@@ -94,14 +79,8 @@ pub enum OperationPrecedence {
 impl std::fmt::Display for StatementNode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
-            StatementNode::ExpressionStatement {
-                token,
-                expression: _,
-            } => token.fmt(f),
-            StatementNode::BlockStatement {
-                token: _,
-                statements,
-            } => {
+            StatementNode::ExpressionStatement { expression } => expression.fmt(f),
+            StatementNode::BlockStatement { statements } => {
                 write!(
                     f,
                     "{}",
@@ -112,15 +91,10 @@ impl std::fmt::Display for StatementNode {
                         .join(";")
                 )
             }
-            StatementNode::ReturnStatement {
-                token: _,
-                return_value,
-            } => write!(f, "return {};", return_value),
-            StatementNode::LetStatement {
-                token: _,
-                name,
-                value,
-            } => write!(f, "let {} = {};", name, value),
+            StatementNode::ReturnStatement { return_value } => {
+                write!(f, "return {};", return_value)
+            }
+            StatementNode::LetStatement { name, value } => write!(f, "let {} = {};", name, value),
         }
     }
 }
@@ -134,23 +108,16 @@ impl From<StatementNode> for String {
 impl From<&StatementNode> for String {
     fn from(sn: &StatementNode) -> Self {
         match sn {
-            StatementNode::LetStatement { token, name, value } => {
-                format!("{} {} = {};", token, name, String::from(value),)
+            StatementNode::LetStatement { name, value } => {
+                format!("let {} = {};", name, String::from(value),)
             }
-            StatementNode::ReturnStatement {
-                token: _,
-                return_value,
-            } => {
+            StatementNode::ReturnStatement { return_value } => {
                 format!("return {};", String::from(return_value))
             }
-            StatementNode::ExpressionStatement {
-                token: _,
-                expression,
-            } => String::from(expression),
-            StatementNode::BlockStatement {
-                token: _,
-                statements,
-            } => statements.iter().map(String::from).collect(),
+            StatementNode::ExpressionStatement { expression } => String::from(expression),
+            StatementNode::BlockStatement { statements } => {
+                statements.iter().map(String::from).collect()
+            }
         }
     }
 }
@@ -169,12 +136,13 @@ impl std::fmt::Display for ExpressionNode {
             ExpressionNode::InfixExpression { token, left, right } => {
                 write!(f, "({} {} {})", left, token, right)
             }
-            ExpressionNode::Boolean { token, value: _ } => token.fmt(f),
+            ExpressionNode::Boolean { token } => token.fmt(f),
             ExpressionNode::CallExpression {
                 token,
                 function: _,
                 arguments: _,
             } => token.fmt(f),
+            ExpressionNode::StringLiteral { token } => token.fmt(f),
             _ => todo!("{:?}", self),
         }
     }
@@ -216,9 +184,8 @@ impl From<&ExpressionNode> for String {
                     String::from(right.as_ref()),
                 )
             }
-            ExpressionNode::Boolean { token, value: _ } => token.into(),
+            ExpressionNode::Boolean { token } => token.into(),
             ExpressionNode::IfExpression {
-                token: _,
                 condition,
                 consequence,
                 alternative,

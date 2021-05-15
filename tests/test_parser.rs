@@ -57,12 +57,7 @@ fn test_let_statements() -> Result<(), ParseError> {
 /// * `expected_value` - expected value for right value
 /// ```
 fn test_let_statement(s: &StatementNode, expected_name: &str, expected_value: &TestLiteral) {
-    if let StatementNode::LetStatement {
-        token: _,
-        name,
-        value,
-    } = s
-    {
+    if let StatementNode::LetStatement { name, value } = s {
         assert_eq!(
             Token::Ident(format!("{}", name)),
             Token::Ident(expected_name.to_string()),
@@ -111,11 +106,7 @@ fn test_return_statements() -> Result<(), ParseError> {
 
         let program = p.next().unwrap()?;
 
-        if let StatementNode::ReturnStatement {
-            token: _,
-            return_value,
-        } = program
-        {
+        if let StatementNode::ReturnStatement { return_value } = program {
             test_literal_expression(&return_value, &tt.expected_value);
         } else {
             panic!("return statement is expected");
@@ -130,7 +121,6 @@ fn test_return_statements() -> Result<(), ParseError> {
 #[test]
 fn test_string() {
     let v = StatementNode::LetStatement {
-        token: Token::Let,
         name: Token::Ident("myVar".into()),
         value: ExpressionNode::Identifier {
             token: Token::Ident("anotherVar".into()),
@@ -149,15 +139,12 @@ fn test_identifier_expression() -> Result<(), ParseError> {
 
     let program = p.next().unwrap()?;
 
-    let stmt_token = match program {
-        StatementNode::ExpressionStatement {
-            token,
-            expression: _,
-        } => token,
+    let stmt_exp = match program {
+        StatementNode::ExpressionStatement { expression } => expression,
         _ => panic!("first statement is not expressionstatement"),
     };
 
-    assert_eq!(String::from(stmt_token), "foobar");
+    assert_eq!(String::from(stmt_exp), "foobar");
     assert!(p.next().is_none());
 
     Ok(())
@@ -220,22 +207,21 @@ fn test_boolean_literal_expression() -> Result<(), ParseError> {
         let program = p.next().unwrap()?;
 
         let stmt_exp = match &program {
-            StatementNode::ExpressionStatement {
-                token: _,
-                expression,
-            } => expression,
+            StatementNode::ExpressionStatement { expression } => expression,
             _ => panic!("first statement is not expression statement"),
         };
 
-        let exp_value = match &stmt_exp {
-            ExpressionNode::Boolean { token: _, value } => value,
+        let exp_token = match &stmt_exp {
+            ExpressionNode::Boolean { token } => token,
             _ => panic!("this expression statement does not have boolean expression"),
         };
 
         assert_eq!(
-            *exp_value, tt.value,
+            exp_token,
+            &Token::Boolean(tt.value),
             "{} is expected, but got {}",
-            tt.value, exp_value,
+            &Token::Boolean(tt.value),
+            exp_token,
         );
 
         assert!(p.next().is_none());
@@ -277,10 +263,7 @@ fn test_parsing_prefix_expressions() -> Result<(), ParseError> {
         let program = p.next().unwrap()?;
 
         let stmt_exp = match &program {
-            StatementNode::ExpressionStatement {
-                token: _,
-                expression,
-            } => expression,
+            StatementNode::ExpressionStatement { expression } => expression,
             _ => panic!("first statement is not expression statement"),
         };
 
@@ -382,10 +365,7 @@ fn test_parsing_infix_expressions() -> Result<(), ParseError> {
         let program = p.next().unwrap()?;
 
         let stmt_exp = match &program {
-            StatementNode::ExpressionStatement {
-                token: _,
-                expression,
-            } => expression,
+            StatementNode::ExpressionStatement { expression } => expression,
             _ => panic!("first statement is not expression statement"),
         };
 
@@ -532,16 +512,12 @@ fn test_if_expression() -> Result<(), ParseError> {
     let program = p.next().unwrap()?;
 
     let exps = match &program {
-        StatementNode::ExpressionStatement {
-            token: _,
-            expression,
-        } => expression,
+        StatementNode::ExpressionStatement { expression } => expression,
         _ => panic!("expression stateme is expected"),
     };
 
     let (condition, consequence, alternative) = match &exps {
         ExpressionNode::IfExpression {
-            token: _,
             condition,
             consequence,
             alternative,
@@ -557,10 +533,7 @@ fn test_if_expression() -> Result<(), ParseError> {
     );
 
     let cs_stmt = match consequence.as_ref().unwrap().as_ref() {
-        StatementNode::BlockStatement {
-            token: _,
-            statements,
-        } => statements,
+        StatementNode::BlockStatement { statements } => statements,
         _ => panic!("consequence does not have block statement"),
     };
 
@@ -571,10 +544,7 @@ fn test_if_expression() -> Result<(), ParseError> {
     );
 
     let conex = match &cs_stmt[0] {
-        StatementNode::ExpressionStatement {
-            token: _,
-            expression,
-        } => expression,
+        StatementNode::ExpressionStatement { expression } => expression,
         _ => panic!("expression statement is expected"),
     };
 
@@ -600,16 +570,12 @@ fn test_if_else_expression() -> Result<(), ParseError> {
     let stmt = p.next().unwrap()?;
 
     let exps = match &stmt {
-        StatementNode::ExpressionStatement {
-            token: _,
-            expression,
-        } => expression,
+        StatementNode::ExpressionStatement { expression } => expression,
         _ => panic!("expression stateme is expected"),
     };
 
     let (condition, consequence, alternative) = match &exps {
         ExpressionNode::IfExpression {
-            token: _,
             condition,
             consequence,
             alternative,
@@ -625,10 +591,7 @@ fn test_if_else_expression() -> Result<(), ParseError> {
     );
 
     let cs_stmt = match consequence.as_ref().unwrap().as_ref() {
-        StatementNode::BlockStatement {
-            token: _,
-            statements,
-        } => statements,
+        StatementNode::BlockStatement { statements } => statements,
         _ => panic!("consequence does not have block statement"),
     };
 
@@ -639,20 +602,14 @@ fn test_if_else_expression() -> Result<(), ParseError> {
     );
 
     let conex = match &cs_stmt[0] {
-        StatementNode::ExpressionStatement {
-            token: _,
-            expression,
-        } => expression,
+        StatementNode::ExpressionStatement { expression } => expression,
         _ => panic!("expression statement is expected"),
     };
 
     test_literal_expression(&conex, &TestLiteral::IdentifierLiteral("x"));
 
     let als_stmt = match alternative.as_ref().unwrap().as_ref() {
-        StatementNode::BlockStatement {
-            token: _,
-            statements,
-        } => statements,
+        StatementNode::BlockStatement { statements } => statements,
         _ => panic!("alternative does not have block statement"),
     };
 
@@ -663,10 +620,7 @@ fn test_if_else_expression() -> Result<(), ParseError> {
     );
 
     let alsex = match &als_stmt[0] {
-        StatementNode::ExpressionStatement {
-            token: _,
-            expression,
-        } => expression,
+        StatementNode::ExpressionStatement { expression } => expression,
         _ => panic!("expression statement is expected"),
     };
 
@@ -688,10 +642,7 @@ fn test_function_literal_parsing() -> Result<(), ParseError> {
     let program = p.next().unwrap()?;
 
     let exps = match &program {
-        StatementNode::ExpressionStatement {
-            token: _,
-            expression,
-        } => expression,
+        StatementNode::ExpressionStatement { expression } => expression,
         _ => panic!("expression stateme is expected"),
     };
 
@@ -715,10 +666,7 @@ fn test_function_literal_parsing() -> Result<(), ParseError> {
     test_literal_expression(&fl_params[1], &TestLiteral::IdentifierLiteral("y"));
 
     let body_stmt = match &**(fl_body.as_ref().unwrap()) {
-        StatementNode::BlockStatement {
-            token: _,
-            statements,
-        } => statements,
+        StatementNode::BlockStatement { statements } => statements,
         _ => panic!("block statement is expected here"),
     };
 
@@ -729,10 +677,7 @@ fn test_function_literal_parsing() -> Result<(), ParseError> {
     );
 
     let body_stmt_exp = match &body_stmt[0] {
-        StatementNode::ExpressionStatement {
-            token: _,
-            expression,
-        } => expression,
+        StatementNode::ExpressionStatement { expression } => expression,
         _ => panic!("expression statement is expected here"),
     };
 
@@ -777,10 +722,7 @@ fn test_function_parameter_parsing() -> Result<(), ParseError> {
         let program = p.next().unwrap()?;
 
         let exps = match &program {
-            StatementNode::ExpressionStatement {
-                token: _,
-                expression,
-            } => expression,
+            StatementNode::ExpressionStatement { expression } => expression,
             _ => panic!("expression stateme is expected"),
         };
 
@@ -822,10 +764,7 @@ fn test_call_expression_parsing() -> Result<(), ParseError> {
     let program = p.next().unwrap()?;
 
     let exps = match &program {
-        StatementNode::ExpressionStatement {
-            token: _,
-            expression,
-        } => expression,
+        StatementNode::ExpressionStatement { expression } => expression,
         _ => panic!("expression stateme is expected"),
     };
 
@@ -875,10 +814,7 @@ fn test_parsing_array_literal() -> Result<(), ParseError> {
     let program = p.next().unwrap()?;
 
     let exps = match &program {
-        StatementNode::ExpressionStatement {
-            token: _,
-            expression,
-        } => expression,
+        StatementNode::ExpressionStatement { expression } => expression,
         _ => panic!("expression stateme is expected"),
     };
 
@@ -923,10 +859,7 @@ fn test_parsing_index_expressions() -> Result<(), ParseError> {
     let program = p.next().unwrap()?;
 
     let exps = match &program {
-        StatementNode::ExpressionStatement {
-            token: _,
-            expression,
-        } => expression,
+        StatementNode::ExpressionStatement { expression } => expression,
         _ => panic!("expression stateme is expected"),
     };
 
@@ -962,10 +895,7 @@ fn test_parsing_hash_literals_string_keys() -> Result<(), ParseError> {
     let program = p.next().unwrap()?;
 
     let exps = match &program {
-        StatementNode::ExpressionStatement {
-            token: _,
-            expression,
-        } => expression,
+        StatementNode::ExpressionStatement { expression } => expression,
         _ => panic!("expression stateme is expected"),
     };
 
@@ -1002,10 +932,7 @@ fn test_parsing_empty_hash_literal() -> Result<(), ParseError> {
     let program = p.next().unwrap()?;
 
     let exps = match &program {
-        StatementNode::ExpressionStatement {
-            token: _,
-            expression,
-        } => expression,
+        StatementNode::ExpressionStatement { expression } => expression,
         _ => panic!("hash literal stateme is expected"),
     };
 
@@ -1035,10 +962,7 @@ fn test_parsing_hash_literals_with_expressions() -> Result<(), ParseError> {
     let program = p.next().unwrap()?;
 
     let exps = match &program {
-        StatementNode::ExpressionStatement {
-            token: _,
-            expression,
-        } => expression,
+        StatementNode::ExpressionStatement { expression } => expression,
         _ => panic!("hash literal stateme is expected"),
     };
 
@@ -1128,23 +1052,25 @@ fn test_string_literal(en: &ExpressionNode, value: &'static str) {
 
 /// test boolean literal
 fn test_boolean_literal(en: &ExpressionNode, value: bool) {
-    let (bl_token, bl_value) = match &en {
-        ExpressionNode::Boolean { token, value } => (token, value),
+    let token = match &en {
+        ExpressionNode::Boolean { token } => token,
         _ => panic!("boolean expression node is expected"),
     };
 
     assert_eq!(
-        bl_value, &value,
+        token,
+        &Token::Boolean(value),
         "{:?} is expected, but got {:?}",
-        value, bl_value,
+        &Token::Boolean(value),
+        token,
     );
 
     assert_eq!(
-        String::from(bl_token),
+        String::from(token),
         format!("{:?}", value),
         r##"{:?} is expected, but got {}"##,
         format!("{:?}", value),
-        bl_token
+        token
     );
 }
 

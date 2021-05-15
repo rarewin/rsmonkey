@@ -70,8 +70,7 @@ fn parse_let_statement<I>(l: &mut Peekable<I>) -> Result<StatementNode, ParseErr
 where
     I: Iterator<Item = Token>,
 {
-    let token = consume_expect(l, Token::Let)?;
-
+    let _token = consume_expect(l, Token::Let)?;
     let ident = consume_expect(l, Token::Ident("".into()))?;
 
     let name = if let Token::Ident(_) = ident {
@@ -88,38 +87,35 @@ where
         consume_expect(l, Token::Semicolon)?;
     }
 
-    Ok(StatementNode::LetStatement { token, name, value })
+    Ok(StatementNode::LetStatement { name, value })
 }
 
 fn parse_return_statement<I>(l: &mut Peekable<I>) -> Result<StatementNode, ParseError>
 where
     I: Iterator<Item = Token>,
 {
-    let token = consume_expect(l, Token::Return)?;
+    let _token = consume_expect(l, Token::Return)?;
     let return_value = parse_expression(l, OperationPrecedence::Lowest)?;
 
     if l.peek() == Some(&Token::Semicolon) {
         consume_expect(l, Token::Semicolon)?;
     }
 
-    Ok(StatementNode::ReturnStatement {
-        token,
-        return_value,
-    })
+    Ok(StatementNode::ReturnStatement { return_value })
 }
 
 fn parse_expression_statement<I>(l: &mut Peekable<I>) -> Result<StatementNode, ParseError>
 where
     I: Iterator<Item = Token>,
 {
-    let token = l.peek().ok_or(ParseError::UnexpectedEof)?.clone();
+    let _token = l.peek().ok_or(ParseError::UnexpectedEof)?.clone();
     let expression = parse_expression(l, OperationPrecedence::Lowest)?;
 
     if l.peek() == Some(&Token::Semicolon) {
         l.next();
     }
 
-    Ok(StatementNode::ExpressionStatement { token, expression })
+    Ok(StatementNode::ExpressionStatement { expression })
 }
 
 fn parse_expression<I>(
@@ -151,11 +147,7 @@ where
         Token::Int(_) => Ok(ExpressionNode::IntegerLiteral { token }),
         Token::String(_) => Ok(ExpressionNode::StringLiteral { token }),
         Token::Ident(_) => Ok(ExpressionNode::Identifier { token }),
-        Token::True => Ok(ExpressionNode::Boolean { token, value: true }),
-        Token::False => Ok(ExpressionNode::Boolean {
-            token,
-            value: false,
-        }),
+        Token::Boolean(_) => Ok(ExpressionNode::Boolean { token }),
         Token::LParen => {
             let ex = parse_expression(l, OperationPrecedence::Lowest)?;
             consume_expect(l, Token::RParen)?;
@@ -185,7 +177,6 @@ where
             };
 
             Ok(ExpressionNode::IfExpression {
-                token,
                 condition,
                 consequence,
                 alternative,
@@ -337,7 +328,7 @@ fn parse_block_statement<I>(l: &mut Peekable<I>) -> Result<StatementNode, ParseE
 where
     I: Iterator<Item = Token>,
 {
-    let token = consume_expect(l, Token::LBrace)?;
+    let _token = consume_expect(l, Token::LBrace)?;
     let mut statements = Vec::new();
 
     while l.peek() != Some(&Token::RBrace) {
@@ -346,7 +337,7 @@ where
 
     consume_expect(l, Token::RBrace)?;
 
-    Ok(StatementNode::BlockStatement { token, statements })
+    Ok(StatementNode::BlockStatement { statements })
 }
 
 fn parse_function_parameters<I>(l: &mut Peekable<I>) -> Result<Vec<ExpressionNode>, ParseError>

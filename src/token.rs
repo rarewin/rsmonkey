@@ -2,7 +2,7 @@
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Token {
     /// illegal token
-    Illegal,
+    Illegal(String),
     /// End of File
     EoF,
 
@@ -88,7 +88,7 @@ impl From<Token> for String {
 impl From<&Token> for String {
     fn from(t: &Token) -> Self {
         match t {
-            Token::Illegal => "Illegal".into(),
+            Token::Illegal(s) => s.into(),
             Token::EoF => "EoF".into(),
             Token::Ident(ident) => ident.to_string(),
             Token::Int(int) => int.to_string(),

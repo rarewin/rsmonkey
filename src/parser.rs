@@ -12,9 +12,9 @@ pub enum ParseError {
     UnexpectedToken { found: Token, expected: Token },
     #[error("unexpected EOF")]
     UnexpectedEof,
-    #[error(r#""unexpected token "{0:?}" for infix_parse""#)]
+    #[error(r#""unexpected token "{0:}" for infix_parse""#)]
     UnexpectedTokenForInfixParser(Token),
-    #[error(r#""unexpected token "{0:?}" for prefix_parse""#)]
+    #[error(r#""unexpected token "{0:}" for prefix_parse""#)]
     UnexpectedTokenForPrefixParser(Token),
     #[error("unknown error")]
     Unknown,
@@ -74,10 +74,8 @@ where
 
     let ident = consume_expect(l, Token::Ident("".into()))?;
 
-    let name = if let Token::Ident(id) = ident {
-        Identifier {
-            token: Token::Ident(id),
-        }
+    let name = if let Token::Ident(_) = ident {
+        ident
     } else {
         return Err(ParseError::UnexpectedEof);
     };
@@ -150,23 +148,14 @@ where
     let token = l.next().ok_or(ParseError::UnexpectedEof)?;
 
     match token {
-        Token::Int(_) => Ok(ExpressionNode::IntegerLiteralNode(Box::new(
-            IntegerLiteral { token },
-        ))),
-        Token::String(_) => Ok(ExpressionNode::StringLiteralNode(Box::new(StringLiteral {
-            token,
-        }))),
-        Token::Ident(_) => Ok(ExpressionNode::IdentifierNode(Box::new(Identifier {
-            token,
-        }))),
-        Token::True => Ok(ExpressionNode::BooleanExpressionNode(Box::new(Boolean {
-            token,
-            value: true,
-        }))),
-        Token::False => Ok(ExpressionNode::BooleanExpressionNode(Box::new(Boolean {
+        Token::Int(_) => Ok(ExpressionNode::IntegerLiteral { token }),
+        Token::String(_) => Ok(ExpressionNode::StringLiteral { token }),
+        Token::Ident(_) => Ok(ExpressionNode::Identifier { token }),
+        Token::True => Ok(ExpressionNode::Boolean { token, value: true }),
+        Token::False => Ok(ExpressionNode::Boolean {
             token,
             value: false,
-        }))),
+        }),
         Token::LParen => {
             let ex = parse_expression(l, OperationPrecedence::Lowest)?;
             consume_expect(l, Token::RParen)?;
@@ -175,53 +164,45 @@ where
         Token::LBracket => {
             let elements = parse_expression_list(l, &Token::RBracket)?;
             consume_expect(l, Token::RBracket)?;
-            Ok(ExpressionNode::ArrayLiteralNode(Box::new(ArrayLiteral {
-                token,
-                elements,
-            })))
+            Ok(ExpressionNode::ArrayLiteral { token, elements })
         }
         Token::LBrace => {
             let pairs = parse_hash_literal(l)?;
             consume_expect(l, Token::RBrace)?;
-            Ok(ExpressionNode::HashLiteralNode(Box::new(HashLiteral {
-                token,
-                pairs,
-            })))
+            Ok(ExpressionNode::HashLiteral { token, pairs })
         }
         Token::If => {
             consume_expect(l, Token::LParen)?;
-            let condition = parse_expression(l, OperationPrecedence::Lowest)?;
+            let condition = Box::new(parse_expression(l, OperationPrecedence::Lowest)?);
             consume_expect(l, Token::RParen)?;
-            let consequence = Some(parse_block_statement(l)?);
+            let consequence = Some(Box::new(parse_block_statement(l)?));
 
             let alternative = if l.peek() == Some(&Token::Else) {
                 consume_expect(l, Token::Else)?;
-                Some(parse_block_statement(l)?)
+                Some(Box::new(parse_block_statement(l)?))
             } else {
                 None
             };
 
-            Ok(ExpressionNode::IfExpressionNode(Box::new(IfExpression {
+            Ok(ExpressionNode::IfExpression {
                 token,
                 condition,
                 consequence,
                 alternative,
-            })))
+            })
         }
         Token::Function => {
             let parameters = parse_function_parameters(l)?;
-            let body = Some(parse_block_statement(l)?);
+            let body = Some(Box::new(parse_block_statement(l)?));
 
-            Ok(ExpressionNode::FunctionLiteralNode(Box::new(
-                FunctionLiteral {
-                    token,
-                    parameters,
-                    body,
-                },
-            )))
+            Ok(ExpressionNode::FunctionLiteral {
+                token,
+                parameters,
+                body,
+            })
         }
         Token::Bang | Token::Minus => parse_prefix_expression(l, token),
-        _ => todo!("{:?}", token),
+        _ => Err(ParseError::UnexpectedTokenForPrefixParser(token)),
     }
 }
 
@@ -232,11 +213,9 @@ fn parse_prefix_expression<I>(
 where
     I: Iterator<Item = Token>,
 {
-    let right = parse_expression(l, OperationPrecedence::Prefix)?;
+    let right = Box::new(parse_expression(l, OperationPrecedence::Prefix)?);
 
-    Ok(ExpressionNode::PrefixExpressionNode(Box::new(
-        PrefixExpression { token, right },
-    )))
+    Ok(ExpressionNode::PrefixExpression { token, right })
 }
 
 fn infix_parse<I>(l: &mut Peekable<I>, left: ExpressionNode) -> Result<ExpressionNode, ParseError>
@@ -254,30 +233,27 @@ where
         | Token::Lt
         | Token::Eq
         | Token::NotEq => {
-            let right = parse_expression(l, get_precedence(&token))?;
-            Ok(ExpressionNode::InfixExpressionNode(Box::new(
-                InfixExpression { token, left, right },
-            )))
+            let right = Box::new(parse_expression(l, get_precedence(&token))?);
+            let left = Box::new(left);
+            Ok(ExpressionNode::InfixExpression { token, left, right })
         }
         Token::LParen => {
             let arguments = parse_call_arguments(l)?;
+            let function = Box::new(left);
             consume_expect(l, Token::RParen)?;
-            Ok(ExpressionNode::CallExpressionNode(Box::new(
-                CallExpression {
-                    token,
-                    function: left,
-                    arguments,
-                },
-            )))
+            Ok(ExpressionNode::CallExpression {
+                token,
+                function,
+                arguments,
+            })
         }
         Token::LBracket => {
-            let index = parse_expression(l, OperationPrecedence::Lowest)?;
+            let index = Box::new(parse_expression(l, OperationPrecedence::Lowest)?);
+            let left = Box::new(left);
             consume_expect(l, Token::RBracket)?;
-            Ok(ExpressionNode::IndexExpressionNode(Box::new(
-                IndexExpression { token, left, index },
-            )))
+            Ok(ExpressionNode::IndexExpression { token, left, index })
         }
-        _ => todo!("{:?}", token),
+        _ => Err(ParseError::UnexpectedTokenForInfixParser(token)),
     }
 }
 
@@ -388,18 +364,14 @@ where
 
     let token = l.next().ok_or(ParseError::UnexpectedEof)?;
 
-    params.push(ExpressionNode::IdentifierNode(Box::new(Identifier {
-        token,
-    })));
+    params.push(ExpressionNode::Identifier { token });
 
     while l.peek() == Some(&Token::Comma) {
         consume_expect(l, Token::Comma)?;
 
         let token = l.next().ok_or(ParseError::UnexpectedEof)?;
 
-        params.push(ExpressionNode::IdentifierNode(Box::new(Identifier {
-            token,
-        })));
+        params.push(ExpressionNode::Identifier { token });
     }
 
     consume_expect(l, Token::RParen)?;

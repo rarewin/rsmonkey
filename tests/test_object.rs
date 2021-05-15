@@ -66,6 +66,7 @@ if (x == 0) return 1; else return (x * 2);
         (test_eval("rest"), "builtin function"),
         (test_eval("first"), "builtin function"),
         (test_eval("puts"), "builtin function"),
+        (test_eval("let a = 1;"), "1"),
         (Object::Null, ""),
     ];
 

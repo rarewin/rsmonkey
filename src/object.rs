@@ -11,14 +11,18 @@ use crate::token::Token;
 /// object
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Object {
-    IntegerObject(Box<Integer>),
-    BooleanObject(Box<Boolean>),
-    StringObject(Box<StringObj>),
-    ReturnValueObject(Box<ReturnValue>),
-    FunctionObject(Box<Function>),
-    ArrayObject(Box<Array>),
-    HashObject(Box<Hash>),
-    BuiltinObject(Box<Builtin>),
+    Integer(i64),
+    Boolean(bool),
+    String(String),
+    ReturnValue(Box<Object>),
+    Function {
+        parameters: Vec<ExpressionNode>,
+        body: StatementNode,
+        env: Rc<RefCell<Environment>>,
+    },
+    Array(Vec<Object>),
+    Hash(Vec<(Object, Object)>),
+    Builtin(fn(Vec<Object>) -> Result<Object, ObjectError>),
     Null,
 }
 
@@ -40,31 +44,35 @@ pub enum ObjectError {
 impl fmt::Display for Object {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Object::IntegerObject(io) => write!(f, "{}", io.value),
-            Object::BooleanObject(bo) => write!(f, "{}", bo.value),
-            Object::StringObject(so) => write!(f, r##""{}""##, so.value),
-            Object::ReturnValueObject(rvo) => write!(f, "{}", rvo.value),
-            Object::FunctionObject(fo) => {
+            Object::Integer(value) => value.fmt(f),
+            Object::Boolean(value) => value.fmt(f),
+            Object::String(value) => write!(f, r##""{}""##, value),
+            Object::ReturnValue(value) => value.fmt(f),
+            Object::Function {
+                parameters,
+                body,
+                env: _,
+            } => {
                 let mut ret = String::new();
                 ret.push_str("fn(");
                 ret.push_str(
-                    &((&fo.parameters)
+                    &((&parameters)
                         .iter()
                         .map(|x| format!("{}", x))
                         .collect::<Vec<String>>()
                         .join(", ")),
                 );
                 ret.push_str(") {\n");
-                let body = String::from(&fo.body);
-                ret.push_str(&body);
-                ret.push_str(if body.is_empty() { "}" } else { "\n}" });
+                let b = String::from(body);
+                ret.push_str(&b);
+                ret.push_str(if b.is_empty() { "}" } else { "\n}" });
                 write!(f, "{}", ret)
             }
-            Object::ArrayObject(ao) => {
+            Object::Array(ao) => {
                 let mut ret = String::new();
                 ret.push('[');
                 ret.push_str(
-                    &((&ao.elements)
+                    &((&ao)
                         .iter()
                         .map(|x| format!("{}", x))
                         .collect::<Vec<String>>()
@@ -73,11 +81,11 @@ impl fmt::Display for Object {
                 ret.push(']');
                 write!(f, "{}", ret)
             }
-            Object::HashObject(ho) => {
+            Object::Hash(ho) => {
                 let mut ret = String::new();
                 ret.push('{');
                 ret.push_str(
-                    &((&ho.pairs)
+                    &((ho)
                         .iter()
                         .map(|x| format!("{}: {}", x.0, x.1))
                         .collect::<Vec<String>>()
@@ -86,7 +94,7 @@ impl fmt::Display for Object {
                 ret.push('}');
                 write!(f, "{}", ret)
             }
-            Object::BuiltinObject(_) => write!(f, "builtin function"),
+            Object::Builtin(_) => write!(f, "builtin function"),
             Object::Null => write!(f, ""),
         }
     }
@@ -110,33 +118,25 @@ impl From<&Token> for Object {
 
 impl From<i64> for Object {
     fn from(value: i64) -> Self {
-        Object::IntegerObject(Box::new(Integer { value }))
+        Object::Integer(value)
     }
 }
 
 impl From<&String> for Object {
     fn from(value: &String) -> Self {
-        Object::StringObject(Box::new(StringObj {
-            value: value.to_string(),
-        }))
+        Object::String(value.to_string())
     }
 }
 
 impl From<&str> for Object {
     fn from(value: &str) -> Self {
-        Object::StringObject(Box::new(StringObj {
-            value: value.to_string(),
-        }))
+        Object::String(value.to_string())
     }
 }
 
 impl From<bool> for Object {
     fn from(value: bool) -> Self {
-        if value {
-            Object::BooleanObject(Box::new(TRUE))
-        } else {
-            Object::BooleanObject(Box::new(FALSE))
-        }
+        Object::Boolean(value)
     }
 }
 
@@ -145,21 +145,25 @@ impl Object {
     /// object type function
     pub fn object_type(&self) -> &'static str {
         match self {
-            Object::IntegerObject(_) => INTEGER_OBJ,
-            Object::BooleanObject(_) => BOOLEAN_OBJ,
-            Object::StringObject(_) => STRING_OBJ,
-            Object::ReturnValueObject(_) => RETURN_VALUE_OBJ,
-            Object::FunctionObject(_) => FUNCTION_OBJ,
-            Object::ArrayObject(_) => ARRAY_OBJ,
-            Object::HashObject(_) => HASH_OBJ,
-            Object::BuiltinObject(_) => BUILTIN_OBJ,
+            Object::Integer(_) => INTEGER_OBJ,
+            Object::Boolean(_) => BOOLEAN_OBJ,
+            Object::String(_) => STRING_OBJ,
+            Object::ReturnValue(_) => RETURN_VALUE_OBJ,
+            Object::Function {
+                parameters: _,
+                body: _,
+                env: _,
+            } => FUNCTION_OBJ,
+            Object::Array(_) => ARRAY_OBJ,
+            Object::Hash(_) => HASH_OBJ,
+            Object::Builtin(_) => BUILTIN_OBJ,
             Object::Null => "(null)",
         }
     }
 
     /// create a new return value object
     pub fn new_return_value(value: Object) -> Object {
-        Object::ReturnValueObject(Box::new(ReturnValue { value }))
+        Object::ReturnValue(Box::new(value))
     }
 
     /// create a new function object
@@ -168,25 +172,21 @@ impl Object {
         body: &StatementNode,
         env: Rc<RefCell<Environment>>,
     ) -> Object {
-        Object::FunctionObject(Box::new(Function {
+        Object::Function {
             parameters: parameters.to_vec(),
             body: body.clone(),
             env,
-        }))
+        }
     }
 
     /// create a new array object
     pub fn new_array(elements: &[Object]) -> Object {
-        Object::ArrayObject(Box::new(Array {
-            elements: elements.to_vec(),
-        }))
+        Object::Array(elements.to_vec())
     }
 
     /// create a new hash object
     pub fn new_hash(pairs: &[(Object, Object)]) -> Object {
-        Object::HashObject(Box::new(Hash {
-            pairs: pairs.to_vec(),
-        }))
+        Object::Hash(pairs.to_vec())
     }
 }
 
@@ -201,58 +201,10 @@ pub const ARRAY_OBJ: &str = "ARRAY";
 pub const HASH_OBJ: &str = "HASH";
 pub const BUILTIN_OBJ: &str = "BUILTIN";
 
-/// const boolan object
-pub const TRUE: Boolean = Boolean { value: true };
-pub const FALSE: Boolean = Boolean { value: false };
-
-/// struct for Integer object
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub struct Integer {
-    pub value: i64,
-}
-
-/// struct for Boolean object
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub struct Boolean {
-    pub value: bool,
-}
-
 /// struct for String object
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct StringObj {
     pub value: String,
-}
-
-/// struct for Return Value object
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub struct ReturnValue {
-    pub value: Object,
-}
-
-/// struct for Array object
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub struct Array {
-    pub elements: Vec<Object>,
-}
-
-// struct for Hash object
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub struct Hash {
-    pub pairs: Vec<(Object, Object)>,
-}
-
-/// struct for Function object
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub struct Function {
-    pub parameters: Vec<ExpressionNode>,
-    pub body: StatementNode,
-    pub env: Rc<RefCell<Environment>>,
-}
-
-/// struct for Builtin object
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub struct Builtin {
-    pub builtin: fn(Vec<Object>) -> Result<Object, ObjectError>,
 }
 
 /// struct for Environment
@@ -281,24 +233,12 @@ impl Environment {
     pub fn get(&self, key: &str) -> Result<Object, ObjectError> {
         match key {
             // builtins
-            "len" => Ok(Object::BuiltinObject(Box::new(Builtin {
-                builtin: builtin_len,
-            }))),
-            "first" => Ok(Object::BuiltinObject(Box::new(Builtin {
-                builtin: builtin_first,
-            }))),
-            "last" => Ok(Object::BuiltinObject(Box::new(Builtin {
-                builtin: builtin_last,
-            }))),
-            "rest" => Ok(Object::BuiltinObject(Box::new(Builtin {
-                builtin: builtin_rest,
-            }))),
-            "push" => Ok(Object::BuiltinObject(Box::new(Builtin {
-                builtin: builtin_push,
-            }))),
-            "puts" => Ok(Object::BuiltinObject(Box::new(Builtin {
-                builtin: builtin_puts,
-            }))),
+            "len" => Ok(Object::Builtin(builtin_len)),
+            "first" => Ok(Object::Builtin(builtin_first)),
+            "last" => Ok(Object::Builtin(builtin_last)),
+            "rest" => Ok(Object::Builtin(builtin_rest)),
+            "push" => Ok(Object::Builtin(builtin_push)),
+            "puts" => Ok(Object::Builtin(builtin_puts)),
             // normal function
             _ => match self.store.get(key) {
                 Some(obj) => Ok(obj.clone()),
@@ -332,8 +272,8 @@ fn builtin_len(parameters: Vec<Object>) -> Result<Object, ObjectError> {
     }
 
     match &parameters[0] {
-        Object::StringObject(so) => Ok(Object::from(so.value.len() as i64)),
-        Object::ArrayObject(ao) => Ok(Object::from(ao.elements.len() as i64)),
+        Object::String(s) => Ok(Object::from(s.len() as i64)),
+        Object::Array(ao) => Ok(Object::from(ao.len() as i64)),
         _ => Err(ObjectError::InvalidArgumentForLen(
             parameters[0].object_type().into(),
         )),
@@ -346,9 +286,9 @@ fn builtin_first(parameters: Vec<Object>) -> Result<Object, ObjectError> {
         return Err(ObjectError::WrongNumberOfArguments(parameters.len(), 1));
     }
 
-    if let Object::ArrayObject(ao) = &parameters[0] {
-        if !ao.elements.is_empty() {
-            Ok(ao.elements[0].clone())
+    if let Object::Array(ao) = &parameters[0] {
+        if !ao.is_empty() {
+            Ok(ao[0].clone())
         } else {
             Ok(Object::Null)
         }
@@ -365,9 +305,9 @@ fn builtin_last(parameters: Vec<Object>) -> Result<Object, ObjectError> {
         return Err(ObjectError::WrongNumberOfArguments(parameters.len(), 1));
     }
 
-    if let Object::ArrayObject(ao) = &parameters[0] {
-        if !ao.elements.is_empty() {
-            Ok(ao.elements[ao.elements.len() - 1].clone())
+    if let Object::Array(ao) = &parameters[0] {
+        if !ao.is_empty() {
+            Ok(ao[ao.len() - 1].clone())
         } else {
             Ok(Object::Null)
         }
@@ -384,9 +324,9 @@ fn builtin_rest(parameters: Vec<Object>) -> Result<Object, ObjectError> {
         return Err(ObjectError::WrongNumberOfArguments(parameters.len(), 1));
     }
 
-    if let Object::ArrayObject(ao) = &parameters[0] {
-        if !ao.elements.is_empty() {
-            Ok(Object::new_array(&ao.elements[1..].to_vec()))
+    if let Object::Array(ao) = &parameters[0] {
+        if !ao.is_empty() {
+            Ok(Object::new_array(&ao[1..].to_vec()))
         } else {
             Ok(Object::Null)
         }
@@ -401,8 +341,8 @@ fn builtin_push(parameters: Vec<Object>) -> Result<Object, ObjectError> {
         return Err(ObjectError::WrongNumberOfArguments(parameters.len(), 2));
     }
 
-    if let Object::ArrayObject(ao) = &parameters[0] {
-        let mut a = ao.elements.clone();
+    if let Object::Array(ao) = &parameters[0] {
+        let mut a = ao.clone();
         a.push(parameters[1].clone());
         Ok(Object::new_array(&a))
     } else {

@@ -85,7 +85,7 @@ impl Lexer {
                     }
                     tokens.push(Token::String(string));
                 }
-                _ => unimplemented!("{:?}", ch),
+                _ => tokens.push(Token::Illegal(ch.into())),
             }
         }
 

@@ -21,8 +21,8 @@ impl TestLiteral {
     fn test_literal(&self, value: &Result<Object, EvaluationError>) {
         match self {
             TestLiteral::IntegerLiteral { value: v } => {
-                if let Ok(Object::IntegerObject(io)) = value {
-                    assert_eq!(io.value, *v);
+                if let Ok(Object::Integer(value)) = value {
+                    assert_eq!(value, v);
                 } else {
                     panic!(
                         "object is not integer, got {:?}, expected {:?}",
@@ -32,8 +32,8 @@ impl TestLiteral {
                 }
             }
             TestLiteral::BooleanLiteral { value: v } => {
-                if let Ok(Object::BooleanObject(bo)) = value {
-                    assert_eq!(bo.value, *v);
+                if let Ok(Object::Boolean(b)) = value {
+                    assert_eq!(b, v);
                 } else {
                     panic!(
                         "object is not boolean, got {:?}",
@@ -48,8 +48,8 @@ impl TestLiteral {
                 assert_eq!(format!("{}", value.as_ref().unwrap_err()), m.to_string());
             }
             TestLiteral::StringLiteral { value: s } => {
-                if let Object::StringObject(so) = value.as_ref().unwrap() {
-                    assert_eq!(so.value, *s);
+                if let Object::String(so) = value.as_ref().unwrap() {
+                    assert_eq!(so, s);
                 } else {
                     panic!(
                         "object is not string, got {:?}",
@@ -58,26 +58,26 @@ impl TestLiteral {
                 }
             }
             TestLiteral::ArrayLiteral { array } => {
-                if let Object::ArrayObject(al) = value.as_ref().unwrap() {
+                if let Object::Array(al) = value.as_ref().unwrap() {
                     assert!(
-                        al.elements.len() == array.len(),
+                        al.len() == array.len(),
                         "the length of array is expected {}, got {}",
                         array.len(),
-                        al.elements.len()
+                        al.len()
                     );
                     for (i, a) in array.iter().enumerate() {
-                        assert_eq!(&al.elements[i], a);
+                        assert_eq!(&al[i], a);
                     }
                 } else {
                     panic!("object is not array literal, got {:?}", value);
                 }
             }
             TestLiteral::HashLiteral { pairs: p } => {
-                if let Ok(Object::HashObject(ho)) = value {
-                    assert_eq!(ho.pairs.len(), p.len());
+                if let Ok(Object::Hash(ho)) = value {
+                    assert_eq!(ho.len(), p.len());
 
                     for (i, h) in p.iter().enumerate() {
-                        assert_eq!(&ho.pairs[i], h);
+                        assert_eq!(&ho[i], h);
                     }
                 } else {
                     panic!(
@@ -463,14 +463,14 @@ fn test_error_handling() {
     ];
 
     for tt in error_tests {
-        let evaluated = test_eval(tt.input);
+        let evaluated = dbg!(test_eval(tt.input));
         tt.expected.test_literal(&evaluated);
     }
 }
 
 /// test let statement
 #[test]
-fn test_let_statements() {
+fn test_eval_let_statements() {
     struct Test {
         input: &'static str,
         expected: TestLiteral,
@@ -508,27 +508,34 @@ fn test_function_object() {
 
     let evaluated = test_eval(input);
 
-    let f = match evaluated {
-        Ok(Object::FunctionObject(f)) => f,
-        _ => panic!("function object is expected, got {:?}", evaluated),
+    let (parameters, body) = if let Ok(Object::Function {
+        parameters,
+        body,
+        env: _,
+    }) = evaluated
+    {
+        (parameters, body)
+    } else {
+        panic!("function object is expected, got {:?}", evaluated)
     };
 
     assert!(
-        f.parameters.len() == 1,
+        parameters.len() == 1,
         "# of parameters should be 1, got {}",
-        f.parameters.len()
+        parameters.len()
     );
 
-    assert!(
-        f.parameters[0].string() == "x",
+    assert_eq!(
+        String::from(&parameters[0]),
+        "x",
         "parameter should be 'x', got '{}'",
-        f.parameters[0].string()
+        String::from(&parameters[0])
     );
 
     assert!(
-        f.body.string() == "(x + 2)",
+        String::from(&body) == "(x + 2)",
         r##"body should be "(x + 2)", got {}"##,
-        f.body.string()
+        String::from(&body)
     );
 }
 
@@ -625,25 +632,25 @@ fn test_hash() {
     let evaluated = test_eval(input);
 
     let ho = match &evaluated {
-        Ok(Object::HashObject(h)) => h,
+        Ok(Object::Hash(h)) => h,
         _ => panic!("hash object is expected, got {:?}", evaluated),
     };
 
     assert_eq!(
-        ho.pairs.len(),
+        ho.len(),
         6,
         "the number of elements is expected 6, got {}",
-        ho.pairs.len(),
+        ho.len(),
     );
 
     let expected = TestLiteral::HashLiteral {
         pairs: vec![
-            (Object::new_string("one"), Object::new_integer(1)),
-            (Object::new_string("two"), Object::new_integer(2)),
-            (Object::new_string("three"), Object::new_integer(3)),
-            (Object::new_integer(4), Object::new_integer(4)),
-            (Object::new_boolean(true), Object::new_integer(5)),
-            (Object::new_boolean(false), Object::new_integer(6)),
+            (Object::from("one"), Object::from(1)),
+            (Object::from("two"), Object::from(2)),
+            (Object::from("three"), Object::from(3)),
+            (Object::from(4), Object::from(4)),
+            (Object::from(true), Object::from(5)),
+            (Object::from(false), Object::from(6)),
         ],
     };
 
@@ -711,22 +718,18 @@ fn test_array_literals() {
     let evaluated = test_eval(input);
 
     let ao = match &evaluated {
-        Ok(Object::ArrayObject(a)) => a,
+        Ok(Object::Array(a)) => a,
         _ => panic!("array object is expected, got {:?}", evaluated),
     };
 
     assert!(
-        ao.elements.len() == 3,
+        ao.len() == 3,
         "the # of elements is expected 3, got {}",
-        ao.elements.len()
+        ao.len()
     );
 
     TestLiteral::ArrayLiteral {
-        array: vec![
-            Object::new_integer(1),
-            Object::new_integer(4),
-            Object::new_integer(6),
-        ],
+        array: vec![Object::from(1), Object::from(4), Object::from(6)],
     }
     .test_literal(&evaluated);
 }
@@ -786,11 +789,11 @@ fn test_array_index_expressions() {
 
 /// eval function
 fn test_eval(input: &'static str) -> Result<Object, EvaluationError> {
-    let l = Lexer::new(input.to_string());
-    let mut p = Parser::new(l);
+    let l = Lexer::new(input);
+    let p = Parser::new(l);
 
     let env = Rc::new(RefCell::new(Environment::new()));
-    eval(&mut p, env)
+    eval(p, env)
 }
 
 /// test string literal
@@ -888,23 +891,19 @@ fn test_builtin_functions() {
         Test {
             input: r##"rest([1, 2, 3, 4]);"##,
             expected: TestLiteral::ArrayLiteral {
-                array: vec![
-                    Object::new_integer(2),
-                    Object::new_integer(3),
-                    Object::new_integer(4),
-                ],
+                array: vec![Object::from(2), Object::from(3), Object::from(4)],
             },
         },
         Test {
             input: r##"rest(rest([1, 2, 3, 4]));"##,
             expected: TestLiteral::ArrayLiteral {
-                array: vec![Object::new_integer(3), Object::new_integer(4)],
+                array: vec![Object::from(3), Object::from(4)],
             },
         },
         Test {
             input: r##"rest(rest(rest([1, 2, 3, 4])));"##,
             expected: TestLiteral::ArrayLiteral {
-                array: vec![Object::new_integer(4)],
+                array: vec![Object::from(4)],
             },
         },
         Test {
@@ -918,11 +917,7 @@ fn test_builtin_functions() {
         Test {
             input: r##"let a = [1, 2]; push(a, 3);"##,
             expected: TestLiteral::ArrayLiteral {
-                array: vec![
-                    Object::new_integer(1),
-                    Object::new_integer(2),
-                    Object::new_integer(3),
-                ],
+                array: vec![Object::from(1), Object::from(2), Object::from(3)],
             },
         },
         Test {
@@ -941,10 +936,10 @@ fn test_builtin_functions() {
                       map(a, double);"##,
             expected: TestLiteral::ArrayLiteral {
                 array: vec![
-                    Object::new_integer(2),
-                    Object::new_integer(4),
-                    Object::new_integer(6),
-                    Object::new_integer(8),
+                    Object::from(2),
+                    Object::from(4),
+                    Object::from(6),
+                    Object::from(8),
                 ],
             },
         },

@@ -1,113 +1,15 @@
 /// struct for tokens
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct Token {
-    /// type of token
-    pub token_type: TokenType,
-    /// literal string
-    pub literal: String,
-}
-
-impl Token {
-    /// constructor for token
-    ///
-    /// # Arguments
-    ///
-    /// * `token_type` - type of token
-    /// * `literal_str` - literal string
-    ///
-    /// # Return value
-    ///
-    /// return a new Token
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// extern crate rsmonkey;
-    /// use rsmonkey::token::{TokenType, Token};
-    ///
-    /// let token = Token::new(TokenType::Int, "4");
-    /// let token = Token::new(TokenType::Ident, "hoge");
-    /// ```
-    pub fn new(token_type: TokenType, literal_str: &str) -> Token {
-        let literal = literal_str.to_string();
-        Token {
-            token_type,
-            literal,
-        }
-    }
-
-    /// check if EoF or not
-    ///
-    /// # Return value
-    ///
-    /// return true if Token is EoF, otherwise false
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// extern crate rsmonkey;
-    /// use rsmonkey::token::{TokenType, Token};
-    ///
-    /// assert!(Token::new(TokenType::EoF, "\0").is_eof());
-    /// assert!(!Token::new(TokenType::Int, "23").is_eof());
-    /// ```
-    pub fn is_eof(&self) -> bool {
-        self.token_type == TokenType::EoF
-    }
-
-    /// get token literal string
-    ///
-    /// # Return value
-    ///
-    /// return literal string of Token.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// extern crate rsmonkey;
-    /// use rsmonkey::token::{TokenType, Token};
-    ///
-    /// let l = Token::new(TokenType::Ident, "hoge");
-    /// assert_eq!(l.get_literal(), "hoge");
-    ///
-    /// let n = Token::new(TokenType::Int, "100");
-    /// assert_eq!(n.get_literal(), "100");
-    /// ```
-    pub fn get_literal(&self) -> String {
-        self.literal.clone()
-    }
-
-    /// get type of token
-    ///
-    /// # Return value
-    ///
-    /// token type of Token.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use rsmonkey::token::{TokenType, Token};
-    ///
-    /// let l = Token::new(TokenType::Ident, "hoge");
-    /// assert_eq!(l.get_token_type(), TokenType::Ident);
-    /// ```
-    pub fn get_token_type(&self) -> TokenType {
-        self.token_type
-    }
-}
-
-/// Token type
-#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
-pub enum TokenType {
+pub enum Token {
     /// illegal token
-    Illegal,
+    Illegal(String),
     /// End of File
     EoF,
 
     /// identifier
-    Ident,
+    Ident(String),
     /// integer
-    Int,
+    Int(i64),
 
     /// assign `=`
     Assign,
@@ -156,10 +58,8 @@ pub enum TokenType {
     Function,
     /// let
     Let,
-    /// true
-    True,
-    /// false
-    False,
+    /// true or false
+    Boolean(bool),
     /// if
     If,
     /// else
@@ -168,5 +68,54 @@ pub enum TokenType {
     Return,
 
     /// string
-    StringToken,
+    String(String),
+}
+
+impl std::fmt::Display for Token {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, "{}", String::from(self),)
+    }
+}
+
+impl From<Token> for String {
+    fn from(t: Token) -> Self {
+        String::from(&t)
+    }
+}
+
+impl From<&Token> for String {
+    fn from(t: &Token) -> Self {
+        match t {
+            Token::Illegal(s) => s.into(),
+            Token::EoF => "EoF".into(),
+            Token::Ident(ident) => ident.to_string(),
+            Token::Int(int) => int.to_string(),
+            Token::Assign => "=".into(),
+            Token::Plus => "+".into(),
+            Token::Minus => "-".into(),
+            Token::Bang => "!".into(),
+            Token::Asterisk => "*".into(),
+            Token::Slash => "/".into(),
+            Token::Lt => "<".into(),
+            Token::Gt => ">".into(),
+            Token::Eq => "==".into(),
+            Token::NotEq => "!=".into(),
+            Token::Comma => ",".into(),
+            Token::Semicolon => ";".into(),
+            Token::Colon => ":".into(),
+            Token::LParen => "(".into(),
+            Token::RParen => ")".into(),
+            Token::LBrace => "{".into(),
+            Token::RBrace => "}".into(),
+            Token::LBracket => "[".into(),
+            Token::RBracket => "]".into(),
+            Token::Function => "fn".into(),
+            Token::Let => "let".into(),
+            Token::Boolean(b) => (if *b { "true" } else { "false" }).into(),
+            Token::If => "if".into(),
+            Token::Else => "else".into(),
+            Token::Return => "return".into(),
+            Token::String(string) => string.to_string(),
+        }
+    }
 }

@@ -1,7 +1,7 @@
 use rsmonkey::ast::*;
 use rsmonkey::lexer::Lexer;
 use rsmonkey::parser::{ParseError, Parser};
-use rsmonkey::token::{Token, TokenType};
+use rsmonkey::token::Token;
 
 enum TestLiteral {
     IntegerLiteral(i64),
@@ -9,7 +9,6 @@ enum TestLiteral {
     StringLiteral(&'static str),
     BooleanLiteral(bool),
 }
-
 #[test]
 fn test_let_statements() -> Result<(), ParseError> {
     struct Test {
@@ -36,17 +35,12 @@ fn test_let_statements() -> Result<(), ParseError> {
     ];
 
     for tt in let_statement_test {
-        let l = Lexer::new(tt.input.to_string());
-        let mut p = Parser::new(l);
+        let l = Lexer::new(tt.input);
+        let mut p = Parser::new(l).into_iter();
 
         let program = p.next().unwrap()?;
 
-        let stmt = match program {
-            StatementNode::LetStatementNode(s) => s,
-            _ => panic!("let statement is expected"),
-        };
-
-        test_let_statement(&stmt, tt.expected_identifier, &tt.expected_value);
+        test_let_statement(&program, tt.expected_identifier, &tt.expected_value);
         assert!(p.next().is_none());
     }
 
@@ -59,23 +53,29 @@ fn test_let_statements() -> Result<(), ParseError> {
 /// # Arguments
 ///
 /// * `s` - let statement
-/// * `name` - expected string for identifer of `s`
-/// * `value` - expected value for right value
+/// * `expected_name` - expected string for identifer of `s`
+/// * `expected_value` - expected value for right value
 /// ```
-fn test_let_statement(s: &LetStatement, name: &str, value: &TestLiteral) {
-    assert_eq!(
-        s.name.value, name,
-        "expected identifier is '{}', but got '{}'.",
-        name, s.name.value,
-    );
-    assert_eq!(
-        s.name.token.get_literal(),
-        name,
-        "expected identifier is '{}', but got '{}'.",
-        name,
-        s.name.token.get_literal()
-    );
-    test_literal_expression(&s.value, value);
+fn test_let_statement(s: &StatementNode, expected_name: &str, expected_value: &TestLiteral) {
+    if let StatementNode::LetStatement { name, value } = s {
+        assert_eq!(
+            Token::Ident(format!("{}", name)),
+            Token::Ident(expected_name.to_string()),
+            "expected identifier is '{}', but got '{:?}'.",
+            expected_name,
+            name,
+        );
+        assert_eq!(
+            String::from(name),
+            expected_name,
+            "expected identifier is '{}', but got '{}'.",
+            expected_name,
+            name
+        );
+        test_literal_expression(&value, expected_value);
+    } else {
+        panic!();
+    }
 }
 
 #[test]
@@ -101,17 +101,17 @@ fn test_return_statements() -> Result<(), ParseError> {
     ];
 
     for tt in return_statement_test {
-        let l = Lexer::new(tt.input.to_string());
-        let mut p = Parser::new(l);
+        let l = Lexer::new(tt.input);
+        let mut p = Parser::new(l).into_iter();
 
         let program = p.next().unwrap()?;
 
-        let stmt = match program {
-            StatementNode::ReturnStatementNode(rs) => rs,
-            _ => panic!("return statement is expected"),
-        };
+        if let StatementNode::ReturnStatement { return_value } = program {
+            test_literal_expression(&return_value, &tt.expected_value);
+        } else {
+            panic!("return statement is expected");
+        }
 
-        test_literal_expression(&stmt.return_value, &tt.expected_value);
         assert!(p.next().is_none());
     }
 
@@ -120,36 +120,31 @@ fn test_return_statements() -> Result<(), ParseError> {
 
 #[test]
 fn test_string() {
-    let v = StatementNode::LetStatementNode(Box::new(LetStatement {
-        token: Token::new(TokenType::Let, "let"),
-        name: Identifier {
-            token: Token::new(TokenType::Ident, "myVar"),
-            value: "myVar".to_string(),
+    let v = StatementNode::LetStatement {
+        name: Token::Ident("myVar".into()),
+        value: ExpressionNode::Identifier {
+            token: Token::Ident("anotherVar".into()),
         },
-        value: ExpressionNode::IdentifierNode(Box::new(Identifier {
-            token: Token::new(TokenType::Ident, "anotherVar"),
-            value: "myVar".to_string(),
-        })),
-    }));
+    };
 
-    assert_eq!(v.string(), "let myVar = anotherVar;");
+    assert_eq!(String::from(&v), "let myVar = anotherVar;");
 }
 
 #[test]
 fn test_identifier_expression() -> Result<(), ParseError> {
     let input = r##"foobar;"##;
 
-    let l = Lexer::new(input.to_string());
-    let mut p = Parser::new(l);
+    let l = Lexer::new(input);
+    let mut p = Parser::new(l).into_iter();
 
     let program = p.next().unwrap()?;
 
-    let stmt = match program {
-        StatementNode::ExpressionStatementNode(es) => es,
+    let stmt_exp = match program {
+        StatementNode::ExpressionStatement { expression } => expression,
         _ => panic!("first statement is not expressionstatement"),
     };
 
-    assert_eq!(stmt.token.get_literal(), "foobar");
+    assert_eq!(String::from(stmt_exp), "foobar");
     assert!(p.next().is_none());
 
     Ok(())
@@ -159,12 +154,12 @@ fn test_identifier_expression() -> Result<(), ParseError> {
 fn test_integer_literal_expression() -> Result<(), ParseError> {
     let input = r##"5;"##;
 
-    let l = Lexer::new(input.to_string());
-    let mut p = Parser::new(l);
+    let l = Lexer::new(input);
+    let mut p = Parser::new(l).into_iter();
 
     let program = p.next().unwrap()?;
 
-    assert!(program.get_literal() == "5");
+    assert_eq!(format!("{}", program), "5");
     assert!(p.next().is_none());
 
     Ok(())
@@ -175,12 +170,12 @@ fn test_integer_literal_expression() -> Result<(), ParseError> {
 fn test_string_literal_expression() -> Result<(), ParseError> {
     let input = r##""hello world""##;
 
-    let l = Lexer::new(input.to_string());
-    let mut p = Parser::new(l);
+    let l = Lexer::new(input);
+    let mut p = Parser::new(l).into_iter();
 
     let program = p.next().unwrap()?;
 
-    assert!(program.get_literal() == "hello world");
+    assert_eq!(format!("{}", program), "hello world");
     assert!(p.next().is_none());
 
     Ok(())
@@ -206,25 +201,27 @@ fn test_boolean_literal_expression() -> Result<(), ParseError> {
     ];
 
     for tt in boolean_test {
-        let l = Lexer::new(tt.input.to_string());
-        let mut p = Parser::new(l);
+        let l = Lexer::new(tt.input);
+        let mut p = Parser::new(l).into_iter();
 
         let program = p.next().unwrap()?;
 
-        let stmt = match &program {
-            StatementNode::ExpressionStatementNode(es) => es,
+        let stmt_exp = match &program {
+            StatementNode::ExpressionStatement { expression } => expression,
             _ => panic!("first statement is not expression statement"),
         };
 
-        let exp = match &stmt.expression {
-            ExpressionNode::BooleanExpressionNode(bn) => bn,
+        let exp_token = match &stmt_exp {
+            ExpressionNode::Boolean { token } => token,
             _ => panic!("this expression statement does not have boolean expression"),
         };
 
         assert_eq!(
-            exp.value, tt.value,
+            exp_token,
+            &Token::Boolean(tt.value),
             "{} is expected, but got {}",
-            tt.value, exp.value,
+            &Token::Boolean(tt.value),
+            exp_token,
         );
 
         assert!(p.next().is_none());
@@ -237,56 +234,45 @@ fn test_boolean_literal_expression() -> Result<(), ParseError> {
 fn test_parsing_prefix_expressions() -> Result<(), ParseError> {
     struct Test {
         input: &'static str,
-        operator: &'static str,
         value: TestLiteral,
     }
 
     let prefix_test = vec![
         Test {
             input: "!5;",
-            operator: "!",
             value: TestLiteral::IntegerLiteral(5),
         },
         Test {
             input: "-15;",
-            operator: "-",
             value: TestLiteral::IntegerLiteral(15),
         },
         Test {
             input: "!true;",
-            operator: "!",
             value: TestLiteral::BooleanLiteral(true),
         },
         Test {
             input: "!false;",
-            operator: "!",
             value: TestLiteral::BooleanLiteral(false),
         },
     ];
 
     for tt in prefix_test {
-        let l = Lexer::new(tt.input.to_string());
-        let mut p = Parser::new(l);
+        let l = Lexer::new(tt.input);
+        let mut p = Parser::new(l).into_iter();
 
         let program = p.next().unwrap()?;
 
-        let stmt = match &program {
-            StatementNode::ExpressionStatementNode(es) => es,
+        let stmt_exp = match &program {
+            StatementNode::ExpressionStatement { expression } => expression,
             _ => panic!("first statement is not expression statement"),
         };
 
-        let exp = match &stmt.expression {
-            ExpressionNode::PrefixExpressionNode(pe) => pe,
+        let exp = match &stmt_exp {
+            ExpressionNode::PrefixExpression { token: _, right } => right,
             _ => panic!("this expression statement does not have prefix expression"),
         };
 
-        assert_eq!(
-            tt.operator, exp.operator,
-            "unexpected operator {} (expected {})",
-            exp.operator, tt.operator
-        );
-
-        test_literal_expression(&exp.right, &tt.value);
+        test_literal_expression(&exp, &tt.value);
 
         assert!(p.next().is_none());
     }
@@ -373,22 +359,17 @@ fn test_parsing_infix_expressions() -> Result<(), ParseError> {
     ];
 
     for tt in infix_test {
-        let l = Lexer::new(tt.input.to_string());
-        let mut p = Parser::new(l);
+        let l = Lexer::new(tt.input);
+        let mut p = Parser::new(l).into_iter();
 
         let program = p.next().unwrap()?;
 
-        let stmt = match &program {
-            StatementNode::ExpressionStatementNode(es) => es,
+        let stmt_exp = match &program {
+            StatementNode::ExpressionStatement { expression } => expression,
             _ => panic!("first statement is not expression statement"),
         };
 
-        test_infix_expression(
-            &stmt.expression,
-            &tt.left_value,
-            tt.operator,
-            &tt.right_value,
-        );
+        test_infix_expression(&stmt_exp, &tt.left_value, tt.operator, &tt.right_value);
         assert!(p.next().is_none());
     }
 
@@ -506,10 +487,10 @@ fn test_operator_precedence_parsing() -> Result<(), ParseError> {
     ];
 
     for tt in operator_precedence_test {
-        let l = Lexer::new(tt.input.to_string());
-        let p = Parser::new(l);
+        let l = Lexer::new(tt.input);
+        let p = Parser::new(l).into_iter();
 
-        let program_str = p.map(|c| c.unwrap().string()).collect::<String>();
+        let program_str = p.map(|c| String::from(&c.unwrap())).collect::<String>();
 
         assert_eq!(
             program_str, tt.expected,
@@ -525,47 +506,51 @@ fn test_operator_precedence_parsing() -> Result<(), ParseError> {
 fn test_if_expression() -> Result<(), ParseError> {
     let input = "if (x < y) { x };";
 
-    let l = Lexer::new(input.to_string());
-    let mut p = Parser::new(l);
+    let l = Lexer::new(input);
+    let mut p = Parser::new(l).into_iter();
 
     let program = p.next().unwrap()?;
 
     let exps = match &program {
-        StatementNode::ExpressionStatementNode(es) => es,
+        StatementNode::ExpressionStatement { expression } => expression,
         _ => panic!("expression stateme is expected"),
     };
 
-    let exp = match &exps.expression {
-        ExpressionNode::IfExpressionNode(ie) => ie,
+    let (condition, consequence, alternative) = match &exps {
+        ExpressionNode::IfExpression {
+            condition,
+            consequence,
+            alternative,
+        } => (condition, consequence, alternative),
         _ => panic!("if expression is expected"),
     };
 
     test_infix_expression(
-        &exp.condition,
+        condition,
         &TestLiteral::IdentifierLiteral("x"),
         "<",
         &TestLiteral::IdentifierLiteral("y"),
     );
 
-    let cs = match &exp.consequence {
-        Some(StatementNode::BlockStatementNode(bs)) => bs,
+    let cs_stmt = match consequence.as_ref().unwrap().as_ref() {
+        StatementNode::BlockStatement { statements } => statements,
         _ => panic!("consequence does not have block statement"),
     };
 
     assert_eq!(
-        cs.statements.len(),
+        cs_stmt.len(),
         1,
         "consequence does not have the expected number of statements.",
     );
 
-    let conex = match &cs.statements[0] {
-        StatementNode::ExpressionStatementNode(es) => es,
+    let conex = match &cs_stmt[0] {
+        StatementNode::ExpressionStatement { expression } => expression,
         _ => panic!("expression statement is expected"),
     };
 
-    test_literal_expression(&conex.expression, &TestLiteral::IdentifierLiteral("x"));
+    test_literal_expression(&conex, &TestLiteral::IdentifierLiteral("x"));
 
-    match &exp.alternative {
+    match alternative {
         None => {}
         _ => panic!("alternative has unexpected statement node"),
     };
@@ -579,65 +564,69 @@ fn test_if_expression() -> Result<(), ParseError> {
 fn test_if_else_expression() -> Result<(), ParseError> {
     let input = "if (x < y) { x; } else { y };";
 
-    let l = Lexer::new(input.to_string());
-    let mut p = Parser::new(l);
+    let l = Lexer::new(input);
+    let mut p = Parser::new(l).into_iter();
 
     let stmt = p.next().unwrap()?;
 
     let exps = match &stmt {
-        StatementNode::ExpressionStatementNode(es) => es,
+        StatementNode::ExpressionStatement { expression } => expression,
         _ => panic!("expression stateme is expected"),
     };
 
-    let exp = match &exps.expression {
-        ExpressionNode::IfExpressionNode(ie) => ie,
+    let (condition, consequence, alternative) = match &exps {
+        ExpressionNode::IfExpression {
+            condition,
+            consequence,
+            alternative,
+        } => (condition, consequence, alternative),
         _ => panic!("if expression is expected"),
     };
 
     test_infix_expression(
-        &exp.condition,
+        condition,
         &TestLiteral::IdentifierLiteral("x"),
         "<",
         &TestLiteral::IdentifierLiteral("y"),
     );
 
-    let cs = match &exp.consequence {
-        Some(StatementNode::BlockStatementNode(bs)) => bs,
+    let cs_stmt = match consequence.as_ref().unwrap().as_ref() {
+        StatementNode::BlockStatement { statements } => statements,
         _ => panic!("consequence does not have block statement"),
     };
 
     assert!(
-        cs.statements.len() == 1,
+        cs_stmt.len() == 1,
         "consequence does not have the expected number of statements. {}",
-        cs.statements.len()
+        cs_stmt.len()
     );
 
-    let conex = match &cs.statements[0] {
-        StatementNode::ExpressionStatementNode(es) => es,
+    let conex = match &cs_stmt[0] {
+        StatementNode::ExpressionStatement { expression } => expression,
         _ => panic!("expression statement is expected"),
     };
 
-    test_literal_expression(&conex.expression, &TestLiteral::IdentifierLiteral("x"));
+    test_literal_expression(&conex, &TestLiteral::IdentifierLiteral("x"));
 
-    let als = match &exp.alternative {
-        Some(StatementNode::BlockStatementNode(bs)) => bs,
+    let als_stmt = match alternative.as_ref().unwrap().as_ref() {
+        StatementNode::BlockStatement { statements } => statements,
         _ => panic!("alternative does not have block statement"),
     };
 
     assert!(
-        als.statements.len() == 1,
+        als_stmt.len() == 1,
         "consequence does not have the expected number of statements. {}",
-        als.statements.len()
+        als_stmt.len()
     );
 
-    let alsex = match &als.statements[0] {
-        StatementNode::ExpressionStatementNode(es) => es,
+    let alsex = match &als_stmt[0] {
+        StatementNode::ExpressionStatement { expression } => expression,
         _ => panic!("expression statement is expected"),
     };
 
-    test_literal_expression(&alsex.expression, &TestLiteral::IdentifierLiteral("y"));
+    test_literal_expression(&alsex, &TestLiteral::IdentifierLiteral("y"));
 
-    assert_eq!(stmt.string(), "if (x < y) x else y");
+    assert_eq!(String::from(&stmt), "if (x < y) x else y");
     assert!(p.next().is_none());
 
     Ok(())
@@ -647,49 +636,53 @@ fn test_if_else_expression() -> Result<(), ParseError> {
 fn test_function_literal_parsing() -> Result<(), ParseError> {
     let input = "fn(x, y) { x + y; }";
 
-    let l = Lexer::new(input.to_string());
-    let mut p = Parser::new(l);
+    let l = Lexer::new(input);
+    let mut p = Parser::new(l).into_iter();
 
     let program = p.next().unwrap()?;
 
     let exps = match &program {
-        StatementNode::ExpressionStatementNode(exps) => exps,
+        StatementNode::ExpressionStatement { expression } => expression,
         _ => panic!("expression stateme is expected"),
     };
 
-    let fl = match &exps.expression {
-        ExpressionNode::FunctionLiteralNode(f) => f,
+    let (fl_params, fl_body) = match &exps {
+        ExpressionNode::FunctionLiteral {
+            token: _,
+            parameters,
+            body,
+        } => (parameters, body),
         _ => panic!("function literalis expected"),
     };
 
     assert!(
-        fl.parameters.len() == 2,
+        fl_params.len() == 2,
         "parameters should have {}, but got {}",
         2,
-        fl.parameters.len(),
+        fl_params.len(),
     );
 
-    test_literal_expression(&fl.parameters[0], &TestLiteral::IdentifierLiteral("x"));
-    test_literal_expression(&fl.parameters[1], &TestLiteral::IdentifierLiteral("y"));
+    test_literal_expression(&fl_params[0], &TestLiteral::IdentifierLiteral("x"));
+    test_literal_expression(&fl_params[1], &TestLiteral::IdentifierLiteral("y"));
 
-    let body = match &fl.body {
-        Some(StatementNode::BlockStatementNode(b)) => b,
+    let body_stmt = match &**(fl_body.as_ref().unwrap()) {
+        StatementNode::BlockStatement { statements } => statements,
         _ => panic!("block statement is expected here"),
     };
 
     assert!(
-        body.statements.len() == 1,
+        body_stmt.len() == 1,
         "block statement does not have the expected number of statements. got {}",
-        body.statements.len(),
+        body_stmt.len(),
     );
 
-    let body_stmt = match &body.statements[0] {
-        StatementNode::ExpressionStatementNode(e) => e,
+    let body_stmt_exp = match &body_stmt[0] {
+        StatementNode::ExpressionStatement { expression } => expression,
         _ => panic!("expression statement is expected here"),
     };
 
     test_infix_expression(
-        &body_stmt.expression,
+        &body_stmt_exp,
         &TestLiteral::IdentifierLiteral("x"),
         "+",
         &TestLiteral::IdentifierLiteral("y"),
@@ -723,31 +716,35 @@ fn test_function_parameter_parsing() -> Result<(), ParseError> {
     ];
 
     for tt in func_test {
-        let l = Lexer::new(tt.input.to_string());
-        let mut p = Parser::new(l);
+        let l = Lexer::new(tt.input);
+        let mut p = Parser::new(l).into_iter();
 
         let program = p.next().unwrap()?;
 
         let exps = match &program {
-            StatementNode::ExpressionStatementNode(exps) => exps,
+            StatementNode::ExpressionStatement { expression } => expression,
             _ => panic!("expression stateme is expected"),
         };
 
-        let fl = match &exps.expression {
-            ExpressionNode::FunctionLiteralNode(f) => f,
+        let fl_params = match &exps {
+            ExpressionNode::FunctionLiteral {
+                token: _,
+                parameters,
+                body: _,
+            } => parameters,
             _ => panic!("function literalis expected"),
         };
 
         assert!(
-            fl.parameters.len() == tt.expected.len(),
+            fl_params.len() == tt.expected.len(),
             "parameters should have {}, but got {}",
             tt.expected.len(),
-            fl.parameters.len(),
+            fl_params.len(),
         );
 
         for i in 0..(tt.expected.len()) {
             test_literal_expression(
-                &fl.parameters[i],
+                &fl_params[i],
                 &TestLiteral::IdentifierLiteral(tt.expected[i]),
             );
         }
@@ -758,40 +755,44 @@ fn test_function_parameter_parsing() -> Result<(), ParseError> {
 }
 
 #[test]
-fn test_call_expression_arsing() -> Result<(), ParseError> {
+fn test_call_expression_parsing() -> Result<(), ParseError> {
     let input = "add(1, 2 * 3, 4 + 5);";
 
-    let l = Lexer::new(input.to_string());
-    let mut p = Parser::new(l);
+    let l = Lexer::new(input);
+    let mut p = Parser::new(l).into_iter();
 
     let program = p.next().unwrap()?;
 
     let exps = match &program {
-        StatementNode::ExpressionStatementNode(exps) => exps,
+        StatementNode::ExpressionStatement { expression } => expression,
         _ => panic!("expression stateme is expected"),
     };
 
-    let fc = match &exps.expression {
-        ExpressionNode::CallExpressionNode(fc) => fc,
+    let arguments = match &exps {
+        ExpressionNode::CallExpression {
+            token: _,
+            function: _,
+            arguments,
+        } => arguments,
         _ => panic!("call expression is expected"),
     };
 
     assert!(
-        fc.arguments.len() == 3,
+        arguments.len() == 3,
         "# of arguments should be {}, but got {}",
         3,
-        fc.arguments.len()
+        arguments.len()
     );
 
-    test_literal_expression(&fc.arguments[0], &TestLiteral::IntegerLiteral(1));
+    test_literal_expression(&arguments[0], &TestLiteral::IntegerLiteral(1));
     test_infix_expression(
-        &fc.arguments[1],
+        &arguments[1],
         &TestLiteral::IntegerLiteral(2),
         "*",
         &TestLiteral::IntegerLiteral(3),
     );
     test_infix_expression(
-        &fc.arguments[2],
+        &arguments[2],
         &TestLiteral::IntegerLiteral(4),
         "+",
         &TestLiteral::IntegerLiteral(5),
@@ -807,36 +808,36 @@ fn test_call_expression_arsing() -> Result<(), ParseError> {
 fn test_parsing_array_literal() -> Result<(), ParseError> {
     let input = "[1, 2 * 2, 3 + 3];";
 
-    let l = Lexer::new(input.to_string());
-    let mut p = Parser::new(l);
+    let l = Lexer::new(input);
+    let mut p = Parser::new(l).into_iter();
 
     let program = p.next().unwrap()?;
 
     let exps = match &program {
-        StatementNode::ExpressionStatementNode(e) => e,
+        StatementNode::ExpressionStatement { expression } => expression,
         _ => panic!("expression stateme is expected"),
     };
 
-    let al = match &exps.expression {
-        ExpressionNode::ArrayLiteralNode(a) => a,
+    let elements = match &exps {
+        ExpressionNode::ArrayLiteral { token: _, elements } => elements,
         _ => panic!("array literal node is expectd"),
     };
 
     assert!(
-        al.elements.len() == 3,
+        elements.len() == 3,
         "the # of elements of the array literal should be 3, but {}",
-        al.elements.len()
+        elements.len()
     );
 
-    test_integer_literal(&al.elements[0], 1);
+    test_integer_literal(&elements[0], 1);
     test_infix_expression(
-        &al.elements[1],
+        &elements[1],
         &TestLiteral::IntegerLiteral(2),
         "*",
         &TestLiteral::IntegerLiteral(2),
     );
     test_infix_expression(
-        &al.elements[2],
+        &elements[2],
         &TestLiteral::IntegerLiteral(3),
         "+",
         &TestLiteral::IntegerLiteral(3),
@@ -852,24 +853,28 @@ fn test_parsing_array_literal() -> Result<(), ParseError> {
 fn test_parsing_index_expressions() -> Result<(), ParseError> {
     let input = "myArray[1 + 1]";
 
-    let l = Lexer::new(input.to_string());
-    let mut p = Parser::new(l);
+    let l = Lexer::new(input);
+    let mut p = Parser::new(l).into_iter();
 
     let program = p.next().unwrap()?;
 
     let exps = match &program {
-        StatementNode::ExpressionStatementNode(e) => e,
+        StatementNode::ExpressionStatement { expression } => expression,
         _ => panic!("expression stateme is expected"),
     };
 
-    let il = match &exps.expression {
-        ExpressionNode::IndexExpressionNode(a) => a,
+    let (left, index) = match &exps {
+        ExpressionNode::IndexExpression {
+            token: _,
+            left,
+            index,
+        } => (left, index),
         _ => panic!("index expression node is expectd"),
     };
 
-    test_literal_expression(&il.left, &TestLiteral::IdentifierLiteral("myArray"));
+    test_literal_expression(&left, &TestLiteral::IdentifierLiteral("myArray"));
     test_infix_expression(
-        &il.index,
+        &index,
         &TestLiteral::IntegerLiteral(1),
         "+",
         &TestLiteral::IntegerLiteral(1),
@@ -884,33 +889,33 @@ fn test_parsing_index_expressions() -> Result<(), ParseError> {
 fn test_parsing_hash_literals_string_keys() -> Result<(), ParseError> {
     let input = r##"{"one": 1, "two": 2, "three": 3}"##;
 
-    let l = Lexer::new(input.to_string());
-    let mut p = Parser::new(l);
+    let l = Lexer::new(input);
+    let mut p = Parser::new(l).into_iter();
 
     let program = p.next().unwrap()?;
 
     let exps = match &program {
-        StatementNode::ExpressionStatementNode(e) => e,
+        StatementNode::ExpressionStatement { expression } => expression,
         _ => panic!("expression stateme is expected"),
     };
 
-    let hl = match &exps.expression {
-        ExpressionNode::HashLiteralNode(h) => h,
+    let pairs = match &exps {
+        ExpressionNode::HashLiteral { token: _, pairs } => pairs,
         _ => panic!("hash literal is expected"),
     };
 
     assert!(
-        hl.pairs.len() == 3,
+        pairs.len() == 3,
         "the # of pairs of the hash literal should be 3, but {}",
-        hl.pairs.len()
+        pairs.len()
     );
 
-    test_literal_expression(&hl.pairs[0].0, &TestLiteral::StringLiteral("one"));
-    test_literal_expression(&hl.pairs[1].0, &TestLiteral::StringLiteral("two"));
-    test_literal_expression(&hl.pairs[2].0, &TestLiteral::StringLiteral("three"));
-    test_literal_expression(&hl.pairs[0].1, &TestLiteral::IntegerLiteral(1));
-    test_literal_expression(&hl.pairs[1].1, &TestLiteral::IntegerLiteral(2));
-    test_literal_expression(&hl.pairs[2].1, &TestLiteral::IntegerLiteral(3));
+    test_literal_expression(&pairs[0].0, &TestLiteral::StringLiteral("one"));
+    test_literal_expression(&pairs[1].0, &TestLiteral::StringLiteral("two"));
+    test_literal_expression(&pairs[2].0, &TestLiteral::StringLiteral("three"));
+    test_literal_expression(&pairs[0].1, &TestLiteral::IntegerLiteral(1));
+    test_literal_expression(&pairs[1].1, &TestLiteral::IntegerLiteral(2));
+    test_literal_expression(&pairs[2].1, &TestLiteral::IntegerLiteral(3));
 
     assert!(p.next().is_none());
 
@@ -921,25 +926,25 @@ fn test_parsing_hash_literals_string_keys() -> Result<(), ParseError> {
 fn test_parsing_empty_hash_literal() -> Result<(), ParseError> {
     let input = "{}";
 
-    let l = Lexer::new(input.to_string());
-    let mut p = Parser::new(l);
+    let l = Lexer::new(input);
+    let mut p = Parser::new(l).into_iter();
 
     let program = p.next().unwrap()?;
 
     let exps = match &program {
-        StatementNode::ExpressionStatementNode(e) => e,
+        StatementNode::ExpressionStatement { expression } => expression,
         _ => panic!("hash literal stateme is expected"),
     };
 
-    let hl = match &exps.expression {
-        ExpressionNode::HashLiteralNode(h) => h,
+    let pairs = match &exps {
+        ExpressionNode::HashLiteral { token: _, pairs } => pairs,
         _ => panic!("hash literal is expected"),
     };
 
     assert!(
-        hl.pairs.len() == 0,
+        pairs.len() == 0,
         "the # of elements of {{}} should be 0, got {}",
-        hl.pairs.len()
+        pairs.len()
     );
 
     assert!(p.next().is_none());
@@ -951,46 +956,46 @@ fn test_parsing_empty_hash_literal() -> Result<(), ParseError> {
 fn test_parsing_hash_literals_with_expressions() -> Result<(), ParseError> {
     let input = r##"{"one": 0 + 1, "two": 10 - 8, "three": 15 / 5}"##;
 
-    let l = Lexer::new(input.to_string());
-    let mut p = Parser::new(l);
+    let l = Lexer::new(input);
+    let mut p = Parser::new(l).into_iter();
 
     let program = p.next().unwrap()?;
 
     let exps = match &program {
-        StatementNode::ExpressionStatementNode(e) => e,
+        StatementNode::ExpressionStatement { expression } => expression,
         _ => panic!("hash literal stateme is expected"),
     };
 
-    let hl = match &exps.expression {
-        ExpressionNode::HashLiteralNode(h) => h,
+    let pairs = match &exps {
+        ExpressionNode::HashLiteral { token: _, pairs } => pairs,
         _ => panic!("hash literal is expected"),
     };
 
     assert!(
-        hl.pairs.len() == 3,
+        pairs.len() == 3,
         "the # of elements of {{}} should be 3, got {}",
-        hl.pairs.len()
+        pairs.len()
     );
 
-    test_literal_expression(&hl.pairs[0].0, &TestLiteral::StringLiteral("one"));
+    test_literal_expression(&pairs[0].0, &TestLiteral::StringLiteral("one"));
     test_infix_expression(
-        &hl.pairs[0].1,
+        &pairs[0].1,
         &TestLiteral::IntegerLiteral(0),
         "+",
         &TestLiteral::IntegerLiteral(1),
     );
 
-    test_literal_expression(&hl.pairs[1].0, &TestLiteral::StringLiteral("two"));
+    test_literal_expression(&pairs[1].0, &TestLiteral::StringLiteral("two"));
     test_infix_expression(
-        &hl.pairs[1].1,
+        &pairs[1].1,
         &TestLiteral::IntegerLiteral(10),
         "-",
         &TestLiteral::IntegerLiteral(8),
     );
 
-    test_literal_expression(&hl.pairs[2].0, &TestLiteral::StringLiteral("three"));
+    test_literal_expression(&pairs[2].0, &TestLiteral::StringLiteral("three"));
     test_infix_expression(
-        &hl.pairs[2].1,
+        &pairs[2].1,
         &TestLiteral::IntegerLiteral(15),
         "/",
         &TestLiteral::IntegerLiteral(5),
@@ -1007,24 +1012,12 @@ fn test_parsing_hash_literals_with_expressions() -> Result<(), ParseError> {
 /// * `en` - `ExpressionNode::IntegerLiteralNode` to be tested
 /// * `value` - the value that `en` should have
 fn test_integer_literal(en: &ExpressionNode, value: i64) {
-    let il = match &en {
-        ExpressionNode::IntegerLiteralNode(iln) => iln,
+    let il_token = match &en {
+        ExpressionNode::IntegerLiteral { token } => token,
         _ => panic!("unexpected node"),
     };
 
-    assert_eq!(
-        il.value, value,
-        "integer value is expected as {} but got {}",
-        value, il.value
-    );
-
-    assert_eq!(
-        il.token.get_literal(),
-        format!("{}", value),
-        "get_literal() is expected as {} bug got {}",
-        format!("{}", value),
-        il.token.get_literal(),
-    );
+    assert_eq!(il_token, &Token::Int(value),);
 }
 
 /// test identifier literal
@@ -1034,24 +1027,12 @@ fn test_integer_literal(en: &ExpressionNode, value: i64) {
 /// * `en` - `ExpressionNode::IdentifierNode` to be tested
 /// * `value` - the value that `en` should have
 fn test_identifier_literal(en: &ExpressionNode, value: &'static str) {
-    let id = match &en {
-        ExpressionNode::IdentifierNode(idn) => idn,
+    let id_token = match &en {
+        ExpressionNode::Identifier { token } => token,
         _ => panic!("unexpected node"),
     };
 
-    assert_eq!(
-        id.value, value,
-        r##"value is expected as "{}" but got "{}""##,
-        value, id.value,
-    );
-
-    assert_eq!(
-        id.token.get_literal(),
-        value,
-        r##"get_literal() is expected as "{}" but got "{}""##,
-        id.token.get_literal(),
-        id.value,
-    );
+    assert_eq!(id_token, &Token::Ident(value.to_string()),);
 }
 
 /// test string literal
@@ -1061,45 +1042,35 @@ fn test_identifier_literal(en: &ExpressionNode, value: &'static str) {
 /// * `en` - `ExpressionNode::StringNode` to be tested
 /// * `value` - the value that `en` should have
 fn test_string_literal(en: &ExpressionNode, value: &'static str) {
-    let id = match &en {
-        ExpressionNode::StringLiteralNode(idn) => idn,
+    let id_token = match &en {
+        ExpressionNode::StringLiteral { token } => token,
         _ => panic!("unexpected node, {:?}", en),
     };
 
-    assert_eq!(
-        id.value, value,
-        r##"value is expected as "{}" but got "{}""##,
-        value, id.value,
-    );
-
-    assert_eq!(
-        id.token.get_literal(),
-        value,
-        r##"get_literal() is expected as "{}" but got "{}""##,
-        id.token.get_literal(),
-        id.value,
-    );
+    assert_eq!(id_token, &Token::String(value.to_string()),);
 }
 
 /// test boolean literal
 fn test_boolean_literal(en: &ExpressionNode, value: bool) {
-    let bl = match &en {
-        ExpressionNode::BooleanExpressionNode(be) => be,
+    let token = match &en {
+        ExpressionNode::Boolean { token } => token,
         _ => panic!("boolean expression node is expected"),
     };
 
     assert_eq!(
-        bl.value, value,
+        token,
+        &Token::Boolean(value),
         "{:?} is expected, but got {:?}",
-        value, bl.value,
+        &Token::Boolean(value),
+        token,
     );
 
     assert_eq!(
-        bl.token.get_literal(),
+        String::from(token),
         format!("{:?}", value),
-        r##"{:?} is expected, but got {:?}"##,
+        r##"{:?} is expected, but got {}"##,
         format!("{:?}", value),
-        bl.token.get_literal(),
+        token
     );
 }
 
@@ -1120,18 +1091,20 @@ fn test_infix_expression(
     ex_operator: &'static str,
     ex_right: &TestLiteral,
 ) {
-    let ifn = match &en {
-        ExpressionNode::InfixExpressionNode(ie) => ie,
+    let (token, left, right) = match &en {
+        ExpressionNode::InfixExpression { token, left, right } => (token, left, right),
         _ => panic!("not infix expression {:?}", en),
     };
 
-    test_literal_expression(&ifn.left, &ex_left);
+    test_literal_expression(left, &ex_left);
 
     assert_eq!(
-        ifn.operator, ex_operator,
+        format!("{}", token),
+        ex_operator,
         "unexpected operator {} (expected {})",
-        ifn.operator, ex_operator,
+        token,
+        ex_operator,
     );
 
-    test_literal_expression(&ifn.right, &ex_right);
+    test_literal_expression(right, &ex_right);
 }

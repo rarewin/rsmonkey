@@ -1,118 +1,117 @@
-use crate::token::{Token, TokenType};
+use crate::token::Token;
 
 #[derive(Debug)]
 pub struct Lexer {
-    input: Vec<char>,
+    tokens: Vec<Token>,
 }
 
 impl Lexer {
     /// create new lexer
-    pub fn new(input: String) -> Lexer {
-        let mut input = input.chars().collect::<Vec<char>>();
-        input.reverse();
-        Lexer { input }
+    pub fn new(input: &str) -> Lexer {
+        let mut input = input.chars().peekable();
+        let mut tokens = Vec::new();
+
+        while let Some(ch) = input.next() {
+            if ch.is_ascii_whitespace() {
+                continue;
+            }
+
+            match ch {
+                '+' => tokens.push(Token::Plus),
+                '-' => tokens.push(Token::Minus),
+                '*' => tokens.push(Token::Asterisk),
+                '<' => tokens.push(Token::Lt),
+                '>' => tokens.push(Token::Gt),
+                '(' => tokens.push(Token::LParen),
+                ')' => tokens.push(Token::RParen),
+                '{' => tokens.push(Token::LBrace),
+                '}' => tokens.push(Token::RBrace),
+                '[' => tokens.push(Token::LBracket),
+                ']' => tokens.push(Token::RBracket),
+                ',' => tokens.push(Token::Comma),
+                ';' => tokens.push(Token::Semicolon),
+                ':' => tokens.push(Token::Colon),
+                '/' => tokens.push(Token::Slash),
+                '\0' => tokens.push(Token::EoF),
+                '=' => {
+                    if let Some(&'=') = input.peek() {
+                        tokens.push(Token::Eq);
+                        input.next(); // consume '='
+                    } else {
+                        tokens.push(Token::Assign);
+                    }
+                }
+                '!' => {
+                    if let Some(&'=') = input.peek() {
+                        tokens.push(Token::NotEq);
+                        input.next(); // consume '='
+                    } else {
+                        tokens.push(Token::Bang);
+                    }
+                }
+                'a'..='z' | 'A'..='Z' | '_' => {
+                    let mut v = String::from(ch);
+                    while let Some(next) = input.peek() {
+                        if next.is_ascii_alphabetic() || *next == '_' {
+                            v.push(*next);
+                            input.next();
+                        } else {
+                            break;
+                        }
+                    }
+                    tokens.push(lookup_ident(&v));
+                }
+                '0'..='9' => {
+                    let mut fig = String::from(ch);
+                    while let Some(next) = input.peek() {
+                        if next.is_ascii_digit() {
+                            fig.push(*next);
+                            input.next();
+                        } else {
+                            break;
+                        }
+                    }
+                    tokens.push(Token::Int(fig.parse().unwrap())); // @todo  change unwrap()
+                }
+                '"' => {
+                    let mut string = String::new();
+                    #[allow(clippy::while_let_on_iterator)]
+                    while let Some(next) = input.next() {
+                        if next == '"' {
+                            break;
+                        } else {
+                            string.push(next);
+                        }
+                    }
+                    tokens.push(Token::String(string));
+                }
+                _ => tokens.push(Token::Illegal(ch.into())),
+            }
+        }
+
+        Lexer { tokens }
     }
 }
 
-impl Iterator for Lexer {
+impl IntoIterator for Lexer {
     type Item = Token;
+    type IntoIter = std::vec::IntoIter<Self::Item>;
 
-    /// get next token
-    fn next(&mut self) -> Option<Self::Item> {
-        let mut ch = self.input.pop()?;
-
-        while ch.is_ascii_whitespace() {
-            ch = self.input.pop()?;
-        }
-
-        match ch {
-            '=' => {
-                let ch = self.input.pop()?;
-                if ch == '=' {
-                    Some(Token::new(TokenType::Eq, "=="))
-                } else {
-                    self.input.push(ch);
-                    Some(Token::new(TokenType::Assign, "="))
-                }
-            }
-            '+' => Some(Token::new(TokenType::Plus, "+")),
-            '-' => Some(Token::new(TokenType::Minus, "-")),
-            '!' => {
-                let ch = self.input.pop()?;
-                if ch == '=' {
-                    Some(Token::new(TokenType::NotEq, "!="))
-                } else {
-                    self.input.push(ch);
-                    Some(Token::new(TokenType::Bang, "!"))
-                }
-            }
-            '/' => Some(Token::new(TokenType::Slash, "/")),
-            '*' => Some(Token::new(TokenType::Asterisk, "*")),
-            '<' => Some(Token::new(TokenType::Lt, "<")),
-            '>' => Some(Token::new(TokenType::Gt, ">")),
-            '(' => Some(Token::new(TokenType::LParen, "(")),
-            ')' => Some(Token::new(TokenType::RParen, ")")),
-            '{' => Some(Token::new(TokenType::LBrace, "{")),
-            '}' => Some(Token::new(TokenType::RBrace, "}")),
-            '[' => Some(Token::new(TokenType::LBracket, "[")),
-            ']' => Some(Token::new(TokenType::RBracket, "]")),
-            ',' => Some(Token::new(TokenType::Comma, ",")),
-            ';' => Some(Token::new(TokenType::Semicolon, ";")),
-            ':' => Some(Token::new(TokenType::Colon, ":")),
-            '\0' => Some(Token::new(TokenType::EoF, "EOF")),
-            '"' => {
-                let string = self
-                    .input
-                    .iter()
-                    .rev()
-                    .take_while(|c| **c != '"')
-                    .collect::<String>();
-                for _ in 0..(string.len() + 1) {
-                    self.input.pop();
-                }
-                Some(Token::new(TokenType::StringToken, &string))
-            }
-            'a'..='z' | 'A'..='Z' | '_' => {
-                self.input.push(ch);
-                let v = self
-                    .input
-                    .iter()
-                    .rev()
-                    .take_while(|c| c.is_ascii_alphabetic() || **c == '_')
-                    .collect::<String>();
-                for _ in 0..v.len() {
-                    self.input.pop();
-                }
-                Some(Token::new(lookup_ident(&v), &v))
-            }
-            '0'..='9' => {
-                self.input.push(ch);
-                let fig = self
-                    .input
-                    .iter()
-                    .rev()
-                    .take_while(|c| c.is_ascii_digit())
-                    .collect::<String>();
-                for _ in 0..fig.len() {
-                    self.input.pop();
-                }
-                Some(Token::new(TokenType::Int, &fig))
-            }
-            _ => None,
-        }
+    fn into_iter(self) -> Self::IntoIter {
+        self.tokens.into_iter()
     }
 }
 
 /// lookup identifier
-fn lookup_ident(s: &str) -> TokenType {
+fn lookup_ident(s: &str) -> Token {
     match s {
-        "let" => TokenType::Let,
-        "fn" => TokenType::Function,
-        "if" => TokenType::If,
-        "else" => TokenType::Else,
-        "return" => TokenType::Return,
-        "true" => TokenType::True,
-        "false" => TokenType::False,
-        _ => TokenType::Ident,
+        "let" => Token::Let,
+        "fn" => Token::Function,
+        "if" => Token::If,
+        "else" => Token::Else,
+        "return" => Token::Return,
+        "true" => Token::Boolean(true),
+        "false" => Token::Boolean(false),
+        _ => Token::Ident(s.into()),
     }
 }
